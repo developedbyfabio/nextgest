@@ -99,6 +99,7 @@ A senha é definida no prompt (nunca em código/git).
 | Cadastros do dono (1B) | [docs/09-cadastros.md](docs/09-cadastros.md) |
 | Portal de agendamento (1C) | [docs/10-agendamento.md](docs/10-agendamento.md) |
 | Agenda da equipe (1D) | [docs/11-agenda-equipe.md](docs/11-agenda-equipe.md) |
+| Design System (1E) | [docs/12-design-system.md](docs/12-design-system.md) |
 
 ## Segurança (resumo)
 
