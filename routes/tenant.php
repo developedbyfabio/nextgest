@@ -6,12 +6,14 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
+use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
+use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\Home as PortalHome;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +53,10 @@ Route::middleware(['tenant'])
             Route::get('registrar', ClienteRegistrar::class)->name('cliente.registrar');
         });
 
+        Route::get('agendar', PortalAgendar::class)
+            ->middleware('auth:cliente')
+            ->name('cliente.agendar');
+
         Route::post('sair', [LogoutController::class, 'cliente'])
             ->middleware('auth:cliente')
             ->name('cliente.logout');
@@ -77,6 +83,10 @@ Route::middleware(['tenant'])
                 Route::get('servicos', ServicosIndex::class)
                     ->middleware('can:editar_servico')
                     ->name('servicos');
+
+                Route::get('bloqueios', BloqueiosIndex::class)
+                    ->middleware('can:gerir_agenda')
+                    ->name('bloqueios');
 
                 Route::get('equipe', EquipeIndex::class)
                     ->middleware('can:editar_usuario')

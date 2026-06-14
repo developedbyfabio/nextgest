@@ -29,6 +29,9 @@
                 @can('editar_servico')
                     <flux:navlist.item icon="scissors" :href="route('painel.servicos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.servicos')" wire:navigate>Serviços</flux:navlist.item>
                 @endcan
+                @can('gerir_agenda')
+                    <flux:navlist.item icon="no-symbol" :href="route('painel.bloqueios', ['tenant' => $tenantId])" :current="request()->routeIs('painel.bloqueios')" wire:navigate>Bloqueios</flux:navlist.item>
+                @endcan
             </flux:navlist.group>
 
             <flux:navlist.group heading="Gestão" expandable :expanded="true">
