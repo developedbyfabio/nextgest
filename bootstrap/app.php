@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Stancl\Tenancy\Contracts\TenantCouldNotBeIdentifiedException;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -41,9 +42,19 @@ return Application::configure(basePath: dirname(__DIR__))
             StartSession::class,
             ScopeSessionToTenant::class,
         );
+
+        // Webhooks de gateways externos não enviam token CSRF.
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Tenant inexistente / não identificado → 404 amigável (em vez de 500).
+        $exceptions->render(function (TenantCouldNotBeIdentifiedException $e, Request $request) {
+            abort(404, 'Estabelecimento não encontrado.');
+        });
     })->create();

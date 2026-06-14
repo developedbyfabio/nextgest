@@ -25,10 +25,31 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     /**
      * O id é o slug — string fornecida na criação, não autoincremento/UUID.
+     *
+     * O trait GeneratesIds do stancl sobrescreve getIncrementing()/getKeyType()
+     * com base na existência de um UniqueIdentifierGenerator (id_generator).
+     * Como usamos id manual (slug), sobrescrevemos os métodos aqui para garantir
+     * chave string não-incremental — senão o Eloquent sobrescreveria o id em
+     * memória com o lastInsertId (0) após o insert.
      */
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    public function getIncrementing(): bool
+    {
+        return false;
+    }
+
+    public function getKeyType(): string
+    {
+        return 'string';
+    }
+
+    public function shouldGenerateId(): bool
+    {
+        return false;
+    }
 
     /**
      * Colunas que existem fisicamente na tabela `tenants` (as demais iriam
