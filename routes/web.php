@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\LogoutController;
+use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Auth\AdminLogin;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,9 +13,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Rodam no domínio central (nextgest.com.br) e NÃO passam pela resolução de
-| tenant. São registradas antes das rotas de tenant, então têm precedência
-| sobre o catch-all /{tenant}. Aqui ficam: landing, painel do super-admin
-| (/admin), login do super-admin e webhooks dos gateways.
+| tenant. Registradas antes das rotas de tenant, então têm precedência sobre o
+| catch-all /{tenant}. Aqui ficam: landing, painel/login do super-admin (guard
+| `admin`) e webhooks dos gateways.
 |
 */
 
@@ -21,11 +24,19 @@ Route::get('/', function () {
     return view('welcome');
 })->name('landing');
 
-// Painel do super-admin (central). Implementado em fase posterior.
+// Super-admin (central, guard `admin`).
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', function () {
-        return 'Painel do super-admin (central) — em construção.';
-    })->name('dashboard');
+    Route::get('login', AdminLogin::class)
+        ->middleware('guest:admin')
+        ->name('login');
+
+    Route::get('/', AdminDashboard::class)
+        ->middleware('auth:admin')
+        ->name('dashboard');
+
+    Route::post('sair', [LogoutController::class, 'admin'])
+        ->middleware('auth:admin')
+        ->name('logout');
 });
 
 // Webhooks dos gateways de pagamento (central, sem tenant na URL; o tenant é

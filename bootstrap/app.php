@@ -1,11 +1,16 @@
 <?php
 
 use App\Http\Middleware\ScopeSessionToTenant;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Contracts\TenantCouldNotBeIdentifiedException;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
@@ -25,14 +30,14 @@ return Application::configure(basePath: dirname(__DIR__))
         | sessão antes de o tenant ser conhecido.
         */
         $middleware->group('tenant', [
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
             InitializeTenancyByPath::class,
             ScopeSessionToTenant::class,
             StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            ShareErrorsFromSession::class,
+            ValidateCsrfToken::class,
+            SubstituteBindings::class,
         ]);
 
         // Garante que o escopo de sessão rode imediatamente antes de StartSession
@@ -47,6 +52,44 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
         ]);
+
+        // Não autenticado → login da ÁREA correta (admin / painel / portal).
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('admin') || $request->is('admin/*')) {
+                return route('admin.login');
+            }
+
+            if (tenancy()->initialized) {
+                $tenantId = tenant('id');
+
+                if ($request->is('*/painel') || $request->is('*/painel/*')) {
+                    return route('painel.login', ['tenant' => $tenantId]);
+                }
+
+                return route('cliente.login', ['tenant' => $tenantId]);
+            }
+
+            return route('admin.login');
+        });
+
+        // Já autenticado tentando acessar tela de login → manda para a ÁREA.
+        $middleware->redirectUsersTo(function (Request $request) {
+            if ($request->is('admin') || $request->is('admin/*')) {
+                return route('admin.dashboard');
+            }
+
+            if (tenancy()->initialized) {
+                $tenantId = tenant('id');
+
+                if ($request->is('*/painel') || $request->is('*/painel/*')) {
+                    return route('painel.dashboard', ['tenant' => $tenantId]);
+                }
+
+                return route('tenant.home', ['tenant' => $tenantId]);
+            }
+
+            return route('admin.dashboard');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
