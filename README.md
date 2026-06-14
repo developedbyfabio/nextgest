@@ -93,7 +93,7 @@ Guia passo a passo (subir serviços, dados de demonstração, roteiro de teste):
 sudo systemctl start mysql redis-server
 php artisan migrate --force
 php artisan nextgest:demo barbeariateste   # cenário de demonstração
-php artisan serve                          # http://127.0.0.1:8000/barbeariateste
+php artisan serve --host=0.0.0.0 --port=8000   # http://192.168.3.100:8000/barbeariateste
 ```
 
 ## Documentação por módulo

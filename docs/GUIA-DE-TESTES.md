@@ -25,14 +25,14 @@ php artisan nextgest:criar-admin
 php artisan nextgest:criar-dono barbeariateste
 
 # 4. Suba o app
-php artisan serve
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
 Abra no navegador:
 
-- **Portal do cliente:** http://127.0.0.1:8000/barbeariateste
-- **Painel da equipe:** http://127.0.0.1:8000/barbeariateste/painel/login
-- **Admin (central):** http://127.0.0.1:8000/admin/login
+- **Portal do cliente:** http://192.168.3.100:8000/barbeariateste
+- **Painel da equipe:** http://192.168.3.100:8000/barbeariateste/painel/login
+- **Admin (central):** http://192.168.3.100:8000/admin/login
 
 Logins de demonstração (senha **`password`**):
 
@@ -46,7 +46,8 @@ Logins de demonstração (senha **`password`**):
 O **super-admin** (`/admin`) e o **Dono** do painel são criados por você nos
 comandos do passo 3 (senha que você digitar).
 
-> Se acessa de outra máquina (servidor remoto), veja a seção 3.1.
+> A VM é acessada pelo host em `192.168.3.100`. Dentro da própria VM,
+> `127.0.0.1`/`localhost` também valem. Detalhes na seção 3.1.
 
 ---
 
@@ -107,31 +108,40 @@ O Nginx de produção **não** está habilitado (sem DNS/SSL). Para testar, use 
 servidor embutido:
 
 ```bash
-php artisan serve
-# Servindo em http://127.0.0.1:8000
+php artisan serve --host=0.0.0.0 --port=8000
+# Servindo em http://192.168.3.100:8000
 ```
 
 URLs reais:
 
-- **Central** (SaaS): http://127.0.0.1:8000/ (landing) e
-  http://127.0.0.1:8000/admin/login (super-admin).
+- **Central** (SaaS): http://192.168.3.100:8000/ (landing) e
+  http://192.168.3.100:8000/admin/login (super-admin).
 - **Tenant** (estabelecimento): tudo sob o **slug** na URL —
-  http://127.0.0.1:8000/barbeariateste (portal do cliente) e
-  http://127.0.0.1:8000/barbeariateste/painel (painel da equipe).
+  http://192.168.3.100:8000/barbeariateste (portal do cliente) e
+  http://192.168.3.100:8000/barbeariateste/painel (painel da equipe).
 
 Ou seja: **`/admin` é o painel central do SaaS**; **`/{slug}` é o
-estabelecimento** (multi-tenant por caminho). `localhost` e `127.0.0.1` já são
-domínios centrais reconhecidos, então o slug funciona direto.
+estabelecimento** (multi-tenant por caminho). Os domínios centrais reconhecidos
+incluem `192.168.3.100`, `localhost` e `127.0.0.1`, então o slug funciona direto.
 
-### 3.1 Acessando de outra máquina (servidor remoto)
+> **Dentro da VM** (terminal/navegador da própria VM), `http://127.0.0.1:8000`
+> e `http://localhost:8000` também valem. **Do navegador do host**, use o IP da
+> VM: `http://192.168.3.100:8000`.
 
-A `ufw` libera só 22/80/443 (não a 8000). Duas opções:
+### 3.1 Acesso pelo navegador do host (VM VirtualBox)
 
-- **Túnel SSH (recomendado):** no seu computador,
-  `ssh -L 8000:127.0.0.1:8000 usuario@servidor` e abra
-  `http://127.0.0.1:8000/barbeariateste` localmente.
-- **Expor a porta:** `php artisan serve --host=0.0.0.0 --port=8000` e
-  `sudo ufw allow 8000/tcp` (lembre de `sudo ufw delete allow 8000/tcp` depois).
+A VM tem IP `192.168.3.100` (adaptador **Bridge** ou **Host-only**). Para o host
+enxergar o app:
+
+- Servir em todas as interfaces (não só no loopback):
+  `php artisan serve --host=0.0.0.0 --port=8000`.
+- Liberar a porta na `ufw` (ambiente de teste em LAN):
+  `sudo ufw allow 8000/tcp` — para remover depois: `sudo ufw delete allow 8000/tcp`.
+- Abrir no host: `http://192.168.3.100:8000`.
+
+> Se o adaptador da VM fosse **NAT** (sem IP de LAN), a alternativa seria
+> **port forwarding** no VirtualBox (host 8000 → guest 8000) e acessar por
+> `http://127.0.0.1:8000` no host.
 
 ---
 
@@ -172,19 +182,19 @@ php artisan nextgest:demo salaodaana
 > Dica: ative o **modo local** (seção 1) para ver erros enquanto explora.
 
 ### 5.1 Admin (central)
-1. http://127.0.0.1:8000/admin/login → entre com o super-admin que você criou.
+1. http://192.168.3.100:8000/admin/login → entre com o super-admin que você criou.
 2. Cai no painel central (`/admin`) com o total de estabelecimentos.
 3. Menu do perfil → **Sair**. Tente abrir `/admin` deslogado → redireciona ao login.
 
 ### 5.2 Equipe (painel)
-1. http://127.0.0.1:8000/barbeariateste/painel/login → entre como **Dono**
+1. http://192.168.3.100:8000/barbeariateste/painel/login → entre como **Dono**
    (criado por você) ou **Gerente** (`gerente@demo.test` / `password`).
 2. Navegue por **Unidades, Serviços, Equipe, Bloqueios, Papéis** — já vêm
    populados. Crie/edite um serviço (modal + toast), **inative** e **reative**.
 3. Em **Equipe → (profissional) → Horários**, veja as faixas (almoço entre elas).
 
 ### 5.3 Cliente (portal)
-1. http://127.0.0.1:8000/barbeariateste → **Criar conta** (ou entre como
+1. http://192.168.3.100:8000/barbeariateste → **Criar conta** (ou entre como
    `maria@cliente.test` / `password`).
 2. **Novo agendamento**: serviço(s) → profissional (ou "sem preferência") → dia →
    horário → **Confirmar**. Veja em **Próximos agendamentos** e **cancele** um

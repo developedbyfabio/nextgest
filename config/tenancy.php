@@ -26,6 +26,7 @@ return [
         'www.nextgest.com.br',
         '127.0.0.1',
         'localhost',
+        '192.168.3.100', // IP da VM (acesso pelo navegador do host na LAN)
     ],
 
     /**
