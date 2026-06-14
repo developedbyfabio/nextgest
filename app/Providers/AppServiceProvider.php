@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Http\Middleware\InitializeTenancyByPathQuandoPresente;
-use App\Http\Middleware\ScopeSessionToTenant;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,28 +18,19 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         /*
-        | Rota de update do Livewire ciente do tenant (identificação por caminho).
+        | Livewire + multi-tenancy por caminho.
         |
-        | O parâmetro {tenant} é opcional:
-        |  - páginas centrais  → /livewire/update (sem tenant);
-        |  - páginas de tenant → /{tenant}/livewire/update (URL::defaults injeta o
-        |    tenant na geração — ver ScopeSessionToTenant).
-        |
-        | Assim o update roda no MESMO contexto (tenant + cookie de sessão) da
-        | página, evitando sessão vazia / token CSRF inválido (419). O Livewire
-        | adiciona automaticamente o grupo `web` e o RequireLivewireHeaders.
+        | O endpoint de update do Livewire é único e central (/livewire/update).
+        | Para um componente de tenant funcionar nesse endpoint, registramos o
+        | InitializeTenancyByPath como "persistent middleware": o Livewire reexecuta
+        | esse middleware no update usando o caminho ORIGINAL da página (que contém
+        | o {tenant}), reinicializando o tenancy. Assim o componente roda no contexto
+        | do tenant sem precisar de uma rota de update por tenant (que quebraria a
+        | rota central). A sessão é compartilhada (cookie único) — o isolamento de
+        | login entre tenants é feito por App\Http\Middleware\EscoparAutenticacaoPorTenant.
         */
-        if ($this->app->runningUnitTests()) {
-            return;
-        }
-
-        Livewire::setUpdateRoute(function ($handle) {
-            return Route::post('/{tenant?}/livewire/update', $handle)
-                ->middleware([
-                    InitializeTenancyByPathQuandoPresente::class,
-                    ScopeSessionToTenant::class,
-                ])
-                ->where('tenant', '[a-z0-9-]+');
-        });
+        Livewire::addPersistentMiddleware([
+            InitializeTenancyByPath::class,
+        ]);
     }
 }

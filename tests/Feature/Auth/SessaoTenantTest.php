@@ -2,21 +2,26 @@
 
 declare(strict_types=1);
 
+use App\Models\Cliente;
+
 /**
- * Regressão do 419 no login de tenant: a sessão é escopada por NOME de cookie,
- * com path "/" (não no segmento do tenant). Path "/" garante que o cookie chega
- * à rota de update do Livewire (/{tenant}/livewire/update) — senão a sessão fica
- * vazia e o token CSRF não bate (419). A isolação entre tenants vem do nome.
+ * Sessão compartilhada (cookie único) com isolamento de login por tenant:
+ * uma sessão autenticada no tenant A não permanece logada ao acessar o tenant B
+ * (ver App\Http\Middleware\EscoparAutenticacaoPorTenant). É o que impede
+ * vazamento de login entre estabelecimentos sem quebrar o endpoint do Livewire.
  */
-it('usa cookie de sessão por tenant com path /', function () {
+it('não mantém o login de um tenant ao acessar outro', function () {
     criarTenant('lojaum');
+    $b = criarTenant('lojadois');
+    $cliente = $b->run(fn () => Cliente::create(['nome' => 'Maria', 'telefone' => '11', 'email' => 'maria@b.test']));
 
-    $resp = $this->get('/lojaum/painel/login')->assertOk();
+    // Sessão "vem" do tenant lojaum, mas acessamos o portal do lojadois.
+    $resp = $this->actingAs($cliente, 'cliente')
+        ->withSession(['_tenant_sessao' => 'lojaum'])
+        ->get('/lojadois');
 
-    $cookie = collect($resp->headers->getCookies())
-        ->first(fn ($c) => str_contains($c->getName(), 'lojaum'));
+    $resp->assertOk()
+        ->assertSee('Criar conta e agendar'); // conteúdo de visitante (deslogado)
 
-    expect($cookie)->not->toBeNull()
-        ->and($cookie->getName())->toBe('nextgest_tenant_lojaum_session')
-        ->and($cookie->getPath())->toBe('/');
+    $this->assertGuest('cliente');
 });

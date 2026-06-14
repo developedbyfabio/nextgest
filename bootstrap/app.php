@@ -1,7 +1,6 @@
 <?php
 
-use App\Http\Middleware\InitializeTenancyByPathQuandoPresente;
-use App\Http\Middleware\ScopeSessionToTenant;
+use App\Http\Middleware\EscoparAutenticacaoPorTenant;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -25,36 +24,23 @@ return Application::configure(basePath: dirname(__DIR__))
         /*
         | Grupo de middleware dos TENANTS (identificação por caminho).
         |
-        | Equivale ao grupo "web", porém com a inicialização do tenancy ANTES da
-        | sessão, e com o escopo de sessão por tenant logo em seguida. As rotas
-        | de tenant usam SOMENTE este grupo (não o "web"), para não iniciar a
-        | sessão antes de o tenant ser conhecido.
+        | Equivale ao grupo "web" + inicialização do tenancy por caminho. A sessão
+        | usa o cookie padrão (compartilhado); o isolamento de login entre tenants
+        | é feito por EscoparAutenticacaoPorTenant (após a sessão iniciar).
+        |
+        | O endpoint de update do Livewire é central; o tenancy é reaplicado lá via
+        | persistent middleware (ver App\Providers\AppServiceProvider).
         */
         $middleware->group('tenant', [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             InitializeTenancyByPath::class,
-            ScopeSessionToTenant::class,
             StartSession::class,
             ShareErrorsFromSession::class,
             ValidateCsrfToken::class,
             SubstituteBindings::class,
+            EscoparAutenticacaoPorTenant::class,
         ]);
-
-        // Garante que o escopo de sessão rode imediatamente antes de StartSession
-        // (InitializeTenancyByPath já é colocado como prioridade mais alta pelo
-        // TenancyServiceProvider).
-        $middleware->prependToPriorityList(
-            StartSession::class,
-            ScopeSessionToTenant::class,
-        );
-
-        // Na rota de update do Livewire, a inicialização condicional do tenant
-        // precisa vir antes do escopo de sessão (e, portanto, do StartSession).
-        $middleware->prependToPriorityList(
-            ScopeSessionToTenant::class,
-            InitializeTenancyByPathQuandoPresente::class,
-        );
 
         // Webhooks de gateways externos não enviam token CSRF.
         $middleware->validateCsrfTokens(except: [
