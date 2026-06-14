@@ -7,6 +7,11 @@ use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
+use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
+use App\Livewire\Painel\Equipe\Index as EquipeIndex;
+use App\Livewire\Painel\Papeis\Index as PapeisIndex;
+use App\Livewire\Painel\Servicos\Index as ServicosIndex;
+use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Portal\Home as PortalHome;
 use Illuminate\Support\Facades\Route;
 
@@ -58,12 +63,32 @@ Route::middleware(['tenant'])
                 ->middleware('guest:web')
                 ->name('login');
 
-            Route::get('/', PainelDashboard::class)
-                ->middleware('auth:web')
-                ->name('dashboard');
+            Route::middleware('auth:web')->group(function () {
+                Route::get('/', PainelDashboard::class)->name('dashboard');
 
-            Route::post('sair', [LogoutController::class, 'painel'])
-                ->middleware('auth:web')
-                ->name('logout');
+                Route::post('sair', [LogoutController::class, 'painel'])->name('logout');
+
+                // Cadastros (1B). Cada página exige a permissão de gestão correspondente;
+                // ações de criar/editar são reconferidas dentro dos componentes.
+                Route::get('unidades', UnidadesIndex::class)
+                    ->middleware('can:gerir_unidades')
+                    ->name('unidades');
+
+                Route::get('servicos', ServicosIndex::class)
+                    ->middleware('can:editar_servico')
+                    ->name('servicos');
+
+                Route::get('equipe', EquipeIndex::class)
+                    ->middleware('can:editar_usuario')
+                    ->name('equipe');
+
+                Route::get('equipe/{user}/horarios', EquipeHorarios::class)
+                    ->middleware('can:editar_usuario')
+                    ->name('equipe.horarios');
+
+                Route::get('papeis', PapeisIndex::class)
+                    ->middleware('can:editar_permissoes')
+                    ->name('papeis');
+            });
         });
     });

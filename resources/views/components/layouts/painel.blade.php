@@ -25,17 +25,22 @@
             </flux:navlist.item>
 
             <flux:navlist.group heading="Operação" expandable :expanded="true">
-                <flux:navlist.item icon="calendar-days">Agendamentos</flux:navlist.item>
-                <flux:navlist.item icon="scissors">Serviços</flux:navlist.item>
-                <flux:navlist.item icon="users">Clientes</flux:navlist.item>
-                <flux:navlist.item icon="shopping-bag">Vendas</flux:navlist.item>
+                <flux:navlist.item icon="calendar-days" :current="false">Agendamentos</flux:navlist.item>
+                @can('editar_servico')
+                    <flux:navlist.item icon="scissors" :href="route('painel.servicos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.servicos')" wire:navigate>Serviços</flux:navlist.item>
+                @endcan
             </flux:navlist.group>
 
             <flux:navlist.group heading="Gestão" expandable :expanded="true">
-                <flux:navlist.item icon="identification">Equipe</flux:navlist.item>
-                <flux:navlist.item icon="star">Clube</flux:navlist.item>
-                <flux:navlist.item icon="rectangle-stack">Kanban</flux:navlist.item>
-                <flux:navlist.item icon="cog-6-tooth">Configurações</flux:navlist.item>
+                @can('gerir_unidades')
+                    <flux:navlist.item icon="building-storefront" :href="route('painel.unidades', ['tenant' => $tenantId])" :current="request()->routeIs('painel.unidades')" wire:navigate>Unidades</flux:navlist.item>
+                @endcan
+                @can('editar_usuario')
+                    <flux:navlist.item icon="identification" :href="route('painel.equipe', ['tenant' => $tenantId])" :current="request()->routeIs('painel.equipe') || request()->routeIs('painel.equipe.horarios')" wire:navigate>Equipe</flux:navlist.item>
+                @endcan
+                @can('editar_permissoes')
+                    <flux:navlist.item icon="shield-check" :href="route('painel.papeis', ['tenant' => $tenantId])" :current="request()->routeIs('painel.papeis')" wire:navigate>Papéis e permissões</flux:navlist.item>
+                @endcan
             </flux:navlist.group>
         </flux:navlist>
 
@@ -69,6 +74,8 @@
     <flux:main>
         {{ $slot }}
     </flux:main>
+
+    <flux:toast position="top right" />
 
     @fluxScripts
 </body>
