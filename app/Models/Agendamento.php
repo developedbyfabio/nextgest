@@ -18,6 +18,16 @@ class Agendamento extends Model
     /** Status que NÃO ocupam a agenda (liberam o horário). */
     public const STATUS_LIVRES = ['cancelado', 'nao_compareceu'];
 
+    /** Transições de status permitidas (a partir de cada status). */
+    public const TRANSICOES = [
+        'pendente' => ['confirmado', 'em_andamento', 'concluido', 'cancelado', 'nao_compareceu'],
+        'confirmado' => ['em_andamento', 'concluido', 'cancelado', 'nao_compareceu'],
+        'em_andamento' => ['concluido', 'cancelado'],
+        'concluido' => [],
+        'cancelado' => [],
+        'nao_compareceu' => [],
+    ];
+
     protected $fillable = [
         'unidade_id',
         'cliente_id',
@@ -66,5 +76,10 @@ class Agendamento extends Model
     public function scopeOcupantes($query)
     {
         return $query->whereNotIn('status', self::STATUS_LIVRES);
+    }
+
+    public function podeTransicionarPara(string $novo): bool
+    {
+        return in_array($novo, self::TRANSICOES[$this->status] ?? [], true);
     }
 }

@@ -27,6 +27,9 @@ class Agendador
 {
     public function __construct(private MotorDisponibilidade $motor) {}
 
+    /**
+     * Agendamento feito pelo próprio cliente (portal). origem=cliente.
+     */
     public function confirmar(
         Cliente $cliente,
         int $unidadeId,
@@ -34,7 +37,37 @@ class Agendador
         int $profissionalId,
         Carbon $inicio,
     ): Agendamento {
-        return DB::transaction(function () use ($cliente, $unidadeId, $servicoIds, $profissionalId, $inicio) {
+        return $this->criar($unidadeId, $servicoIds, $profissionalId, $inicio, [
+            'cliente_id' => $cliente->id,
+            'origem' => 'cliente',
+        ]);
+    }
+
+    /**
+     * Agendamento feito pela equipe (painel). origem=equipe, registra quem criou.
+     */
+    public function agendarPelaEquipe(
+        int $clienteId,
+        int $unidadeId,
+        array $servicoIds,
+        int $profissionalId,
+        Carbon $inicio,
+        int $criadoPorUserId,
+    ): Agendamento {
+        return $this->criar($unidadeId, $servicoIds, $profissionalId, $inicio, [
+            'cliente_id' => $clienteId,
+            'origem' => 'equipe',
+            'criado_por_user_id' => $criadoPorUserId,
+        ]);
+    }
+
+    /**
+     * Núcleo concorrente-seguro: lock no profissional, revalida o slot e insere
+     * o agendamento com snapshots de preço/duração.
+     */
+    protected function criar(int $unidadeId, array $servicoIds, int $profissionalId, Carbon $inicio, array $atributos): Agendamento
+    {
+        return DB::transaction(function () use ($unidadeId, $servicoIds, $profissionalId, $inicio, $atributos) {
             // Lock pessimista: serializa agendamentos do mesmo profissional.
             User::whereKey($profissionalId)->lockForUpdate()->first();
 
@@ -44,22 +77,18 @@ class Agendador
 
             $servicos = Servico::whereIn('id', $this->normalizar($servicoIds))->get();
             $duracaoTotal = (int) $servicos->sum('duracao_minutos');
-            $valorTotal = (float) $servicos->sum('preco');
 
             $status = Configuracao::booleano('confirmacao_automatica', true) ? 'confirmado' : 'pendente';
 
-            $agendamento = Agendamento::create([
+            $agendamento = Agendamento::create(array_merge([
                 'unidade_id' => $unidadeId,
-                'cliente_id' => $cliente->id,
                 'profissional_id' => $profissionalId,
                 'data_hora_inicio' => $inicio,
                 'data_hora_fim' => $inicio->copy()->addMinutes($duracaoTotal),
                 'status' => $status,
-                'origem' => 'cliente',
-                'valor_total' => $valorTotal,
-            ]);
+                'valor_total' => (float) $servicos->sum('preco'),
+            ], $atributos));
 
-            // Itens com snapshot de preço e duração.
             foreach ($servicos as $servico) {
                 $agendamento->itens()->create([
                     'servico_id' => $servico->id,
@@ -67,6 +96,43 @@ class Agendador
                     'duracao_minutos' => $servico->duracao_minutos,
                 ]);
             }
+
+            return $agendamento;
+        });
+    }
+
+    /**
+     * Remarca um agendamento para um novo início (e opcionalmente outro
+     * profissional), revalidando com lock e ignorando o próprio agendamento na
+     * checagem de conflito. Mantém a duração (snapshot dos itens).
+     */
+    public function remarcar(Agendamento $agendamento, Carbon $novoInicio, ?int $profissionalId = null): Agendamento
+    {
+        $profissionalId ??= $agendamento->profissional_id;
+
+        return DB::transaction(function () use ($agendamento, $novoInicio, $profissionalId) {
+            User::whereKey($profissionalId)->lockForUpdate()->first();
+
+            $duracao = (int) $agendamento->itens()->sum('duracao_minutos');
+            $novoFim = $novoInicio->copy()->addMinutes($duracao);
+
+            $ok = $this->motor->intervaloAgendavel(
+                $agendamento->unidade_id,
+                $profissionalId,
+                $novoInicio,
+                $novoFim,
+                ignorarAgendamentoId: $agendamento->id,
+            );
+
+            if (! $ok) {
+                throw new SlotIndisponivelException;
+            }
+
+            $agendamento->update([
+                'profissional_id' => $profissionalId,
+                'data_hora_inicio' => $novoInicio,
+                'data_hora_fim' => $novoFim,
+            ]);
 
             return $agendamento;
         });
@@ -90,6 +156,18 @@ class Agendador
     public function cancelar(Agendamento $agendamento): void
     {
         $agendamento->update(['status' => 'cancelado']);
+    }
+
+    /**
+     * Muda o status respeitando as transições permitidas (Agendamento::TRANSICOES).
+     */
+    public function mudarStatus(Agendamento $agendamento, string $novo): void
+    {
+        if (! $agendamento->podeTransicionarPara($novo)) {
+            throw new TransicaoInvalidaException;
+        }
+
+        $agendamento->update(['status' => $novo]);
     }
 
     /** @return array<int, int> */

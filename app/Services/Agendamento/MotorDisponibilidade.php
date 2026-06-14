@@ -33,7 +33,7 @@ class MotorDisponibilidade
      * 'inicio' => Carbon]. Para "sem preferência", cada hora traz o primeiro
      * profissional disponível.
      */
-    public function slots(int $unidadeId, array $servicoIds, ?int $profissionalId, Carbon $data): Collection
+    public function slots(int $unidadeId, array $servicoIds, ?int $profissionalId, Carbon $data, ?int $ignorarAgendamentoId = null): Collection
     {
         $servicoIds = $this->normalizarServicos($servicoIds);
         $duracao = $this->duracaoTotal($servicoIds);
@@ -72,7 +72,7 @@ class MotorDisponibilidade
                 continue;
             }
 
-            $ocupados = $this->intervalosOcupados($prof->id, $data);
+            $ocupados = $this->intervalosOcupados($prof->id, $data, $ignorarAgendamentoId);
 
             foreach ($janelas as $janela) {
                 $faixaFim = $data->copy()->setTimeFromTimeString($janela->hora_fim);
@@ -105,7 +105,7 @@ class MotorDisponibilidade
      * Revalida que um início específico é agendável para um profissional.
      * Usado pelo Agendador dentro da transação (com lock).
      */
-    public function slotValido(int $unidadeId, array $servicoIds, int $profissionalId, Carbon $inicio): bool
+    public function slotValido(int $unidadeId, array $servicoIds, int $profissionalId, Carbon $inicio, ?int $ignorarAgendamentoId = null): bool
     {
         $servicoIds = $this->normalizarServicos($servicoIds);
         $duracao = $this->duracaoTotal($servicoIds);
@@ -113,8 +113,6 @@ class MotorDisponibilidade
         if ($duracao <= 0) {
             return false;
         }
-
-        $fim = $inicio->copy()->addMinutes($duracao);
 
         // Profissional ativo, profissional, atende a unidade e faz TODOS os serviços.
         if ($this->filtrarProfissional($profissionalId, $unidadeId, $servicoIds)->isEmpty()) {
@@ -129,12 +127,23 @@ class MotorDisponibilidade
             return false;
         }
 
-        // Não no passado.
+        $fim = $inicio->copy()->addMinutes($duracao);
+
+        return $this->intervaloAgendavel($unidadeId, $profissionalId, $inicio, $fim, $ignorarAgendamentoId);
+    }
+
+    /**
+     * Um intervalo [inicio, fim] é agendável para o profissional: não está no
+     * passado, cabe inteiro numa janela de trabalho do dia, e não colide com
+     * agendamentos/bloqueios (ignorando opcionalmente um agendamento — útil ao
+     * remarcar o próprio).
+     */
+    public function intervaloAgendavel(int $unidadeId, int $profissionalId, Carbon $inicio, Carbon $fim, ?int $ignorarAgendamentoId = null): bool
+    {
         if ($inicio->lte(Carbon::now())) {
             return false;
         }
 
-        // Cabe inteiro em alguma janela do dia.
         $cabe = HorarioTrabalho::where('user_id', $profissionalId)
             ->where('unidade_id', $unidadeId)
             ->where('dia_semana', (int) $inicio->dayOfWeek)
@@ -149,8 +158,7 @@ class MotorDisponibilidade
             return false;
         }
 
-        // Sem colisão com agendamentos/bloqueios.
-        foreach ($this->intervalosOcupados($profissionalId, $inicio) as [$oi, $of]) {
+        foreach ($this->intervalosOcupados($profissionalId, $inicio, $ignorarAgendamentoId) as [$oi, $of]) {
             if ($inicio->lt($of) && $oi->lt($fim)) {
                 return false;
             }
@@ -191,7 +199,7 @@ class MotorDisponibilidade
     }
 
     /** @return array<int, array{0: Carbon, 1: Carbon}> */
-    protected function intervalosOcupados(int $profissionalId, Carbon $data): array
+    protected function intervalosOcupados(int $profissionalId, Carbon $data, ?int $ignorarAgendamentoId = null): array
     {
         $inicioDia = $data->copy()->startOfDay();
         $fimDia = $data->copy()->endOfDay();
@@ -201,6 +209,7 @@ class MotorDisponibilidade
         Agendamento::query()
             ->where('profissional_id', $profissionalId)
             ->ocupantes()
+            ->when($ignorarAgendamentoId, fn ($q) => $q->whereKeyNot($ignorarAgendamentoId))
             ->where('data_hora_inicio', '<', $fimDia)
             ->where('data_hora_fim', '>', $inicioDia)
             ->get(['data_hora_inicio', 'data_hora_fim'])
