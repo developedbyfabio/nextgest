@@ -1,13 +1,11 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
-    <div class="flex items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Equipe</flux:heading>
-            <flux:subheading>Membros, papéis e profissionais</flux:subheading>
-        </div>
-        @can('criar_usuario')
-            <flux:button wire:click="novo" variant="primary" icon="plus">Novo membro</flux:button>
-        @endcan
-    </div>
+    <x-ng.page-header title="Equipe" subtitle="Membros, papéis e profissionais">
+        <x-slot:actions>
+            @can('criar_usuario')
+                <flux:button wire:click="novo" variant="primary" icon="plus">Novo membro</flux:button>
+            @endcan
+        </x-slot:actions>
+    </x-ng.page-header>
 
     <flux:table>
         <flux:table.columns>

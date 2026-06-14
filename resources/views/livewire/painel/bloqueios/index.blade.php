@@ -1,11 +1,9 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
-    <div class="flex items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Bloqueios</flux:heading>
-            <flux:subheading>Folgas, feriados e imprevistos por profissional</flux:subheading>
-        </div>
-        <flux:button wire:click="novo" variant="primary" icon="plus">Novo bloqueio</flux:button>
-    </div>
+    <x-ng.page-header title="Bloqueios" subtitle="Folgas, feriados e imprevistos por profissional">
+        <x-slot:actions>
+            <flux:button wire:click="novo" variant="primary" icon="plus">Novo bloqueio</flux:button>
+        </x-slot:actions>
+    </x-ng.page-header>
 
     <flux:table>
         <flux:table.columns>

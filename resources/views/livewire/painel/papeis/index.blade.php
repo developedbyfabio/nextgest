@@ -1,11 +1,9 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
-    <div class="flex items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Papéis e permissões</flux:heading>
-            <flux:subheading>Defina o que cada papel pode fazer</flux:subheading>
-        </div>
-        <flux:button wire:click="novo" variant="primary" icon="plus">Novo papel</flux:button>
-    </div>
+    <x-ng.page-header title="Papéis e permissões" subtitle="Defina o que cada papel pode fazer">
+        <x-slot:actions>
+            <flux:button wire:click="novo" variant="primary" icon="plus">Novo papel</flux:button>
+        </x-slot:actions>
+    </x-ng.page-header>
 
     <flux:table>
         <flux:table.columns>

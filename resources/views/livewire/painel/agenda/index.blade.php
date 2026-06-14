@@ -1,16 +1,12 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
     {{-- Cabeçalho --}}
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Agenda</flux:heading>
-            <flux:subheading>
-                {{ $podeVerTodas ? 'Agendamentos da equipe' : 'Sua agenda' }}
-            </flux:subheading>
-        </div>
+    <x-ng.page-header title="Agenda" :subtitle="$podeVerTodas ? 'Agendamentos da equipe' : 'Sua agenda'">
         @if ($podeGerir)
-            <livewire:painel.agenda.novo-agendamento />
+            <x-slot:actions>
+                <livewire:painel.agenda.novo-agendamento />
+            </x-slot:actions>
         @endif
-    </div>
+    </x-ng.page-header>
 
     {{-- Controles --}}
     <div class="flex flex-wrap items-center gap-3">
@@ -57,12 +53,16 @@
         </flux:select>
     </div>
 
+    {{-- Carregando --}}
+    <x-ng.skeleton :rows="5" wire:loading.delay.flex wire:target="data,visao,filtroProfissional,filtroUnidade,filtroStatus,navegar,irHoje" />
+
     {{-- Conteúdo --}}
+    <div wire:loading.remove wire:target="data,visao,filtroProfissional,filtroUnidade,filtroStatus,navegar,irHoje">
     @if ($visao === 'dia')
         <div class="flex flex-col gap-2">
             @forelse ($agendamentos as $ag)
                 <button type="button" wire:click="abrirDetalhe({{ $ag->id }})"
-                    class="flex items-center gap-4 rounded-lg border border-zinc-200 p-3 text-left transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
+                    class="ng-card-interactive flex items-center gap-4 p-3">
                     <div class="w-24 shrink-0 font-mono text-sm">
                         {{ $ag->data_hora_inicio->format('H:i') }}–{{ $ag->data_hora_fim->format('H:i') }}
                     </div>
@@ -76,10 +76,7 @@
                     <flux:badge :color="$statusCor[$ag->status]" size="sm">{{ $statusLabel[$ag->status] }}</flux:badge>
                 </button>
             @empty
-                <flux:callout icon="calendar">
-                    <flux:callout.heading>Nenhum agendamento</flux:callout.heading>
-                    <flux:callout.text>Não há agendamentos para os filtros deste dia.</flux:callout.text>
-                </flux:callout>
+                <x-ng.empty icon="calendar" title="Nenhum agendamento" text="Não há agendamentos para os filtros deste dia." />
             @endforelse
         </div>
     @else
@@ -114,6 +111,7 @@
             @endforeach
         </div>
     @endif
+    </div>
 
     {{-- Slide-over: detalhe do agendamento --}}
     <flux:modal variant="flyout" position="right" wire:model.self="mostrarDetalhe" class="md:w-[28rem]">

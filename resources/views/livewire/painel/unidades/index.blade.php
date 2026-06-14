@@ -1,11 +1,9 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
-    <div class="flex items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Unidades</flux:heading>
-            <flux:subheading>Filiais do estabelecimento</flux:subheading>
-        </div>
-        <flux:button wire:click="novo" variant="primary" icon="plus">Nova unidade</flux:button>
-    </div>
+    <x-ng.page-header title="Unidades" subtitle="Filiais do estabelecimento">
+        <x-slot:actions>
+            <flux:button wire:click="novo" variant="primary" icon="plus">Nova unidade</flux:button>
+        </x-slot:actions>
+    </x-ng.page-header>
 
     <flux:table>
         <flux:table.columns>

@@ -12,13 +12,14 @@
                 <flux:input wire:model.live.debounce.300ms="buscaCliente" icon="magnifying-glass" placeholder="Buscar por nome ou telefone" />
 
                 @if ($clientes->isNotEmpty())
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-2">
                         @foreach ($clientes as $cliente)
-                            <button type="button" wire:click="selecionarCliente({{ $cliente->id }})"
-                                class="flex items-center justify-between rounded-md border border-zinc-200 p-2 text-left text-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">
-                                <span>{{ $cliente->nome }}</span>
-                                <span class="text-zinc-500">{{ $cliente->telefone }}</span>
-                            </button>
+                            <x-ng.option-card wire:click="selecionarCliente({{ $cliente->id }})" wire:key="cli-{{ $cliente->id }}">
+                                <span class="flex items-center justify-between gap-2">
+                                    <span class="font-medium">{{ $cliente->nome }}</span>
+                                    <span class="text-sm text-zinc-500">{{ $cliente->telefone }}</span>
+                                </span>
+                            </x-ng.option-card>
                         @endforeach
                     </div>
                 @elseif (strlen($buscaCliente) >= 2)
@@ -48,15 +49,10 @@
                 <flux:subheading>Cliente: {{ $clienteNome }}</flux:subheading>
                 <flux:text class="text-sm font-medium">Serviços</flux:text>
                 @forelse ($servicosDisponiveis as $servico)
-                    @php($marcado = in_array($servico->id, $servicoIds, true))
-                    <button type="button" wire:click="toggleServico({{ $servico->id }})"
-                        class="flex items-center justify-between rounded-lg border p-3 text-left transition {{ $marcado ? 'border-zinc-900 bg-zinc-50 dark:border-white dark:bg-zinc-900' : 'border-zinc-200 dark:border-zinc-700' }}">
-                        <div>
-                            <div class="font-medium">{{ $servico->nome }}</div>
-                            <div class="text-sm text-zinc-500">{{ $servico->duracao_minutos }} min · R$ {{ number_format((float) $servico->preco, 2, ',', '.') }}</div>
-                        </div>
-                        @if ($marcado)<flux:icon name="check-circle" variant="solid" class="size-5" />@endif
-                    </button>
+                    <x-ng.option-card :selected="in_array($servico->id, $servicoIds, true)" wire:click="toggleServico({{ $servico->id }})" wire:key="srv-{{ $servico->id }}">
+                        <span class="block font-medium">{{ $servico->nome }}</span>
+                        <span class="block text-sm text-zinc-500">{{ $servico->duracao_minutos }} min · R$ {{ number_format((float) $servico->preco, 2, ',', '.') }}</span>
+                    </x-ng.option-card>
                 @empty
                     <flux:text class="text-sm text-zinc-500">Nenhum serviço nesta unidade.</flux:text>
                 @endforelse
