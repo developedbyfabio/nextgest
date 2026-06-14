@@ -3,7 +3,14 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper;
+use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
+use Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper;
+use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
 use Stancl\Tenancy\Database\Models\Domain;
+use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
+use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
+use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
 
 return [
     'tenant_model' => Tenant::class,
@@ -36,10 +43,10 @@ return [
      * To configure their behavior, see the config keys below.
      */
     'bootstrappers' => [
-        Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
+        DatabaseTenancyBootstrapper::class,
+        CacheTenancyBootstrapper::class,
+        FilesystemTenancyBootstrapper::class,
+        QueueTenancyBootstrapper::class,
         // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class, // Note: phpredis is needed
     ],
 
@@ -69,10 +76,10 @@ return [
          * TenantDatabaseManagers are classes that handle the creation & deletion of tenant databases.
          */
         'managers' => [
-            'sqlite' => Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager::class,
-            'mysql' => Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager::class,
-            'mariadb' => Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager::class,
-            'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager::class,
+            'sqlite' => SQLiteDatabaseManager::class,
+            'mysql' => MySQLDatabaseManager::class,
+            'mariadb' => MySQLDatabaseManager::class,
+            'pgsql' => PostgreSQLDatabaseManager::class,
 
         /**
          * Use this database manager for MySQL to have a DB user created for each tenant database.
@@ -147,7 +154,10 @@ return [
          * disable asset() helper tenancy and explicitly use tenant_asset() calls in places
          * where you want to use tenant-specific assets (product images, avatars, etc).
          */
-        'asset_helper_tenancy' => true,
+        // Desligado: os assets de build (Vite) são GLOBAIS. Com isto em `true`, o
+        // asset() vira tenant-aware e o @vite gera URLs /tenancy/assets/build/...
+        // (404) nas rotas de tenant. Para arquivos por tenant, usar tenant_asset().
+        'asset_helper_tenancy' => false,
     ],
 
     /**

@@ -62,6 +62,14 @@ pipeline (em `App\Providers\TenancyServiceProvider`) executa:
 - `ufw`: OpenSSH, 80, 443 liberados.
 - Serviços habilitados no boot.
 
+## Assets (Vite) em rotas de tenant
+
+`tenancy.filesystem.asset_helper_tenancy = false`: os assets de build (Vite) são
+**globais** e servidos de `/build/...` em qualquer host/rota. Com isso em `true`,
+o `asset()` (usado pelo `@vite`) viraria "tenant-aware" e geraria
+`/tenancy/assets/build/...` (404) nas rotas `/{slug}`. Para arquivos por tenant
+(uploads), usar `tenant_asset()` explicitamente.
+
 ## Filas e cache
 
 - `CACHE_STORE`, `QUEUE_CONNECTION`, `SESSION_DRIVER` em **Redis**.
