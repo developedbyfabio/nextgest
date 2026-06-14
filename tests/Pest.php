@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\HorarioTrabalho;
 use App\Models\Tenant;
+use App\Models\Unidade;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -56,4 +58,31 @@ function usuarioComPapel(string $papel, array $attrs = []): User
     $user->assignRole($papel);
 
     return $user;
+}
+
+/**
+ * Cria um profissional vinculado a uma unidade e serviços, com faixas de
+ * horário. $horarios: lista de [dia_semana, 'HH:MM', 'HH:MM']. Dentro do tenant.
+ */
+function profissionalAgenda(Unidade $unidade, array $servicos, array $horarios, array $attrs = []): User
+{
+    $prof = usuarioComPapel('Profissional', array_merge([
+        'email' => 'prof'.uniqid().'@loja.test',
+        'e_profissional' => true,
+    ], $attrs));
+
+    $prof->unidades()->sync([$unidade->id]);
+    $prof->servicos()->sync(collect($servicos)->pluck('id')->all());
+
+    foreach ($horarios as [$dia, $ini, $fim]) {
+        HorarioTrabalho::create([
+            'user_id' => $prof->id,
+            'unidade_id' => $unidade->id,
+            'dia_semana' => $dia,
+            'hora_inicio' => $ini,
+            'hora_fim' => $fim,
+        ]);
+    }
+
+    return $prof;
 }
