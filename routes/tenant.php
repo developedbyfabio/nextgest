@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\SuporteController;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
@@ -58,6 +59,10 @@ Route::middleware(['tenant'])
             ->middleware('auth:cliente')
             ->name('cliente.agendar');
 
+        // Suporte (impersonação do super-admin): entra via token de uso único.
+        Route::get('suporte/{token}', [SuporteController::class, 'entrar'])
+            ->name('tenant.suporte.entrar');
+
         Route::post('sair', [LogoutController::class, 'cliente'])
             ->middleware('auth:cliente')
             ->name('cliente.logout');
@@ -74,6 +79,9 @@ Route::middleware(['tenant'])
                 Route::get('/', PainelDashboard::class)->name('dashboard');
 
                 Route::post('sair', [LogoutController::class, 'painel'])->name('logout');
+
+                // Encerrar o modo suporte (impersonação) e voltar ao /admin.
+                Route::post('suporte/sair', [SuporteController::class, 'sair'])->name('suporte.sair');
 
                 // Agenda: acesso por ver_agenda OU ver_agenda_propria (checado no componente).
                 Route::get('agenda', AgendaIndex::class)->name('agenda');

@@ -13,6 +13,19 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800">
     @php($tenantId = tenant('id'))
 
+    @if (session('suporte_ativo'))
+        <div class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
+            <span class="flex items-center gap-2">
+                <flux:icon name="lifebuoy" class="size-4" />
+                Modo suporte — acessando como {{ auth('web')->user()?->name }} · {{ tenant('nome') }}
+            </span>
+            <form method="POST" action="{{ route('painel.suporte.sair', ['tenant' => $tenantId]) }}">
+                @csrf
+                <flux:button type="submit" size="sm" variant="primary">Sair do suporte</flux:button>
+            </form>
+        </div>
+    @endif
+
     <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 

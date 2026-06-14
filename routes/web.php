@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\TenantDetalhe as AdminTenantDetalhe;
 use App\Livewire\Admin\Tenants as AdminTenants;
 use App\Livewire\Auth\AdminLogin;
 use Illuminate\Support\Facades\Route;
@@ -20,9 +21,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Landing institucional.
+// Landing institucional da marca.
 Route::get('/', function () {
-    return view('welcome');
+    return view('landing');
 })->name('landing');
 
 // Super-admin (central, guard `admin`).
@@ -38,6 +39,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('estabelecimentos', AdminTenants::class)
         ->middleware('auth:admin')
         ->name('tenants');
+
+    Route::get('estabelecimentos/{tenantId}', AdminTenantDetalhe::class)
+        ->middleware('auth:admin')
+        ->name('tenant.detalhe');
 
     Route::post('sair', [LogoutController::class, 'admin'])
         ->middleware('auth:admin')
