@@ -97,6 +97,7 @@ A senha é definida no prompt (nunca em código/git).
 | WhatsApp | [docs/07-whatsapp.md](docs/07-whatsapp.md) |
 | Autenticação + layout (1A) | [docs/08-autenticacao.md](docs/08-autenticacao.md) |
 | Cadastros do dono (1B) | [docs/09-cadastros.md](docs/09-cadastros.md) |
+| Portal de agendamento (1C) | [docs/10-agendamento.md](docs/10-agendamento.md) |
 
 ## Segurança (resumo)
 
