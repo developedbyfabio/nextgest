@@ -86,8 +86,9 @@ A senha é definida no prompt (nunca em código/git).
 
 ## Rodar e testar localmente
 
-Guia passo a passo (subir serviços, dados de demonstração, roteiro de teste):
-[docs/GUIA-DE-TESTES.md](docs/GUIA-DE-TESTES.md).
+Para leigos (passo a passo, com URLs e o que esperar):
+[docs/TUTORIAL-COMPLETO.md](docs/TUTORIAL-COMPLETO.md).
+Guia técnico (serviços, demonstração, roteiro): [docs/GUIA-DE-TESTES.md](docs/GUIA-DE-TESTES.md).
 
 ```bash
 sudo systemctl start mysql redis-server
