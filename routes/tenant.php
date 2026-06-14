@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
+use App\Livewire\Painel\Agenda\Index as AgendaIndex;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
@@ -73,6 +74,9 @@ Route::middleware(['tenant'])
                 Route::get('/', PainelDashboard::class)->name('dashboard');
 
                 Route::post('sair', [LogoutController::class, 'painel'])->name('logout');
+
+                // Agenda: acesso por ver_agenda OU ver_agenda_propria (checado no componente).
+                Route::get('agenda', AgendaIndex::class)->name('agenda');
 
                 // Cadastros (1B). Cada página exige a permissão de gestão correspondente;
                 // ações de criar/editar são reconferidas dentro dos componentes.

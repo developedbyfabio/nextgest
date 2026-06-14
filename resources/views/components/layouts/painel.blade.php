@@ -25,7 +25,9 @@
             </flux:navlist.item>
 
             <flux:navlist.group heading="Operação" expandable :expanded="true">
-                <flux:navlist.item icon="calendar-days" :current="false">Agendamentos</flux:navlist.item>
+                @canany(['ver_agenda', 'ver_agenda_propria'])
+                    <flux:navlist.item icon="calendar-days" :href="route('painel.agenda', ['tenant' => $tenantId])" :current="request()->routeIs('painel.agenda')" wire:navigate>Agendamentos</flux:navlist.item>
+                @endcanany
                 @can('editar_servico')
                     <flux:navlist.item icon="scissors" :href="route('painel.servicos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.servicos')" wire:navigate>Serviços</flux:navlist.item>
                 @endcan
