@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -19,8 +21,8 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     use HasFactory;
-    use Notifiable;
     use HasRoles;
+    use Notifiable;
 
     protected $fillable = [
         'name',
@@ -42,5 +44,29 @@ class User extends Authenticatable
             'e_profissional' => 'boolean',
             'ativo' => 'boolean',
         ];
+    }
+
+    /**
+     * Filiais em que o membro atua.
+     */
+    public function unidades(): BelongsToMany
+    {
+        return $this->belongsToMany(Unidade::class, 'user_unidade');
+    }
+
+    /**
+     * Serviços que o profissional sabe executar.
+     */
+    public function servicos(): BelongsToMany
+    {
+        return $this->belongsToMany(Servico::class, 'servico_user');
+    }
+
+    /**
+     * Faixas de horário de trabalho.
+     */
+    public function horariosTrabalho(): HasMany
+    {
+        return $this->hasMany(HorarioTrabalho::class);
     }
 }
