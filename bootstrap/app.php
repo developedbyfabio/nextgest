@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\InitializeTenancyByPathQuandoPresente;
 use App\Http\Middleware\ScopeSessionToTenant;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -46,6 +47,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(
             StartSession::class,
             ScopeSessionToTenant::class,
+        );
+
+        // Na rota de update do Livewire, a inicialização condicional do tenant
+        // precisa vir antes do escopo de sessão (e, portanto, do StartSession).
+        $middleware->prependToPriorityList(
+            ScopeSessionToTenant::class,
+            InitializeTenancyByPathQuandoPresente::class,
         );
 
         // Webhooks de gateways externos não enviam token CSRF.
