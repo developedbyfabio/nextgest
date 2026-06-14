@@ -51,32 +51,47 @@ comandos do passo 3 (senha que você digitar).
 
 ---
 
-## 1. Modo de desenvolvimento (ver erros) x produção
+## 1. Ambiente de teste (http) x produção (https)
 
-Hoje o `.env` está com `APP_ENV=production` e `APP_DEBUG=false` — bom para
-"produção", mas **esconde erros** na tela. Para testar confortavelmente:
-
-**Ativar modo local (mostra erros detalhados):** edite `.env`:
+O `.env` desta VM está em **modo de teste** (acesso por http na LAN):
 
 ```
 APP_ENV=local
 APP_DEBUG=true
+APP_URL=http://192.168.3.100:8000
+SESSION_SECURE_COOKIE=false
 ```
 
-Depois limpe os caches de config:
+Isso é necessário para testar sobre **http**: em produção, o cookie de sessão é
+`Secure` (só https) e o navegador não o enviaria por http → a sessão se perde e o
+login falha com **419** ("página expirou"). Com `SESSION_SECURE_COOKIE=false` e
+`APP_URL` http, funciona na LAN.
+
+**Voltar para produção (https):** edite o `.env`:
+
+```
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://nextgest.com.br
+SESSION_SECURE_COOKIE=true
+```
+
+Sempre que mexer no `.env`, rode:
 
 ```bash
 php artisan optimize:clear
 ```
 
-**Voltar para produção:** reverta para `APP_ENV=production` e `APP_DEBUG=false` e
-rode `php artisan optimize:clear` de novo.
-
-**Mantendo produção?** Os erros não aparecem na tela; veja no log:
+Erros: com `APP_DEBUG=true` aparecem na tela; em produção, veja no log:
 
 ```bash
 tail -f storage/logs/laravel.log
 ```
+
+> Sobre o 419 no login de tenant: além do cookie `Secure`, a rota de update do
+> Livewire foi tornada ciente do tenant (`/{tenant}/livewire/update`) e a sessão
+> é escopada por nome de cookie — ver `docs/08-autenticacao.md`. Se vir "página
+> expirou", confirme o `.env` acima e rode `php artisan optimize:clear`.
 
 ---
 
@@ -174,6 +189,13 @@ Logado no `/admin` → **Estabelecimentos**: liste, **crie** (nome + slug, com
 validação de slug único/formato/reservado), **ative/inative** (sem apagar banco),
 **crie o Dono** inicial e **abra** o estabelecimento (`/{slug}`). Criar pelo
 painel já provisiona o banco/migrations/seed do tenant.
+
+Em **Detalhes** (`/admin/estabelecimentos/{slug}`) você vê um resumo de alto
+nível (contagens de equipe, profissionais, clientes, serviços, agendamentos e os
+donos). Os dados operacionais são **privados de cada estabelecimento**. Para
+inspecionar de verdade, use **Entrar no painel (suporte)**: você é logado como o
+Dono daquele tenant, com uma faixa **"Modo suporte"** no topo e um botão **Sair
+do suporte** que volta ao /admin (o acesso é registrado no log).
 
 Pela linha de comando (alternativa), para testar isolamento com outro tenant:
 

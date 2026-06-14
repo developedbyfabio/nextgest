@@ -103,7 +103,34 @@ php artisan test
 - Verificação de e-mail.
 - CRUDs de cadastro (1B) e fluxo de agendamento (1C).
 
+## Sessão por tenant + Livewire (correção do 419)
+
+A identificação é por caminho (mesmo domínio para todos), então a sessão é
+isolada por tenant pelo **nome do cookie** (`nextgest_tenant_{id}_session`),
+com `path = /` — ver `App\Http\Middleware\ScopeSessionToTenant`.
+
+Como o endpoint de update do Livewire é único e central por padrão
+(`/livewire/update`), numa rota de tenant ele não teria o contexto do tenant nem
+receberia o cookie certo → sessão vazia → token CSRF inválido → **419**. Correção
+(`AppServiceProvider`): a rota de update vira `/{tenant?}/livewire/update`. Nas
+páginas de tenant, `URL::defaults(['tenant' => ...])` faz o front postar em
+`/{tenant}/livewire/update`, que roda no MESMO contexto/cookie da página
+(`InitializeTenancyByPathQuandoPresente` + `ScopeSessionToTenant`). Páginas
+centrais seguem em `/livewire/update` (sem tenant).
+
+Cookie `Secure`: em produção (https) o cookie de sessão é `Secure`; para testar
+em http use `SESSION_SECURE_COOKIE=false` (ver `docs/GUIA-DE-TESTES.md`).
+
+## Suporte do super-admin (impersonação)
+
+No `/admin/estabelecimentos/{slug}`, o botão **Entrar no painel (suporte)** usa o
+recurso `UserImpersonation` do stancl: gera um token de uso único (tabela central
+`tenant_user_impersonation_tokens`), redireciona para `/{slug}/suporte/{token}`,
+que loga o super-admin como o **Dono** no contexto do tenant. A sessão marca
+`suporte_ativo` (faixa "Modo suporte" no painel) e o acesso é registrado no log.
+Sair: `POST /{slug}/painel/suporte/sair`.
+
 ## Suposições (não bloqueiam)
 
 - Login do cliente por e-mail (telefone/OTP fica para o futuro).
-- Landing central é um placeholder por ora.
+- Landing central é uma página simples da marca.
