@@ -84,6 +84,18 @@ php artisan nextgest:criar-dono barbeariateste   # Dono no tenant (painel)
 ```
 A senha é definida no prompt (nunca em código/git).
 
+## Rodar e testar localmente
+
+Guia passo a passo (subir serviços, dados de demonstração, roteiro de teste):
+[docs/GUIA-DE-TESTES.md](docs/GUIA-DE-TESTES.md).
+
+```bash
+sudo systemctl start mysql redis-server
+php artisan migrate --force
+php artisan nextgest:demo barbeariateste   # cenário de demonstração
+php artisan serve                          # http://127.0.0.1:8000/barbeariateste
+```
+
 ## Documentação por módulo
 
 | Bloco | Arquivo |
