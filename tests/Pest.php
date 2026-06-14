@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,4 +37,23 @@ function criarTenant(string $id = 'lojateste'): Tenant
         'slug' => $id,
         'ativo' => true,
     ]);
+}
+
+/**
+ * Cria um usuário de equipe com um papel. Deve ser chamado DENTRO do contexto
+ * de um tenant (após tenancy()->initialize()).
+ */
+function usuarioComPapel(string $papel, array $attrs = []): User
+{
+    $user = User::create(array_merge([
+        'name' => 'Membro '.$papel,
+        'email' => strtolower($papel).'@loja.test',
+        'password' => 'senha-equipe-12345',
+        'e_profissional' => $papel === 'Profissional',
+        'ativo' => true,
+    ], $attrs));
+
+    $user->assignRole($papel);
+
+    return $user;
 }
