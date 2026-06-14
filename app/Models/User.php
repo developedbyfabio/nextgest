@@ -69,4 +69,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(HorarioTrabalho::class);
     }
+
+    /**
+     * Bloqueios pontuais (folga/feriado/imprevisto).
+     */
+    public function bloqueios(): HasMany
+    {
+        return $this->hasMany(Bloqueio::class);
+    }
+
+    /**
+     * Agendamentos em que atua como profissional.
+     */
+    public function agendamentos(): HasMany
+    {
+        return $this->hasMany(Agendamento::class, 'profissional_id');
+    }
 }
