@@ -98,6 +98,7 @@ A senha é definida no prompt (nunca em código/git).
 | Autenticação + layout (1A) | [docs/08-autenticacao.md](docs/08-autenticacao.md) |
 | Cadastros do dono (1B) | [docs/09-cadastros.md](docs/09-cadastros.md) |
 | Portal de agendamento (1C) | [docs/10-agendamento.md](docs/10-agendamento.md) |
+| Agenda da equipe (1D) | [docs/11-agenda-equipe.md](docs/11-agenda-equipe.md) |
 
 ## Segurança (resumo)
 
