@@ -11,9 +11,9 @@ Sem regras de agendamento ainda.
 | Equipe do estabelecimento | `web` | tenant | `/{tenant}/painel/login` | `/{tenant}/painel` |
 | Cliente final | `cliente` | tenant | `/{tenant}/login` | `/{tenant}` |
 
-Sessões isoladas: o central usa o cookie de sessão padrão; cada tenant usa um
-cookie próprio (`ScopeSessionToTenant`), então login de um estabelecimento não
-vale em outro nem no admin.
+Isolamento de login: a sessão usa um cookie único, mas o login de um tenant não
+vale em outro — `EscoparAutenticacaoPorTenant` encerra os guards de tenant ao
+trocar de estabelecimento (ver seção "Livewire + multi-tenancy" abaixo).
 
 ## Rotas
 
@@ -103,23 +103,33 @@ php artisan test
 - Verificação de e-mail.
 - CRUDs de cadastro (1B) e fluxo de agendamento (1C).
 
-## Sessão por tenant + Livewire (correção do 419)
+## Livewire + multi-tenancy por caminho (e o 404/419)
 
-A identificação é por caminho (mesmo domínio para todos), então a sessão é
-isolada por tenant pelo **nome do cookie** (`nextgest_tenant_{id}_session`),
-com `path = /` — ver `App\Http\Middleware\ScopeSessionToTenant`.
+O endpoint de update do Livewire é **único e central** (`/livewire-xxxx/update`)
+e é o que todas as páginas usam a cada clique/login/modal. **Não** crie uma rota
+de update por tenant: uma rota com parâmetro opcional no início
+(`/{tenant?}/livewire/update`) **não casa** o caso central (`/livewire/update`
+viraria `//livewire/update`) → **404 em todas as páginas**. Foi essa a causa do
+"tudo quebrado".
 
-Como o endpoint de update do Livewire é único e central por padrão
-(`/livewire/update`), numa rota de tenant ele não teria o contexto do tenant nem
-receberia o cookie certo → sessão vazia → token CSRF inválido → **419**. Correção
-(`AppServiceProvider`): a rota de update vira `/{tenant?}/livewire/update`. Nas
-páginas de tenant, `URL::defaults(['tenant' => ...])` faz o front postar em
-`/{tenant}/livewire/update`, que roda no MESMO contexto/cookie da página
-(`InitializeTenancyByPathQuandoPresente` + `ScopeSessionToTenant`). Páginas
-centrais seguem em `/livewire/update` (sem tenant).
+Solução (`App\Providers\AppServiceProvider`): mantém-se o endpoint padrão e
+registra-se o `InitializeTenancyByPath` como **persistent middleware** do
+Livewire. No update, o Livewire reexecuta esse middleware usando o **caminho
+original** da página (que contém o `{tenant}`), reinicializando o tenancy — então
+o componente roda no contexto certo sem rota por tenant.
 
-Cookie `Secure`: em produção (https) o cookie de sessão é `Secure`; para testar
-em http use `SESSION_SECURE_COOKIE=false` (ver `docs/GUIA-DE-TESTES.md`).
+Sessão: **cookie único compartilhado** (resolve o CSRF/419, pois o update e a
+página usam a mesma sessão). O isolamento de login entre tenants é feito por
+`App\Http\Middleware\EscoparAutenticacaoPorTenant`: ao detectar que a sessão é de
+**outro** tenant, encerra os guards `web`/`cliente` (cada estabelecimento exige
+login próprio). O guard `admin` (central) não é afetado.
+
+Cookie `Secure`: em produção (https) o cookie é `Secure`; para testar em http use
+`SESSION_SECURE_COOKIE=false` e `APP_URL` http (ver `docs/GUIA-DE-TESTES.md`).
+
+> Lacuna de testes coberta: `Livewire::test()` não passa pela rota HTTP, por isso
+> não pegava o 404. Há testes de fumaça em `tests/Feature/Smoke/` que validam as
+> rotas (200/302) e que a página aponta para uma rota de update **registrada**.
 
 ## Suporte do super-admin (impersonação)
 

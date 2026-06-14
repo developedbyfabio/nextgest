@@ -167,21 +167,27 @@ sem duplicar):
 
 ```bash
 php artisan nextgest:demo barbeariateste
+# o comando CRIA o estabelecimento se ainda não existir
 # senha de login customizável: --senha=outrasenha
 ```
 
-Cria: **1 unidade** (Matriz Centro), **5 serviços** (Corte, Barba, Corte+Barba,
-Sobrancelha, Coloração), **3 profissionais** com serviços e horários (seg–sex
-09–12 e 13–18, sáb 09–13), **Gerente** e **Recepção** de apoio, **3 clientes** e
-**7 agendamentos** em status variados (confirmado, pendente, em_andamento,
-concluído, cancelado, não compareceu).
+Cria (idempotente): o estabelecimento (se faltar), **1 unidade**, **5 serviços**,
+**3 profissionais** com serviços e horários (seg–sex 09–12 e 13–18, sáb 09–13),
+um **Dono**, **Gerente** e **Recepção**, **3 clientes** e **7 agendamentos** em
+status variados.
 
-Para criar os logins de acesso (você define a senha):
+Logins de demonstração criados (senha `password` para todos):
 
-```bash
-php artisan nextgest:criar-admin                 # super-admin do /admin
-php artisan nextgest:criar-dono barbeariateste   # Dono do painel da equipe
-```
+| Papel | E-mail | Onde entra |
+|---|---|---|
+| Dono | `dono@demo.test` | `/{slug}/painel/login` |
+| Gerente | `gerente@demo.test` | `/{slug}/painel/login` |
+| Recepção | `recepcao@demo.test` | `/{slug}/painel/login` |
+| Profissional | `jorge@demo.test` | `/{slug}/painel/login` |
+| Cliente | `maria@cliente.test` | `/{slug}` |
+
+> O **super-admin** (`/admin`) é só seu — crie com `php artisan nextgest:criar-admin`.
+> Você também pode criar mais um Dono manualmente: `php artisan nextgest:criar-dono {slug}`.
 
 ### Criar estabelecimentos pelo /admin
 
