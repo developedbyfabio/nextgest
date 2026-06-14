@@ -16,9 +16,13 @@ class CreateTenantsTable extends Migration
     public function up(): void
     {
         Schema::create('tenants', function (Blueprint $table) {
+            // O id do tenant é o próprio slug usado na URL (nextgest.com.br/{slug}).
             $table->string('id')->primary();
 
-            // your custom columns may go here
+            // Colunas customizadas do Nextgest (ver App\Models\Tenant::getCustomColumns()).
+            $table->string('nome');
+            $table->string('slug')->unique();
+            $table->boolean('ativo')->default(true);
 
             $table->timestamps();
             $table->json('data')->nullable();
