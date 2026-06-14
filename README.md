@@ -96,6 +96,7 @@ A senha é definida no prompt (nunca em código/git).
 | Kanban | [docs/06-kanban.md](docs/06-kanban.md) |
 | WhatsApp | [docs/07-whatsapp.md](docs/07-whatsapp.md) |
 | Autenticação + layout (1A) | [docs/08-autenticacao.md](docs/08-autenticacao.md) |
+| Cadastros do dono (1B) | [docs/09-cadastros.md](docs/09-cadastros.md) |
 
 ## Segurança (resumo)
 
