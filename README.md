@@ -66,11 +66,23 @@ php artisan tenants:migrate --tenants=barbeariadojorge
 
 ## Estrutura de rotas
 
-- **Central** (`routes/web.php`): `/` (landing), `/admin` (super-admin),
-  `/webhooks/...`. Não passam pela resolução de tenant.
+- **Central** (`routes/web.php`): `/` (landing), `/admin/login` + `/admin`
+  (super-admin, guard `admin`), `/webhooks/...`. Não passam pela resolução de
+  tenant.
 - **Tenant** (`routes/tenant.php`): tudo sob `/{tenant}`, com o grupo de
-  middleware `tenant` (identificação por caminho + sessão escopada). Slugs
-  reservados em `config/nextgest.php`.
+  middleware `tenant` (identificação por caminho + sessão escopada). Portal do
+  cliente em `/{tenant}` (guard `cliente`) e painel da equipe em
+  `/{tenant}/painel` (guard `web`). Slugs reservados em `config/nextgest.php`.
+
+Detalhes de autenticação, comandos e telas: [docs/08-autenticacao.md](docs/08-autenticacao.md).
+
+## Acesso (bootstrap)
+
+```bash
+php artisan nextgest:criar-admin                 # super-admin central (/admin)
+php artisan nextgest:criar-dono barbeariateste   # Dono no tenant (painel)
+```
+A senha é definida no prompt (nunca em código/git).
 
 ## Documentação por módulo
 
@@ -83,6 +95,7 @@ php artisan tenants:migrate --tenants=barbeariadojorge
 | Pagamentos | [docs/05-pagamentos.md](docs/05-pagamentos.md) |
 | Kanban | [docs/06-kanban.md](docs/06-kanban.md) |
 | WhatsApp | [docs/07-whatsapp.md](docs/07-whatsapp.md) |
+| Autenticação + layout (1A) | [docs/08-autenticacao.md](docs/08-autenticacao.md) |
 
 ## Segurança (resumo)
 
