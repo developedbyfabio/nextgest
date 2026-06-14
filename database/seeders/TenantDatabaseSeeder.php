@@ -28,6 +28,7 @@ class TenantDatabaseSeeder extends Seeder
         'ver_agenda_propria',
         'criar_agendamento',
         'editar_agendamento',
+        'gerir_agenda',
         'ver_clientes',
         'gerir_unidades',
         'criar_servico',
@@ -70,6 +71,7 @@ class TenantDatabaseSeeder extends Seeder
             'ver_agenda',
             'criar_agendamento',
             'editar_agendamento',
+            'gerir_agenda',
             'ver_clientes',
             'criar_venda',
             'usar_kanban',
@@ -83,10 +85,18 @@ class TenantDatabaseSeeder extends Seeder
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Configuração inicial do estabelecimento.
-        DB::table('configuracoes')->updateOrInsert(
-            ['chave' => 'confirmacao_automatica'],
-            ['valor' => '1', 'created_at' => now(), 'updated_at' => now()]
-        );
+        // Configurações iniciais do estabelecimento.
+        $configs = [
+            'confirmacao_automatica' => '1',
+            'intervalo_slots_minutos' => '15',
+            'cancelamento_antecedencia_horas' => '2',
+        ];
+
+        foreach ($configs as $chave => $valor) {
+            DB::table('configuracoes')->updateOrInsert(
+                ['chave' => $chave],
+                ['valor' => $valor, 'created_at' => now(), 'updated_at' => now()]
+            );
+        }
     }
 }
