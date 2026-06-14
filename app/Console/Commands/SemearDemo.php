@@ -12,6 +12,7 @@ use App\Models\Unidade;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 /**
  * Popula um cenário de DEMONSTRAÇÃO no banco de um tenant (uso local de teste):
@@ -37,12 +38,18 @@ class SemearDemo extends Command
 
     public function handle(): int
     {
-        $tenant = Tenant::find($this->argument('tenant'));
+        $slug = $this->argument('tenant');
+        $tenant = Tenant::find($slug);
 
+        // Cria o estabelecimento se ainda não existir (dispara banco/migrations/seed).
         if (! $tenant) {
-            $this->error("Tenant não encontrado: {$this->argument('tenant')}");
-
-            return self::FAILURE;
+            $tenant = Tenant::create([
+                'id' => $slug,
+                'nome' => Str::of($slug)->headline(),
+                'slug' => $slug,
+                'ativo' => true,
+            ]);
+            $this->info("Estabelecimento criado: {$slug}");
         }
 
         $senha = (string) $this->option('senha');
@@ -52,14 +59,28 @@ class SemearDemo extends Command
             $servicos = $this->servicos($unidade);
             $profissionais = $this->profissionais($unidade, $servicos, $senha);
             $this->equipeDeApoio($unidade, $senha);
+            $this->dono($senha);
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
         });
 
-        $this->info('Cenário de demonstração pronto no tenant '.$this->argument('tenant').'.');
-        $this->line('Senha de demonstração dos logins: '.$senha);
+        $this->newLine();
+        $this->info("Cenário de demonstração pronto em /{$slug} (senha de todos: {$senha}).");
+        $this->line('  Dono (painel):     dono@demo.test');
+        $this->line('  Gerente (painel):  gerente@demo.test');
+        $this->line('  Profissional:      jorge@demo.test');
+        $this->line('  Cliente (portal):  maria@cliente.test');
 
         return self::SUCCESS;
+    }
+
+    private function dono(string $senha): void
+    {
+        $dono = User::firstOrCreate(
+            ['email' => 'dono@demo.test'],
+            ['name' => 'Dona Demo', 'password' => $senha, 'e_profissional' => false, 'ativo' => true],
+        );
+        $dono->syncRoles(['Dono']);
     }
 
     private function unidade(): Unidade
