@@ -7,7 +7,67 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+| Design System Nextgest (D27)
+| Tokens centralizados. Para trocar a cor da marca, ajuste --color-accent*
+| abaixo (claro e escuro). O accent alimenta os componentes Flux (botões
+| primários, foco, links, badges accent...).
+*/
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --radius-card: 0.875rem;
+    --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 16px -4px rgb(0 0 0 / 0.08);
+}
+
+@layer base {
+    /* Cor da marca (indigo). Troque aqui para rebrandar. */
+    :root {
+        --color-accent: var(--color-indigo-600);
+        --color-accent-content: var(--color-indigo-600);
+        --color-accent-foreground: var(--color-white);
+    }
+
+    .dark {
+        --color-accent: var(--color-indigo-500);
+        --color-accent-content: var(--color-indigo-400);
+        --color-accent-foreground: var(--color-white);
+    }
+
+    /* Rolagem suave e tap highlight discreto no mobile. */
+    html {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Acessibilidade: respeitar quem prefere menos movimento. */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/*
+| Utilitários do design system.
+*/
+@layer components {
+    /* Cartão clicável (opções, itens de lista). Anima só transform/opacity. */
+    .ng-card-interactive {
+        @apply w-full rounded-xl border border-zinc-200 bg-white text-left transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:focus-visible:ring-offset-zinc-900;
+    }
+
+    .ng-card-selected {
+        @apply border-indigo-600 ring-1 ring-indigo-600 dark:border-indigo-400 dark:ring-indigo-400;
+    }
+
+    /* Skeleton de carregamento. */
+    .ng-skeleton {
+        @apply animate-pulse rounded-md bg-zinc-200/70 dark:bg-zinc-700/50;
+    }
 }
