@@ -51,6 +51,8 @@
         </footer>
     </div>
 
+    <flux:toast position="top center" />
+
     @fluxScripts
 </body>
 </html>
