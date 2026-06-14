@@ -168,7 +168,14 @@ php artisan nextgest:criar-admin                 # super-admin do /admin
 php artisan nextgest:criar-dono barbeariateste   # Dono do painel da equipe
 ```
 
-Precisa de outro tenant para testar isolamento? Crie um e rode a demo nele:
+### Criar estabelecimentos pelo /admin
+
+Logado no `/admin` → **Estabelecimentos**: liste, **crie** (nome + slug, com
+validação de slug único/formato/reservado), **ative/inative** (sem apagar banco),
+**crie o Dono** inicial e **abra** o estabelecimento (`/{slug}`). Criar pelo
+painel já provisiona o banco/migrations/seed do tenant.
+
+Pela linha de comando (alternativa), para testar isolamento com outro tenant:
 
 ```bash
 php artisan tinker --execute="App\Models\Tenant::create(['id'=>'salaodaana','nome'=>'Salão da Ana','slug'=>'salaodaana','ativo'=>true]);"

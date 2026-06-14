@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Tenants as AdminTenants;
 use App\Livewire\Auth\AdminLogin;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)
         ->middleware('auth:admin')
         ->name('dashboard');
+
+    Route::get('estabelecimentos', AdminTenants::class)
+        ->middleware('auth:admin')
+        ->name('tenants');
 
     Route::post('sair', [LogoutController::class, 'admin'])
         ->middleware('auth:admin')

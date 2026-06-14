@@ -13,6 +13,12 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800">
     <flux:header sticky class="border-b border-zinc-200 bg-zinc-50 px-6 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:brand :href="route('admin.dashboard')" name="Nextgest Admin" />
+
+        <flux:navbar class="ms-6 max-lg:hidden">
+            <flux:navbar.item :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>Início</flux:navbar.item>
+            <flux:navbar.item :href="route('admin.tenants')" :current="request()->routeIs('admin.tenants')" wire:navigate>Estabelecimentos</flux:navbar.item>
+        </flux:navbar>
+
         <flux:spacer />
         <flux:dropdown position="bottom" align="end">
             <flux:profile :name="auth('admin')->user()?->name" :initials="\Illuminate\Support\Str::of(auth('admin')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
