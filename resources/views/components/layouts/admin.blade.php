@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +18,17 @@
             <flux:profile :name="auth('admin')->user()?->name" :initials="\Illuminate\Support\Str::of(auth('admin')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
             <flux:menu>
                 <flux:menu.item icon="user">{{ auth('admin')->user()?->email }}</flux:menu.item>
+
                 <flux:menu.separator />
+
+                <flux:menu.radio.group x-data="{ appearance: $flux.appearance }" x-model="appearance" heading="Tema">
+                    <flux:menu.radio value="light" icon="sun">Claro</flux:menu.radio>
+                    <flux:menu.radio value="dark" icon="moon">Escuro</flux:menu.radio>
+                    <flux:menu.radio value="system" icon="computer-desktop">Sistema</flux:menu.radio>
+                </flux:menu.radio.group>
+
+                <flux:menu.separator />
+
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" variant="danger" class="w-full">
