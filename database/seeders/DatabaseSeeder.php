@@ -2,24 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeder do banco CENTRAL. Hoje não há dados a semear no central por padrão
+ * (super-admins são criados manualmente / por comando). O seed por TENANT fica
+ * em Database\Seeders\TenantDatabaseSeeder, disparado na criação do tenant.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Sem seed central por padrão.
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Admin;
+use App\Models\Cliente;
 use App\Models\User;
 
 return [
@@ -38,9 +40,22 @@ return [
     */
 
     'guards' => [
+        // Equipe interna do estabelecimento (tenant).
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+        ],
+
+        // Cliente final (portal de agendamento do tenant).
+        'cliente' => [
+            'driver' => 'session',
+            'provider' => 'clientes',
+        ],
+
+        // Super-admin do SaaS (central).
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
         ],
     ],
 
@@ -67,10 +82,15 @@ return [
             'model' => env('AUTH_MODEL', User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'clientes' => [
+            'driver' => 'eloquent',
+            'model' => Cliente::class,
+        ],
+
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => Admin::class,
+        ],
     ],
 
     /*

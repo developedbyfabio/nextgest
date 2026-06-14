@@ -4,29 +4,31 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
 
 /**
- * Equipe interna do estabelecimento (guard `web`). Vive no banco do TENANT.
- * Papéis e permissões via spatie/laravel-permission (HasRoles).
- *
- * Não confundir com App\Models\Admin (super-admin central) nem com
- * App\Models\Cliente (cliente final, guard `cliente`).
+ * Super-admin do Nextgest (operador do SaaS). Vive no banco CENTRAL (tabela
+ * `admins`), guard `admin`. Pinado à conexão central para nunca cair no banco
+ * de um tenant caso seja consultado dentro de um contexto de tenant.
  */
-class User extends Authenticatable
+class Admin extends Authenticatable
 {
-    use HasFactory;
     use Notifiable;
-    use HasRoles;
+
+    protected $table = 'admins';
+
+    protected string $guard = 'admin';
+
+    /**
+     * Conexão central (definida em DB_CONNECTION; é a central do tenancy).
+     */
+    protected $connection = 'mysql';
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'e_profissional',
         'ativo',
     ];
 
@@ -39,7 +41,6 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
-            'e_profissional' => 'boolean',
             'ativo' => 'boolean',
         ];
     }
