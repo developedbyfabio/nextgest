@@ -1,58 +1,92 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Nextgest
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+SaaS de agendamento multi-tenant para negócios que atendem por horário marcado
+(barbearias, salões, autônomos). Cada estabelecimento é um **tenant** isolado,
+acessado por `nextgest.com.br/{slug}`.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Ubuntu 24.04 LTS, Nginx, PHP 8.4 (FPM), MySQL 8, Redis 7
+- Laravel 13, Livewire 4 + Alpine.js, Tailwind v4 + Vite, Node 22
+- Multi-tenancy: `stancl/tenancy` (um banco por tenant, identificação por caminho)
+- Permissões: `spatie/laravel-permission`
+- Pagamentos: arquitetura plugável (adapter); primeiro provedor Mercado Pago (stub)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Arquitetura em uma frase
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Banco **central** (`nextgest_central`) guarda `tenants`, `domains` e `admins`
+(super-admin). Cada estabelecimento tem o seu **banco de tenant** (`tenant_{slug}`)
+com todo o operacional. Três guards: `admin` (central), `web` (equipe do tenant),
+`cliente` (cliente final do portal). Ver [docs/01-arquitetura.md](docs/01-arquitetura.md).
 
-## Learning Laravel
+## Como rodar (desenvolvimento)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Pré-requisitos já provisionados no servidor (ver `docs/01-arquitetura.md`).
 
 ```bash
-composer require laravel/boost --dev
+cd /srv/www/nextgest
 
-php artisan boost:install
+# Dependências
+composer install
+npm install
+
+# Ambiente: .env já configurado (MySQL central + Redis). Para um novo ambiente:
+#   cp .env.example .env && php artisan key:generate
+# Credenciais do banco ficam em /root/.nextgest_db (fora do git).
+
+# Migrations do banco CENTRAL (cria tenants, domains, admins)
+php artisan migrate
+
+# Build do front
+npm run build      # produção
+# npm run dev      # desenvolvimento (Vite)
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Criar um tenant
 
-## Contributing
+A criação dispara automaticamente: cria o banco `tenant_{slug}`, roda as
+migrations de tenant e semeia papéis/permissões + `configuracao` inicial.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan tinker
+>>> $t = App\Models\Tenant::create(['id' => 'barbeariadojorge', 'nome' => 'Barbearia do Jorge', 'slug' => 'barbeariadojorge', 'ativo' => true]);
+```
 
-## Code of Conduct
+Acesso do tenant: `https://nextgest.com.br/barbeariadojorge`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Migrations de tenant (todos os tenants)
 
-## Security Vulnerabilities
+```bash
+php artisan tenants:migrate            # roda migrations pendentes em todos os tenants
+php artisan tenants:migrate --tenants=barbeariadojorge
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+> NUNCA usar `migrate:fresh`, `migrate:reset`, `db:wipe` ou rollback em
+> produção. Operações destrutivas exigem revisão humana.
 
-## License
+## Estrutura de rotas
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **Central** (`routes/web.php`): `/` (landing), `/admin` (super-admin),
+  `/webhooks/...`. Não passam pela resolução de tenant.
+- **Tenant** (`routes/tenant.php`): tudo sob `/{tenant}`, com o grupo de
+  middleware `tenant` (identificação por caminho + sessão escopada). Slugs
+  reservados em `config/nextgest.php`.
+
+## Documentação por módulo
+
+| Bloco | Arquivo |
+|---|---|
+| Arquitetura e operação | [docs/01-arquitetura.md](docs/01-arquitetura.md) |
+| Agendamento | [docs/02-agendamento.md](docs/02-agendamento.md) |
+| Produtos e Vendas | [docs/03-produtos-vendas.md](docs/03-produtos-vendas.md) |
+| Clube de Assinatura | [docs/04-clube.md](docs/04-clube.md) |
+| Pagamentos | [docs/05-pagamentos.md](docs/05-pagamentos.md) |
+| Kanban | [docs/06-kanban.md](docs/06-kanban.md) |
+| WhatsApp | [docs/07-whatsapp.md](docs/07-whatsapp.md) |
+
+## Segurança (resumo)
+
+- `.env` permissão 600, fora do git. Credenciais do banco em `/root/.nextgest_db` (600).
+- Pagamentos: nunca armazenar dados de cartão (só token); credenciais de gateway
+  com cast `encrypted`; confirmação por webhook.
+- PHP-FPM e Nginx rodam como `www-data` (app não roda como root).
