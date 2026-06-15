@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\SuporteController;
+use App\Http\Controllers\TenantArquivoController;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
@@ -19,6 +20,7 @@ use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\Home as PortalHome;
 use Illuminate\Support\Facades\Route;
+use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
 /*
 |--------------------------------------------------------------------------
@@ -119,3 +121,15 @@ Route::middleware(['tenant'])
             });
         });
     });
+
+/*
+| Arquivos enviados por tenant (logo/cabeçalho/fundo). Endpoint público leve:
+| só inicializa o tenancy por caminho (sem sessão/CSRF) e serve do disco do
+| tenant. {path} aceita barras. Gerar URL via App\Support\Aparencia::urlArquivo().
+*/
+Route::middleware([InitializeTenancyByPath::class])
+    ->prefix('{tenant}')
+    ->where(['tenant' => $tenantSlugPattern])
+    ->get('arquivo/{path}', TenantArquivoController::class)
+    ->where('path', '.*')
+    ->name('tenant.arquivo');

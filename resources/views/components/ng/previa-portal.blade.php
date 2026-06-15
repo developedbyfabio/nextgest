@@ -4,6 +4,9 @@
 ])
 
 @php($a = array_merge(\App\Support\Aparencia::PADRAO, $aparencia))
+@php($logoUrl = $a['logo_url'] ?? null)
+@php($headerUrl = $a['header_url'] ?? null)
+@php($fundoUrl = $a['fundo_url'] ?? null)
 
 {{--
     Prévia fiel do portal do cliente, dirigida pelas CSS variables da aparência.
@@ -13,14 +16,18 @@
 --}}
 <div
     {{ $attributes->class('mx-auto w-full max-w-sm overflow-hidden rounded-[2rem] border-4 border-zinc-800 shadow-xl') }}
-    style="{{ \App\Support\Aparencia::cssVars($a) }}; background-color: var(--cor-fundo); color: var(--cor-texto);"
+    style="{{ \App\Support\Aparencia::cssVars($a) }}; background-color: var(--cor-fundo); color: var(--cor-texto);@if ($fundoUrl) background-image: url('{{ $fundoUrl }}'); background-size: cover; background-position: center;@endif"
 >
     {{-- cabeçalho --}}
     <div class="flex items-center justify-between px-4 py-3" style="background-color: var(--cor-superficie); border-bottom: 1px solid color-mix(in srgb, var(--cor-texto) 10%, transparent);">
         <div class="flex items-center gap-2">
-            <span class="inline-flex size-6 items-center justify-center" style="color: var(--cor-principal);">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
-            </span>
+            @if ($logoUrl)
+                <img src="{{ $logoUrl }}" alt="{{ $nome }}" class="size-7 rounded object-contain" />
+            @else
+                <span class="inline-flex size-6 items-center justify-center" style="color: var(--cor-principal);">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
+                </span>
+            @endif
             <span class="text-sm font-semibold">{{ $nome }}</span>
         </div>
         <span class="rounded-md px-2.5 py-1 text-xs font-medium text-white" style="background-color: var(--cor-principal);">Entrar</span>
@@ -28,13 +35,16 @@
 
     {{-- corpo --}}
     <div class="flex flex-col gap-4 p-4" style="font-size: 0.9rem;">
-        <div class="flex flex-col items-center gap-2 rounded-2xl border px-4 py-6 text-center"
-            style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); background-color: color-mix(in srgb, var(--cor-principal) 6%, var(--cor-superficie));">
-            <span class="inline-flex size-12 items-center justify-center rounded-2xl text-white" style="background-color: var(--cor-principal);">
+        <div class="relative flex flex-col items-center gap-2 overflow-hidden rounded-2xl border px-4 py-6 text-center"
+            style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); background-color: color-mix(in srgb, var(--cor-principal) 6%, var(--cor-superficie));@if ($headerUrl) background-image: url('{{ $headerUrl }}'); background-size: cover; background-position: center;@endif">
+            @if ($headerUrl)
+                <div class="absolute inset-0" style="background-color: color-mix(in srgb, var(--cor-principal) 55%, transparent);"></div>
+            @endif
+            <span class="relative inline-flex size-12 items-center justify-center rounded-2xl text-white" style="background-color: var(--cor-principal);">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-7"><path d="M14.5 2.5a3 3 0 1 0-2.9 3.74L8.7 9.1a3 3 0 1 0 .9 1.78l3-2.94a3 3 0 0 0 1.9-5.44Z"/></svg>
             </span>
-            <div class="text-base font-semibold">{{ $nome }}</div>
-            <div style="color: var(--cor-texto-suave);">Agende seu horário online.</div>
+            <div class="relative text-base font-semibold" @if ($headerUrl) style="color: #ffffff;" @endif>{{ $nome }}</div>
+            <div class="relative" style="color: @if ($headerUrl) rgba(255,255,255,0.85) @else var(--cor-texto-suave) @endif;">Agende seu horário online.</div>
         </div>
 
         <div class="text-xs font-medium" style="color: var(--cor-texto-suave);">Serviços</div>

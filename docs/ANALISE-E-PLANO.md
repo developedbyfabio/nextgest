@@ -60,8 +60,8 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 ## Ordem de implementação proposta
 1. **Etapa 1 (esta):** corrigir o portal + fundação de tema por CSS vars. ✅
 2. **Etapa 2:** templates (presets de tema) + tela de edição de aparência do dono
-   (`painel.aparencia`, permissão `gerir_aparencia`) + prévia ao vivo reutilizável.
-   ✅ (uploads de logo/header/fundo pendentes — ver nota abaixo).
+   (`painel.aparencia`, permissão `gerir_aparencia`) + prévia ao vivo reutilizável
+   + uploads de logo/cabeçalho/fundo por tenant. ✅
 3. **Etapa 3:** onboarding guiado com prévia ao vivo (usa os presets/edição).
 4. **Etapa 4:** dashboard do dono (indicadores + gráficos).
 5. **Etapa 5:** kanban (atendimento + CRM).
@@ -71,10 +71,11 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 > ambos; dashboard e kanban são módulos independentes que entram depois da
 > identidade visual estar madura.
 
-> **Pendência (uploads por tenant):** logo/imagem de cabeçalho/fundo precisam de
-> um disco por tenant. O `FilesystemTenancyBootstrapper` já isola o disco
-> `public`, mas a rota `tenancy/assets/{path?}` (helper `tenant_asset()`) usa
-> `InitializeTenancyByDomain` — incompatível com a identificação por CAMINHO
-> deste projeto. Antes de implementar uploads é preciso decidir o servidor de
-> assets do tenant (rota sob o prefixo `{tenant}` com `InitializeTenancyByPath`,
-> ou link simbólico por tenant). Por isso os uploads ficaram fora desta entrega.
+> **Uploads por tenant (resolvido):** logo/cabeçalho/fundo são gravados no disco
+> `public` (isolado por tenant pelo `FilesystemTenancyBootstrapper`, em
+> `storage/tenant{id}/app/public`). Como a rota de assets do stancl
+> (`tenancy/assets/{path?}`, helper `tenant_asset()`) identifica o tenant por
+> DOMÍNIO — incompatível com este projeto (por CAMINHO) — criamos rota própria
+> `GET /{tenant}/arquivo/{path}` (`tenant.arquivo`) com `InitializeTenancyByPath`
+> e `App\Http\Controllers\TenantArquivoController` (serve via `response()->file`
+> com proteção anti path-traversal). URLs via `Aparencia::urlArquivo($path)`.

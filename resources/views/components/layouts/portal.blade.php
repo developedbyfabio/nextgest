@@ -11,9 +11,12 @@
     {{-- O portal reflete o tema do ESTABELECIMENTO (não o modo do sistema do
          visitante), por isso não usa @fluxAppearance. As cores vêm das CSS vars. --}}
 </head>
+@php($aparencia = \App\Support\Aparencia::doTenant())
+@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
+@php($fundoUrl = \App\Support\Aparencia::urlArquivo($aparencia['fundo_imagem']))
 <body
     class="min-h-screen antialiased"
-    style="{{ \App\Support\Aparencia::cssVars() }}; background-color: var(--cor-fundo); color: var(--cor-texto);"
+    style="{{ \App\Support\Aparencia::cssVars($aparencia) }}; background-color: var(--cor-fundo); color: var(--cor-texto);@if ($fundoUrl) background-image: url('{{ $fundoUrl }}'); background-size: cover; background-position: center; background-attachment: fixed;@endif"
 >
     @php($tenantId = tenant('id'))
 
@@ -22,7 +25,11 @@
         <header class="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur"
             style="background-color: color-mix(in srgb, var(--cor-superficie) 90%, transparent); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
             <a href="{{ route('tenant.home', ['tenant' => $tenantId]) }}" class="flex items-center gap-2" wire:navigate>
-                <flux:icon name="calendar-days" class="size-6" style="color: var(--cor-principal);" />
+                @if ($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ tenant('nome') }}" class="size-8 rounded object-contain" />
+                @else
+                    <flux:icon name="calendar-days" class="size-6" style="color: var(--cor-principal);" />
+                @endif
                 <span class="text-base font-semibold">{{ tenant('nome') }}</span>
             </a>
 

@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Edição da identidade visual do estabelecimento (Dono/Gerente). Reaproveita
@@ -23,6 +24,7 @@ use Livewire\Component;
 class Editar extends Component
 {
     use AuthorizesRequests;
+    use WithFileUploads;
 
     public string $cor_principal = '';
 
@@ -44,6 +46,20 @@ class Editar extends Component
 
     public string $icone_estilo = '';
 
+    // Caminhos persistidos das imagens (no disco do tenant) — null se não há.
+    public ?string $logo = null;
+
+    public ?string $header_imagem = null;
+
+    public ?string $fundo_imagem = null;
+
+    // Uploads temporários (substituem o caminho persistido ao salvar).
+    public $logoUpload = null;
+
+    public $headerUpload = null;
+
+    public $fundoUpload = null;
+
     public function mount(): void
     {
         $this->authorize('gerir_aparencia');
@@ -63,6 +79,9 @@ class Editar extends Component
         $this->tamanho_base = $a['tamanho_base'];
         $this->menu_posicao = $a['menu_posicao'];
         $this->icone_estilo = $a['icone_estilo'];
+        $this->logo = $a['logo'];
+        $this->header_imagem = $a['header_imagem'];
+        $this->fundo_imagem = $a['fundo_imagem'];
     }
 
     public function aplicarTemplate(string $chave): void
@@ -93,19 +112,59 @@ class Editar extends Component
             'tamanho_base' => ['required', 'string', 'regex:/^\d{2}px$/'],
             'menu_posicao' => ['required', Rule::in(['topo', 'lateral'])],
             'icone_estilo' => ['required', Rule::in(['outline', 'solid'])],
+            'logoUpload' => ['nullable', 'image', 'max:2048'],
+            'headerUpload' => ['nullable', 'image', 'max:4096'],
+            'fundoUpload' => ['nullable', 'image', 'max:4096'],
         ];
+    }
+
+    public function removerImagem(string $campo): void
+    {
+        $this->authorize('gerir_aparencia');
+
+        if (in_array($campo, ['logo', 'header_imagem', 'fundo_imagem'], true)) {
+            $this->{$campo} = null;
+        }
     }
 
     public function salvar(): void
     {
         $this->authorize('gerir_aparencia');
 
-        Aparencia::salvar($this->validate());
+        $this->validate();
+
+        // Persiste cada upload no disco do tenant (storage/tenant{id}/app/public).
+        foreach ([['logoUpload', 'logo'], ['headerUpload', 'header_imagem'], ['fundoUpload', 'fundo_imagem']] as [$tmp, $campo]) {
+            if ($this->{$tmp}) {
+                $this->{$campo} = $this->{$tmp}->store('aparencia', 'public');
+                $this->{$tmp} = null;
+            }
+        }
+
+        Aparencia::salvar([
+            'cor_principal' => $this->cor_principal,
+            'cor_secundaria' => $this->cor_secundaria,
+            'cor_fundo' => $this->cor_fundo,
+            'cor_superficie' => $this->cor_superficie,
+            'cor_texto' => $this->cor_texto,
+            'cor_texto_suave' => $this->cor_texto_suave,
+            'fonte' => $this->fonte,
+            'tamanho_base' => $this->tamanho_base,
+            'menu_posicao' => $this->menu_posicao,
+            'icone_estilo' => $this->icone_estilo,
+            'logo' => $this->logo,
+            'header_imagem' => $this->header_imagem,
+            'fundo_imagem' => $this->fundo_imagem,
+        ]);
 
         Flux::toast('Aparência salva.', variant: 'success');
     }
 
-    /** Estado atual do formulário como array de aparência (para a prévia). */
+    /**
+     * Estado atual do formulário como array de aparência (para a prévia). Inclui
+     * as URLs resolvidas das imagens (upload temporário se houver, senão o
+     * arquivo persistido) em chaves *_url que o componente de prévia consome.
+     */
     public function aparenciaAtual(): array
     {
         return array_merge(Aparencia::doTenant(), [
@@ -119,6 +178,12 @@ class Editar extends Component
             'tamanho_base' => $this->tamanho_base,
             'menu_posicao' => $this->menu_posicao,
             'icone_estilo' => $this->icone_estilo,
+            'logo' => $this->logo,
+            'header_imagem' => $this->header_imagem,
+            'fundo_imagem' => $this->fundo_imagem,
+            'logo_url' => $this->logoUpload ? $this->logoUpload->temporaryUrl() : Aparencia::urlArquivo($this->logo),
+            'header_url' => $this->headerUpload ? $this->headerUpload->temporaryUrl() : Aparencia::urlArquivo($this->header_imagem),
+            'fundo_url' => $this->fundoUpload ? $this->fundoUpload->temporaryUrl() : Aparencia::urlArquivo($this->fundo_imagem),
         ]);
     }
 

@@ -122,6 +122,20 @@ class Aparencia
         return $t;
     }
 
+    /**
+     * URL pública de um arquivo enviado pelo tenant (logo/cabeçalho/fundo),
+     * servido por App\Http\Controllers\TenantArquivoController. Null se não há
+     * arquivo ou se estamos fora do contexto de um tenant.
+     */
+    public static function urlArquivo(?string $path): ?string
+    {
+        if (! $path || ! tenancy()->initialized) {
+            return null;
+        }
+
+        return route('tenant.arquivo', ['tenant' => tenant('id'), 'path' => $path]);
+    }
+
     /** Aparência do tenant atual mesclada com o padrão. */
     public static function doTenant(): array
     {

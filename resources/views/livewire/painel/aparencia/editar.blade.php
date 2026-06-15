@@ -61,6 +61,38 @@
                 </div>
             </div>
 
+            {{-- Imagens --}}
+            <div class="flex flex-col gap-3">
+                <flux:heading size="sm">Imagens</flux:heading>
+                <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP. Logo até 2 MB; cabeçalho e fundo até 4 MB.</flux:text>
+
+                @foreach ([
+                    ['campo' => 'logo', 'upload' => 'logoUpload', 'url' => 'logo_url', 'rotulo' => 'Logo'],
+                    ['campo' => 'header_imagem', 'upload' => 'headerUpload', 'url' => 'header_url', 'rotulo' => 'Imagem de cabeçalho'],
+                    ['campo' => 'fundo_imagem', 'upload' => 'fundoUpload', 'url' => 'fundo_url', 'rotulo' => 'Imagem de fundo'],
+                ] as $img)
+                    <div class="flex items-center gap-4">
+                        <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                            @if ($aparencia[$img['url']] ?? null)
+                                <img src="{{ $aparencia[$img['url']] }}" alt="{{ $img['rotulo'] }}" class="size-full object-contain" />
+                            @else
+                                <flux:icon name="photo" class="size-6 text-zinc-400" />
+                            @endif
+                        </div>
+                        <div class="flex flex-1 flex-col gap-1">
+                            <flux:label>{{ $img['rotulo'] }}</flux:label>
+                            <input type="file" wire:model="{{ $img['upload'] }}" accept="image/*"
+                                class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
+                            <div wire:loading wire:target="{{ $img['upload'] }}" class="text-xs text-zinc-500">Enviando…</div>
+                            <flux:error name="{{ $img['upload'] }}" />
+                        </div>
+                        @if ($aparencia[$img['campo']] ?? null)
+                            <flux:button size="sm" variant="ghost" wire:click="removerImagem('{{ $img['campo'] }}')">Remover</flux:button>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+
             {{-- Layout --}}
             <div class="flex flex-col gap-3">
                 <flux:heading size="sm">Layout</flux:heading>

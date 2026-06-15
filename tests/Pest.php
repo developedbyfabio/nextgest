@@ -24,6 +24,11 @@ pest()->extend(TestCase::class)
         foreach (glob(database_path('tenant_*')) as $arquivo) {
             @unlink($arquivo);
         }
+
+        // Diretórios de storage por tenant criados em testes (uploads/disco fake).
+        foreach (glob(storage_path('tenant*'), GLOB_ONLYDIR) as $dir) {
+            \Illuminate\Support\Facades\File::deleteDirectory($dir);
+        }
     })
     ->in('Feature');
 

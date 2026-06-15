@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use App\Livewire\Painel\Aparencia\Editar;
 use App\Support\Aparencia;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -77,4 +80,54 @@ it('permite acesso ao Gerente', function () {
     $this->actingAs(usuarioComPapel('Gerente'), 'web')
         ->get('/lojavisual/painel/aparencia')
         ->assertOk();
+});
+
+it('faz upload de logo, persiste o caminho e gera URL por caminho', function () {
+    Storage::fake('public');
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    Livewire::test(Editar::class)
+        ->set('logoUpload', UploadedFile::fake()->image('logo.png', 64, 64))
+        ->call('salvar')
+        ->assertHasNoErrors();
+
+    $logo = Aparencia::doTenant()['logo'];
+    expect($logo)->toStartWith('aparencia/');
+    Storage::disk('public')->assertExists($logo);
+    expect(Aparencia::urlArquivo($logo))->toContain('/lojavisual/arquivo/aparencia/');
+});
+
+it('remove a imagem do estado e persiste a remoção ao salvar', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+    Aparencia::salvar(['logo' => 'aparencia/x.png']);
+
+    Livewire::test(Editar::class)
+        ->assertSet('logo', 'aparencia/x.png')
+        ->call('removerImagem', 'logo')
+        ->call('salvar')
+        ->assertHasNoErrors();
+
+    expect(Aparencia::doTenant()['logo'])->toBeNull();
+});
+
+it('serve arquivo do tenant por caminho e responde 404 para inexistente', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    $this->get('/lojavisual/arquivo/aparencia/naoexiste.png')->assertNotFound();
+
+    $base = storage_path('app/public');
+    File::ensureDirectoryExists($base.'/aparencia');
+    // PNG 1x1 mínimo.
+    file_put_contents(
+        $base.'/aparencia/logo.png',
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
+    );
+
+    try {
+        $this->get('/lojavisual/arquivo/aparencia/logo.png')->assertOk();
+        // Path traversal não escapa da raiz pública do tenant.
+        $this->get('/lojavisual/arquivo/'.urlencode('../').'.env')->assertNotFound();
+    } finally {
+        File::deleteDirectory($base);
+    }
 });
