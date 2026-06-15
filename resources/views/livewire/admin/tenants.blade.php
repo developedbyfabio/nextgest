@@ -1,7 +1,8 @@
 <div class="flex flex-col gap-6">
     <x-ng.page-header title="Estabelecimentos" subtitle="Tenants do Nextgest">
         <x-slot:actions>
-            <flux:button wire:click="novo" variant="primary" icon="plus">Novo estabelecimento</flux:button>
+            <flux:button wire:click="novo" variant="ghost" icon="bolt">Criação rápida</flux:button>
+            <flux:button :href="route('admin.tenants.novo')" variant="primary" icon="plus" wire:navigate>Novo estabelecimento</flux:button>
         </x-slot:actions>
     </x-ng.page-header>
 

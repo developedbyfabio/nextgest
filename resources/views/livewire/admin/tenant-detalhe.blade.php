@@ -7,6 +7,13 @@
         </x-slot:actions>
     </x-ng.page-header>
 
+    @if (session('onboarding_sucesso'))
+        <flux:callout variant="success" icon="check-circle">
+            <flux:callout.heading>{{ session('onboarding_sucesso') }}</flux:callout.heading>
+            <flux:callout.text>Banco provisionado, Dono criado e aparência aplicada. Use "Abrir portal" para conferir.</flux:callout.text>
+        </flux:callout>
+    @endif
+
     <flux:callout icon="lock-closed">
         <flux:callout.heading>Dados privados do estabelecimento</flux:callout.heading>
         <flux:callout.text>
@@ -21,6 +28,9 @@
             <flux:badge color="green">Ativo</flux:badge>
         @else
             <flux:badge color="zinc">Inativo</flux:badge>
+        @endif
+        @if ($tenant->segmento)
+            <flux:badge color="blue">{{ \App\Livewire\Admin\OnboardingEstabelecimento::SEGMENTOS[$tenant->segmento] ?? $tenant->segmento }}</flux:badge>
         @endif
         <flux:text class="text-sm text-zinc-500">Criado em {{ $tenant->created_at?->format('d/m/Y H:i') }}</flux:text>
     </div>

@@ -3,21 +3,12 @@
 declare(strict_types=1);
 
 use App\Livewire\Admin\Tenants;
-use App\Models\Admin;
 use App\Models\Tenant;
 use App\Models\User;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
-function admin(): Admin
-{
-    return Admin::create([
-        'name' => 'Super',
-        'email' => 'super@nextgest.com.br',
-        'password' => 'senha-super-12345',
-        'ativo' => true,
-    ]);
-}
+// admin() é um helper global definido em tests/Pest.php.
 
 afterEach(function () {
     // Limpa arquivos sqlite de tenants criados pelos testes.

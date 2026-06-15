@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Models\Admin;
 use App\Models\HorarioTrabalho;
 use App\Models\Tenant;
 use App\Models\Unidade;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /*
@@ -27,10 +29,23 @@ pest()->extend(TestCase::class)
 
         // Diretórios de storage por tenant criados em testes (uploads/disco fake).
         foreach (glob(storage_path('tenant*'), GLOB_ONLYDIR) as $dir) {
-            \Illuminate\Support\Facades\File::deleteDirectory($dir);
+            File::deleteDirectory($dir);
         }
     })
     ->in('Feature');
+
+/**
+ * Cria um super-admin (guard `admin`, banco central) para autenticação em testes.
+ */
+function admin(): Admin
+{
+    return Admin::create([
+        'name' => 'Super',
+        'email' => 'super@nextgest.com.br',
+        'password' => 'senha-super-12345',
+        'ativo' => true,
+    ]);
+}
 
 /**
  * Cria um tenant de teste (dispara criação do banco sqlite, migrations e seed

@@ -57,7 +57,7 @@
             </div>
             <div>
                 <flux:heading size="xl">{{ tenant('nome') }}</flux:heading>
-                <flux:text class="mt-1" style="color: var(--cor-texto-suave);">Agende seu horário online, em poucos toques.</flux:text>
+                <flux:text class="mt-1" style="color: var(--cor-texto-suave);">{{ $descricao ?: 'Agende seu horário online, em poucos toques.' }}</flux:text>
             </div>
         </div>
 

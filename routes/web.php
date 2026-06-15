@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\OnboardingEstabelecimento;
 use App\Livewire\Admin\TenantDetalhe as AdminTenantDetalhe;
 use App\Livewire\Admin\Tenants as AdminTenants;
 use App\Livewire\Auth\AdminLogin;
@@ -39,6 +40,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('estabelecimentos', AdminTenants::class)
         ->middleware('auth:admin')
         ->name('tenants');
+
+    // Onboarding guiado (wizard). Registrado ANTES de {tenantId} para que o
+    // segmento "novo" não seja interpretado como id de tenant.
+    Route::get('estabelecimentos/novo', OnboardingEstabelecimento::class)
+        ->middleware('auth:admin')
+        ->name('tenants.novo');
 
     Route::get('estabelecimentos/{tenantId}', AdminTenantDetalhe::class)
         ->middleware('auth:admin')

@@ -51,18 +51,24 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 - ♻️ pós-tema: aplicar identidade visual e revisar densidade/affordances.
 
 ## Fundação transversal já entregue
-- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 100 testes + smoke
+- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 111 testes + smoke
   HTTP. Multi-tenancy por caminho com Livewire estável (endpoint único +
   persistent middleware).
 - **Tema:** `App\Support\Aparencia` (CSS vars por tenant), 7 presets em código
   (`Aparencia::TEMPLATES`), prévia reutilizável `x-ng.previa-portal`.
+- **Onboarding:** wizard `admin.tenants.novo` cria o tenant de ponta a ponta
+  (identidade/segmento, Dono, funcionamento, aparência com prévia, revisão).
 
 ## Ordem de implementação proposta
 1. **Etapa 1 (esta):** corrigir o portal + fundação de tema por CSS vars. ✅
 2. **Etapa 2:** templates (presets de tema) + tela de edição de aparência do dono
    (`painel.aparencia`, permissão `gerir_aparencia`) + prévia ao vivo reutilizável
    + uploads de logo/cabeçalho/fundo por tenant. ✅
-3. **Etapa 3:** onboarding guiado com prévia ao vivo (usa os presets/edição).
+3. **Etapa 3:** onboarding guiado com prévia ao vivo (usa os presets/edição). ✅
+   Wizard de 5 etapas em `App\Livewire\Admin\OnboardingEstabelecimento`
+   (`/admin/estabelecimentos/novo`). Segmento sugere o template; a confirmação
+   provisiona o banco, cria o Dono, aplica a aparência e semeia o horário.
+   Segmento → coluna JSON `data` do tenant; descrição/horário → `configuracoes`.
 4. **Etapa 4:** dashboard do dono (indicadores + gráficos).
 5. **Etapa 5:** kanban (atendimento + CRM).
 6. **Etapa 6:** polimento das áreas de gestão sob o tema e do portal logado.

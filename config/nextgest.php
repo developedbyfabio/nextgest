@@ -33,6 +33,7 @@ return [
         'painel',
         'super-admin',
         'up', // health check do Laravel
+        'novo', // usado pela rota /admin/estabelecimentos/novo (onboarding)
     ],
 
 ];

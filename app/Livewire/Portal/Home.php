@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Portal;
 
 use App\Models\Agendamento;
+use App\Models\Configuracao;
 use App\Services\Agendamento\Agendador;
 use Carbon\Carbon;
 use Flux\Flux;
@@ -57,6 +58,7 @@ class Home extends Component
         return view('livewire.portal.home', [
             'proximos' => $proximos,
             'podeCancelar' => fn (Agendamento $a) => $agendador->podeCancelar($a),
+            'descricao' => Configuracao::valor('descricao'),
         ]);
     }
 }
