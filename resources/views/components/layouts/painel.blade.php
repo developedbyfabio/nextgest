@@ -59,6 +59,9 @@
                 @can('editar_permissoes')
                     <flux:navlist.item icon="shield-check" :href="route('painel.papeis', ['tenant' => $tenantId])" :current="request()->routeIs('painel.papeis')" wire:navigate>Papéis e permissões</flux:navlist.item>
                 @endcan
+                @can('gerir_aparencia')
+                    <flux:navlist.item icon="paint-brush" :href="route('painel.aparencia', ['tenant' => $tenantId])" :current="request()->routeIs('painel.aparencia')" wire:navigate>Aparência</flux:navlist.item>
+                @endcan
             </flux:navlist.group>
         </flux:navlist>
 

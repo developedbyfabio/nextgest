@@ -51,14 +51,17 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 - ♻️ pós-tema: aplicar identidade visual e revisar densidade/affordances.
 
 ## Fundação transversal já entregue
-- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 93 testes + smoke
+- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 100 testes + smoke
   HTTP. Multi-tenancy por caminho com Livewire estável (endpoint único +
   persistent middleware).
+- **Tema:** `App\Support\Aparencia` (CSS vars por tenant), 7 presets em código
+  (`Aparencia::TEMPLATES`), prévia reutilizável `x-ng.previa-portal`.
 
 ## Ordem de implementação proposta
 1. **Etapa 1 (esta):** corrigir o portal + fundação de tema por CSS vars. ✅
-2. **Etapa 2:** templates (presets de tema) + tela de edição de aparência do dono,
-   reusando as CSS vars.
+2. **Etapa 2:** templates (presets de tema) + tela de edição de aparência do dono
+   (`painel.aparencia`, permissão `gerir_aparencia`) + prévia ao vivo reutilizável.
+   ✅ (uploads de logo/header/fundo pendentes — ver nota abaixo).
 3. **Etapa 3:** onboarding guiado com prévia ao vivo (usa os presets/edição).
 4. **Etapa 4:** dashboard do dono (indicadores + gráficos).
 5. **Etapa 5:** kanban (atendimento + CRM).
@@ -67,3 +70,11 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 > Racional da ordem: tema é base de templates e da prévia; onboarding consome
 > ambos; dashboard e kanban são módulos independentes que entram depois da
 > identidade visual estar madura.
+
+> **Pendência (uploads por tenant):** logo/imagem de cabeçalho/fundo precisam de
+> um disco por tenant. O `FilesystemTenancyBootstrapper` já isola o disco
+> `public`, mas a rota `tenancy/assets/{path?}` (helper `tenant_asset()`) usa
+> `InitializeTenancyByDomain` — incompatível com a identificação por CAMINHO
+> deste projeto. Antes de implementar uploads é preciso decidir o servidor de
+> assets do tenant (rota sob o prefixo `{tenant}` com `InitializeTenancyByPath`,
+> ou link simbólico por tenant). Por isso os uploads ficaram fora desta entrega.

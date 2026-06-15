@@ -44,6 +44,7 @@ class TenantDatabaseSeeder extends Seeder
         'gerenciar_pagamentos',
         'gerenciar_whatsapp',
         'usar_kanban',
+        'gerir_aparencia',
     ];
 
     public function run(): void

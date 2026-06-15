@@ -8,6 +8,7 @@ use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
+use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
@@ -111,6 +112,10 @@ Route::middleware(['tenant'])
                 Route::get('papeis', PapeisIndex::class)
                     ->middleware('can:editar_permissoes')
                     ->name('papeis');
+
+                Route::get('aparencia', AparenciaEditar::class)
+                    ->middleware('can:gerir_aparencia')
+                    ->name('aparencia');
             });
         });
     });

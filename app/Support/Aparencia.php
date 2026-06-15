@@ -42,6 +42,86 @@ class Aparencia
         'icone_estilo' => 'outline',
     ];
 
+    /**
+     * Templates (presets) de aparência (D30) — definidos em código, não por tenant.
+     * Aplicar um template = copiar estes valores para o tenant (segue editável).
+     * Reutilizados pela tela de edição e pelo onboarding (Etapa 3).
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    public const TEMPLATES = [
+        'neutro' => [
+            'rotulo' => 'Neutro', 'descricao' => 'Equilibrado e versátil.',
+            'cor_principal' => '#4f46e5', 'cor_secundaria' => '#0ea5e9',
+            'cor_fundo' => '#f4f4f5', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#18181b', 'cor_texto_suave' => '#71717a',
+            'fonte' => "'Instrument Sans', ui-sans-serif, system-ui, sans-serif",
+            'tamanho_base' => '16px', 'menu_posicao' => 'topo', 'icone_estilo' => 'outline',
+        ],
+        'barbearia' => [
+            'rotulo' => 'Barbearia', 'descricao' => 'Âmbar e tons terrosos, ar masculino.',
+            'cor_principal' => '#b45309', 'cor_secundaria' => '#57534e',
+            'cor_fundo' => '#f5f5f4', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#1c1917', 'cor_texto_suave' => '#78716c',
+            'fonte' => 'ui-sans-serif, system-ui, sans-serif',
+            'tamanho_base' => '16px', 'menu_posicao' => 'topo', 'icone_estilo' => 'solid',
+        ],
+        'salao_feminino' => [
+            'rotulo' => 'Salão feminino', 'descricao' => 'Rosa e roxo, delicado.',
+            'cor_principal' => '#db2777', 'cor_secundaria' => '#a855f7',
+            'cor_fundo' => '#fdf2f8', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#1f2937', 'cor_texto_suave' => '#9d6b86',
+            'fonte' => "'Instrument Sans', ui-sans-serif, system-ui, sans-serif",
+            'tamanho_base' => '16px', 'menu_posicao' => 'topo', 'icone_estilo' => 'outline',
+        ],
+        'salao_masculino' => [
+            'rotulo' => 'Salão masculino', 'descricao' => 'Azul-petróleo e grafite.',
+            'cor_principal' => '#0f766e', 'cor_secundaria' => '#334155',
+            'cor_fundo' => '#f1f5f9', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#0f172a', 'cor_texto_suave' => '#64748b',
+            'fonte' => 'ui-sans-serif, system-ui, sans-serif',
+            'tamanho_base' => '16px', 'menu_posicao' => 'topo', 'icone_estilo' => 'outline',
+        ],
+        'premium' => [
+            'rotulo' => 'Premium', 'descricao' => 'Preto e dourado, sofisticado.',
+            'cor_principal' => '#111827', 'cor_secundaria' => '#b8860b',
+            'cor_fundo' => '#faf9f7', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#111827', 'cor_texto_suave' => '#6b7280',
+            'fonte' => "Georgia, 'Times New Roman', serif",
+            'tamanho_base' => '16px', 'menu_posicao' => 'lateral', 'icone_estilo' => 'solid',
+        ],
+        'moderno' => [
+            'rotulo' => 'Moderno', 'descricao' => 'Ciano e violeta vibrantes.',
+            'cor_principal' => '#06b6d4', 'cor_secundaria' => '#8b5cf6',
+            'cor_fundo' => '#f8fafc', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#0f172a', 'cor_texto_suave' => '#64748b',
+            'fonte' => 'ui-sans-serif, system-ui, sans-serif',
+            'tamanho_base' => '16px', 'menu_posicao' => 'topo', 'icone_estilo' => 'outline',
+        ],
+        'minimalista' => [
+            'rotulo' => 'Minimalista', 'descricao' => 'Preto e branco, tipografia limpa.',
+            'cor_principal' => '#111827', 'cor_secundaria' => '#6b7280',
+            'cor_fundo' => '#ffffff', 'cor_superficie' => '#ffffff',
+            'cor_texto' => '#111827', 'cor_texto_suave' => '#9ca3af',
+            'fonte' => 'ui-sans-serif, system-ui, sans-serif',
+            'tamanho_base' => '15px', 'menu_posicao' => 'topo', 'icone_estilo' => 'outline',
+        ],
+    ];
+
+    /** Campos visuais de um template (sem rótulo/descrição), prontos para o form. */
+    public static function template(string $chave): ?array
+    {
+        $t = self::TEMPLATES[$chave] ?? null;
+
+        if ($t === null) {
+            return null;
+        }
+
+        unset($t['rotulo'], $t['descricao']);
+
+        return $t;
+    }
+
     /** Aparência do tenant atual mesclada com o padrão. */
     public static function doTenant(): array
     {
