@@ -47,6 +47,9 @@
                 @can('gerir_agenda')
                     <flux:navlist.item icon="no-symbol" :href="route('painel.bloqueios', ['tenant' => $tenantId])" :current="request()->routeIs('painel.bloqueios')" wire:navigate>Bloqueios</flux:navlist.item>
                 @endcan
+                @can('ver_kanban_atendimento')
+                    <flux:navlist.item icon="view-columns" :href="route('painel.kanban', ['tenant' => $tenantId])" :current="request()->routeIs('painel.kanban')" wire:navigate>Kanban</flux:navlist.item>
+                @endcan
             </flux:navlist.group>
 
             <flux:navlist.group heading="Gestão" expandable :expanded="true">

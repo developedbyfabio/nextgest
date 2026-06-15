@@ -51,7 +51,7 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 - ♻️ pós-tema: aplicar identidade visual e revisar densidade/affordances.
 
 ## Fundação transversal já entregue
-- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 123 testes + smoke
+- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 133 testes + smoke
   HTTP. Multi-tenancy por caminho com Livewire estável (endpoint único +
   persistent middleware).
 - **Tema:** `App\Support\Aparencia` (CSS vars por tenant), 7 presets em código
@@ -77,7 +77,11 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
    período (hoje/7d/30d/mês/custom) e unidade (se 2+). Chart.js via Vite, cores do
    tema. Faturamento estimado por `agendamento_servico` de concluídos (sem Vendas).
    Demo enriquecido com ~90 dias de histórico (idempotente, marcado `[demo]`).
-5. **Etapa 5:** kanban (atendimento + CRM).
+5. **Etapa 5:** kanban (atendimento + CRM). ✅
+   `App\Livewire\Painel\Kanban\Index` (`painel.kanban`). Dois quadros semeados no
+   tenant (TenantDatabaseSeeder); colunas/cartões editáveis; DnD via SortableJS
+   (persiste coluna+ordem) + menu "Mover para" acessível. Permissões:
+   `ver_kanban_atendimento` (inclui Recepção) e `gerir_kanban` (CRM/estrutura).
 6. **Etapa 6:** polimento das áreas de gestão sob o tema e do portal logado.
 
 > Racional da ordem: tema é base de templates e da prévia; onboarding consome

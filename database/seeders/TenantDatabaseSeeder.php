@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\KanbanColuna;
+use App\Models\KanbanQuadro;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -46,6 +48,8 @@ class TenantDatabaseSeeder extends Seeder
         'usar_kanban',
         'gerir_aparencia',
         'ver_dashboard',
+        'gerir_kanban',            // quadros/colunas + CRM (Dono/Gerente)
+        'ver_kanban_atendimento',  // quadro de atendimento/balcão (inclui Recepção)
     ];
 
     public function run(): void
@@ -67,7 +71,7 @@ class TenantDatabaseSeeder extends Seeder
             'editar_permissoes',
         ]));
 
-        // Recepção: agenda, clientes, vendas e kanban.
+        // Recepção: agenda, clientes, vendas e kanban de atendimento (balcão).
         $recepcao = Role::findOrCreate('Recepção', 'web');
         $recepcao->syncPermissions([
             'ver_agenda',
@@ -77,6 +81,7 @@ class TenantDatabaseSeeder extends Seeder
             'ver_clientes',
             'criar_venda',
             'usar_kanban',
+            'ver_kanban_atendimento',
         ]);
 
         // Profissional: vê apenas a própria agenda.
@@ -99,6 +104,34 @@ class TenantDatabaseSeeder extends Seeder
                 ['chave' => $chave],
                 ['valor' => $valor, 'created_at' => now(), 'updated_at' => now()]
             );
+        }
+
+        $this->semearKanban();
+    }
+
+    /**
+     * Quadros Kanban padrão (D22): Atendimento e CRM, com colunas iniciais.
+     * Idempotente (firstOrCreate), para re-seed seguro de tenants existentes.
+     */
+    private function semearKanban(): void
+    {
+        $padrao = [
+            'atendimento' => ['nome' => 'Atendimento', 'colunas' => ['Aguardando', 'Em atendimento', 'Concluído', 'Pago']],
+            'crm' => ['nome' => 'CRM', 'colunas' => ['Novo contato', 'Em conversa', 'Agendado', 'Fidelizado']],
+        ];
+
+        foreach ($padrao as $tipo => $def) {
+            $quadro = KanbanQuadro::firstOrCreate(
+                ['tipo' => $tipo],
+                ['nome' => $def['nome'], 'ativo' => true],
+            );
+
+            foreach ($def['colunas'] as $ordem => $nome) {
+                KanbanColuna::firstOrCreate(
+                    ['quadro_id' => $quadro->id, 'nome' => $nome],
+                    ['ordem' => $ordem],
+                );
+            }
         }
     }
 }

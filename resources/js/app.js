@@ -1,4 +1,5 @@
 import Chart from 'chart.js/auto';
+import Sortable from 'sortablejs';
 
 /*
 | Gráficos do dashboard (Etapa 4).
@@ -10,6 +11,29 @@ import Chart from 'chart.js/auto';
 | resolvidas no servidor (Aparencia) e embutidas nos datasets.
 */
 document.addEventListener('alpine:init', () => {
+    /*
+    | Kanban (Etapa 5): arrastar-e-soltar entre colunas e reordenar.
+    | Cada lista de cartões de uma coluna é um Sortable do grupo 'kanban'. No
+    | drop, chama Livewire `moverCartao(id, colunaDestino, novaOrdem)` —
+    | atualização otimista (o DOM já moveu; o servidor persiste; última escrita
+    | vence). A alternativa por teclado é o menu "Mover para" em cada cartão.
+    */
+    window.Alpine.data('kanbanColuna', () => ({
+        init() {
+            Sortable.create(this.$el, {
+                group: 'kanban',
+                animation: 150,
+                draggable: '[data-cartao-id]',
+                ghostClass: 'opacity-40',
+                onEnd: (evt) => {
+                    const cartaoId = evt.item.dataset.cartaoId;
+                    const colunaDestino = evt.to.dataset.colunaId;
+                    this.$wire.moverCartao(cartaoId, colunaDestino, evt.newIndex);
+                },
+            });
+        },
+    }));
+
     window.Alpine.data('ngGrafico', (config) => ({
         chart: null,
 

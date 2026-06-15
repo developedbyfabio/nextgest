@@ -6,6 +6,8 @@ namespace App\Console\Commands;
 
 use App\Models\Agendamento;
 use App\Models\Cliente;
+use App\Models\KanbanCartao;
+use App\Models\KanbanQuadro;
 use App\Models\Servico;
 use App\Models\Tenant;
 use App\Models\Unidade;
@@ -65,6 +67,7 @@ class SemearDemo extends Command
             Aparencia::salvar([]); // grava o tema padrão (base editável)
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
+            $this->kanban($clientes, $profissionais);
         });
 
         $this->newLine();
@@ -303,6 +306,45 @@ class SemearDemo extends Command
         }
 
         mt_srand();
+    }
+
+    /**
+     * Semeia alguns cartões nos quadros padrão (criados pelo seeder do tenant).
+     * Idempotente: só cria se o quadro ainda não tiver cartões.
+     *
+     * @param  array<int, Cliente>  $clientes
+     * @param  array<int, User>  $profissionais
+     */
+    private function kanban(array $clientes, array $profissionais): void
+    {
+        [$maria, $carlos, $paula] = $clientes;
+        $prof = $profissionais[0] ?? null;
+
+        $atendimento = KanbanQuadro::where('tipo', 'atendimento')->first();
+        $crm = KanbanQuadro::where('tipo', 'crm')->first();
+
+        if ($atendimento && $atendimento->colunas()->whereHas('cartoes')->doesntExist()) {
+            $col = $atendimento->colunas()->orderBy('ordem')->pluck('id', 'nome');
+            $this->cartao($col['Aguardando'] ?? $col->first(), 'Maria · Corte', ['cliente_id' => $maria->id, 'responsavel_user_id' => $prof?->id]);
+            $this->cartao($col['Em atendimento'] ?? $col->first(), 'Carlos · Coloração', ['cliente_id' => $carlos->id, 'responsavel_user_id' => $prof?->id]);
+            $this->cartao($col['Concluído'] ?? $col->first(), 'Paula · Sobrancelha', ['cliente_id' => $paula->id]);
+        }
+
+        if ($crm && $crm->colunas()->whereHas('cartoes')->doesntExist()) {
+            $col = $crm->colunas()->orderBy('ordem')->pluck('id', 'nome');
+            $this->cartao($col['Novo contato'] ?? $col->first(), 'Lead do Instagram', ['descricao' => 'Pediu preço de combo corte+barba.']);
+            $this->cartao($col['Em conversa'] ?? $col->first(), 'João — retorno', ['descricao' => 'Aguardando confirmar horário.', 'valor_estimado' => 70]);
+            $this->cartao($col['Fidelizado'] ?? $col->first(), 'Maria — mensalista', ['cliente_id' => $maria->id, 'valor_estimado' => 90]);
+        }
+    }
+
+    private function cartao(int $colunaId, string $titulo, array $extra = []): void
+    {
+        KanbanCartao::create(array_merge([
+            'coluna_id' => $colunaId,
+            'titulo' => $titulo,
+            'ordem' => (int) KanbanCartao::where('coluna_id', $colunaId)->max('ordem') + 1,
+        ], $extra));
     }
 
     /** @param  Collection<int, Servico>  $itens */
