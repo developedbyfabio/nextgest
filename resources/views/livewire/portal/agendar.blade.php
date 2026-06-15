@@ -13,7 +13,11 @@
     {{-- Indicador de progresso --}}
     <div class="flex items-center gap-1.5" aria-label="Progresso">
         @for ($i = 1; $i <= $totalPassos; $i++)
-            <div class="h-1.5 flex-1 rounded-full transition-colors duration-300 {{ $i <= $passoAtual ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-zinc-200 dark:bg-zinc-700' }}"></div>
+            <div class="h-1.5 flex-1 rounded-full transition-colors duration-300"
+                @style([
+                    'background-color: var(--cor-principal)' => $i <= $passoAtual,
+                    'background-color: color-mix(in srgb, var(--cor-texto) 12%, transparent)' => $i > $passoAtual,
+                ])></div>
         @endfor
     </div>
 

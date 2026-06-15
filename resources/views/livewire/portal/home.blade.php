@@ -50,24 +50,25 @@
         </flux:callout>
     @else
         {{-- Visitante: identidade do estabelecimento + chamada para agendar --}}
-        <div class="flex flex-col items-center gap-4 rounded-2xl border border-zinc-200 bg-gradient-to-b from-indigo-50/60 to-white px-6 py-10 text-center dark:border-zinc-800 dark:from-indigo-950/30 dark:to-zinc-900">
-            <div class="flex size-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm">
+        <div class="flex flex-col items-center gap-4 rounded-2xl border px-6 py-10 text-center"
+            style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); background-color: color-mix(in srgb, var(--cor-principal) 6%, var(--cor-superficie));">
+            <div class="flex size-16 items-center justify-center rounded-2xl text-white shadow-sm" style="background-color: var(--cor-principal);">
                 <flux:icon name="scissors" class="size-8" />
             </div>
             <div>
                 <flux:heading size="xl">{{ tenant('nome') }}</flux:heading>
-                <flux:text class="mt-1 text-zinc-600 dark:text-zinc-300">Agende seu horário online, em poucos toques.</flux:text>
+                <flux:text class="mt-1" style="color: var(--cor-texto-suave);">Agende seu horário online, em poucos toques.</flux:text>
             </div>
         </div>
 
         <div class="flex flex-col gap-3">
-            <flux:text class="text-center text-sm font-medium text-zinc-500">Como funciona</flux:text>
+            <flux:text class="text-center text-sm font-medium" style="color: var(--cor-texto-suave);">Como funciona</flux:text>
             <div class="grid grid-cols-3 gap-2 text-center">
                 @php($passos = [['user-plus', 'Crie sua conta'], ['scissors', 'Escolha o serviço'], ['calendar-days', 'Marque o horário']])
                 @foreach ($passos as $i => [$icone, $texto])
-                    <div class="flex flex-col items-center gap-1 rounded-xl border border-zinc-100 p-3 dark:border-zinc-800">
-                        <flux:icon :name="$icone" class="size-5 text-indigo-600 dark:text-indigo-400" />
-                        <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ $texto }}</span>
+                    <div class="flex flex-col items-center gap-1 rounded-xl border p-3" style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent);">
+                        <flux:icon :name="$icone" class="size-5" style="color: var(--cor-principal);" />
+                        <span class="text-xs" style="color: var(--cor-texto-suave);">{{ $texto }}</span>
                     </div>
                 @endforeach
             </div>

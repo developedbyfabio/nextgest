@@ -5,19 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? tenant('nome') }} · Nextgest</title>
+    <title>{{ $title ?? tenant('nome') }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @fluxAppearance
+    {{-- O portal reflete o tema do ESTABELECIMENTO (não o modo do sistema do
+         visitante), por isso não usa @fluxAppearance. As cores vêm das CSS vars. --}}
 </head>
-<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
+<body
+    class="min-h-screen antialiased"
+    style="{{ \App\Support\Aparencia::cssVars() }}; background-color: var(--cor-fundo); color: var(--cor-texto);"
+>
     @php($tenantId = tenant('id'))
 
-    {{-- Portal do cliente: mobile-first. Conteúdo numa coluna estreita centralizada. --}}
-    <div class="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white shadow-sm">
-        <header class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-100 bg-white/90 px-4 py-3 backdrop-blur">
+    {{-- Portal do cliente: mobile-first. Coluna estreita centralizada. --}}
+    <div class="mx-auto flex min-h-screen w-full max-w-md flex-col shadow-sm" style="background-color: var(--cor-superficie);">
+        <header class="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur"
+            style="background-color: color-mix(in srgb, var(--cor-superficie) 90%, transparent); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
             <a href="{{ route('tenant.home', ['tenant' => $tenantId]) }}" class="flex items-center gap-2" wire:navigate>
-                <flux:icon name="calendar-days" class="size-6 text-zinc-900" />
+                <flux:icon name="calendar-days" class="size-6" style="color: var(--cor-principal);" />
                 <span class="text-base font-semibold">{{ tenant('nome') }}</span>
             </a>
 
@@ -46,7 +51,8 @@
             {{ $slot }}
         </main>
 
-        <footer class="border-t border-zinc-100 px-4 py-3 text-center text-xs text-zinc-400">
+        <footer class="border-t px-4 py-3 text-center text-xs"
+            style="border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent); color: var(--cor-texto-suave);">
             Powered by Nextgest
         </footer>
     </div>

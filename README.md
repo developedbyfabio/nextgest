@@ -113,6 +113,7 @@ php artisan serve --host=0.0.0.0 --port=8000   # http://192.168.3.100:8000/barbe
 | Portal de agendamento (1C) | [docs/10-agendamento.md](docs/10-agendamento.md) |
 | Agenda da equipe (1D) | [docs/11-agenda-equipe.md](docs/11-agenda-equipe.md) |
 | Design System (1E) | [docs/12-design-system.md](docs/12-design-system.md) |
+| Análise e plano (evolução visual) | [docs/ANALISE-E-PLANO.md](docs/ANALISE-E-PLANO.md) |
 
 ## Segurança (resumo)
 

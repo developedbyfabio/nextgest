@@ -10,6 +10,7 @@ use App\Models\Servico;
 use App\Models\Tenant;
 use App\Models\Unidade;
 use App\Models\User;
+use App\Support\Aparencia;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
@@ -60,6 +61,7 @@ class SemearDemo extends Command
             $profissionais = $this->profissionais($unidade, $servicos, $senha);
             $this->equipeDeApoio($unidade, $senha);
             $this->dono($senha);
+            Aparencia::salvar([]); // grava o tema padrão (base editável)
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
         });
