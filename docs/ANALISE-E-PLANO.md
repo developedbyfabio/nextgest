@@ -51,13 +51,16 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
 - ♻️ pós-tema: aplicar identidade visual e revisar densidade/affordances.
 
 ## Fundação transversal já entregue
-- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 111 testes + smoke
+- Design system (Flux + `x-ng.*`), dark mode no painel/admin, 123 testes + smoke
   HTTP. Multi-tenancy por caminho com Livewire estável (endpoint único +
   persistent middleware).
 - **Tema:** `App\Support\Aparencia` (CSS vars por tenant), 7 presets em código
   (`Aparencia::TEMPLATES`), prévia reutilizável `x-ng.previa-portal`.
 - **Onboarding:** wizard `admin.tenants.novo` cria o tenant de ponta a ponta
   (identidade/segmento, Dono, funcionamento, aparência com prévia, revisão).
+- **Dashboard:** `painel.dashboard` (permissão `ver_dashboard`) com indicadores e
+  gráficos (Chart.js) sobre dados reais; faturamento ESTIMADO por serviços
+  concluídos. Agregações em `App\Services\Dashboard\Metricas`.
 
 ## Ordem de implementação proposta
 1. **Etapa 1 (esta):** corrigir o portal + fundação de tema por CSS vars. ✅
@@ -69,7 +72,11 @@ dono, kanban, áreas de gestão). Legenda: ✅ existe · 🐛 bugado · 🚧 inc
    (`/admin/estabelecimentos/novo`). Segmento sugere o template; a confirmação
    provisiona o banco, cria o Dono, aplica a aparência e semeia o horário.
    Segmento → coluna JSON `data` do tenant; descrição/horário → `configuracoes`.
-4. **Etapa 4:** dashboard do dono (indicadores + gráficos).
+4. **Etapa 4:** dashboard do dono (indicadores + gráficos). ✅
+   `App\Livewire\Painel\Dashboard` + `App\Services\Dashboard\Metricas`. Filtros de
+   período (hoje/7d/30d/mês/custom) e unidade (se 2+). Chart.js via Vite, cores do
+   tema. Faturamento estimado por `agendamento_servico` de concluídos (sem Vendas).
+   Demo enriquecido com ~90 dias de histórico (idempotente, marcado `[demo]`).
 5. **Etapa 5:** kanban (atendimento + CRM).
 6. **Etapa 6:** polimento das áreas de gestão sob o tema e do portal logado.
 

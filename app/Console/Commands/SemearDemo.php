@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Support\Aparencia;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -182,7 +183,7 @@ class SemearDemo extends Command
             ['Paula Dias', 'paula@cliente.test', '(11) 90000-0003'],
         ];
 
-        return collect($definicoes)->map(function ($def) use ($senha) {
+        $clientes = collect($definicoes)->map(function ($def) use ($senha) {
             [$nome, $email, $tel] = $def;
 
             return Cliente::firstOrCreate(
@@ -190,6 +191,23 @@ class SemearDemo extends Command
                 ['nome' => $nome, 'telefone' => $tel, 'password' => $senha],
             );
         })->all();
+
+        // Pool extra com created_at espalhado nos últimos ~85 dias, para que o
+        // indicador "clientes novos" varie por período. Backdate só na criação.
+        for ($i = 1; $i <= 8; $i++) {
+            $cliente = Cliente::firstOrCreate(
+                ['email' => "cliente{$i}@demo.test"],
+                ['nome' => "Cliente Demo {$i}", 'telefone' => sprintf('(11) 90000-1%03d', $i), 'password' => $senha],
+            );
+
+            if ($cliente->wasRecentlyCreated) {
+                $cliente->forceFill(['created_at' => Carbon::today()->subDays(($i * 11) % 85)])->save();
+            }
+
+            $clientes[] = $cliente;
+        }
+
+        return $clientes;
     }
 
     /**
@@ -234,28 +252,82 @@ class SemearDemo extends Command
         ];
 
         foreach ($plano as [$cliente, $prof, $nomesServicos, $inicio, $status]) {
-            $itens = collect($nomesServicos)->map(fn ($n) => $servicos[$n]);
-            $duracao = (int) $itens->sum('duracao_minutos');
+            $this->criarAgendamento($unidade, $cliente, $prof, $inicio, $status, collect($nomesServicos)->map(fn ($n) => $servicos[$n]));
+        }
 
-            $agendamento = Agendamento::create([
-                'unidade_id' => $unidade->id,
-                'cliente_id' => $cliente->id,
-                'profissional_id' => $prof->id,
-                'data_hora_inicio' => $inicio,
-                'data_hora_fim' => $inicio->copy()->addMinutes($duracao),
-                'status' => $status,
-                'origem' => 'equipe',
-                'valor_total' => (float) $itens->sum('preco'),
-                'observacoes' => self::MARCA_DEMO,
-            ]);
+        $this->historico($unidade, $servicos, $profissionais, $clientes);
+    }
 
-            foreach ($itens as $servico) {
-                $agendamento->itens()->create([
-                    'servico_id' => $servico->id,
-                    'preco' => $servico->preco,
-                    'duracao_minutos' => $servico->duracao_minutos,
-                ]);
+    /**
+     * Histórico DETERMINÍSTICO (~90 dias) para os gráficos terem forma. Seg–sáb,
+     * 2–6 agendamentos/dia, em horário comercial; passado já resolvido (concluído
+     * na maioria, com não comparecimentos e cancelamentos). Semente fixa torna o
+     * conteúdo reproduzível; tudo marcado [demo] (limpo por --recriar).
+     *
+     * @param  array<string, Servico>  $servicos
+     * @param  array<int, User>  $profissionais
+     * @param  array<int, Cliente>  $clientes
+     */
+    private function historico(Unidade $unidade, array $servicos, array $profissionais, array $clientes): void
+    {
+        mt_srand(20260614);
+
+        $catalogo = array_values($servicos);
+        $hoje = Carbon::today();
+
+        for ($d = 90; $d >= 1; $d--) {
+            $dia = $hoje->copy()->subDays($d);
+
+            if ($dia->dayOfWeek === Carbon::SUNDAY) {
+                continue; // domingo fechado
             }
+
+            $quantidade = mt_rand(2, 6);
+
+            for ($i = 0; $i < $quantidade; $i++) {
+                $hora = mt_rand(9, 17);
+                $minuto = [0, 15, 30, 45][mt_rand(0, 3)];
+                $inicio = $dia->copy()->setTime($hora, $minuto);
+
+                $cliente = $clientes[mt_rand(0, count($clientes) - 1)];
+                $prof = $profissionais[mt_rand(0, count($profissionais) - 1)];
+
+                $itens = collect($catalogo)->shuffle()->take(mt_rand(1, 2));
+
+                // Passado já resolvido: ~70% concluído, ~15% faltou, ~15% cancelado.
+                $sorte = mt_rand(1, 100);
+                $status = $sorte <= 70 ? 'concluido' : ($sorte <= 85 ? 'nao_compareceu' : 'cancelado');
+
+                $this->criarAgendamento($unidade, $cliente, $prof, $inicio, $status, $itens);
+            }
+        }
+
+        mt_srand();
+    }
+
+    /** @param  Collection<int, Servico>  $itens */
+    private function criarAgendamento(Unidade $unidade, Cliente $cliente, User $prof, Carbon $inicio, string $status, $itens): void
+    {
+        $duracao = (int) $itens->sum('duracao_minutos');
+
+        $agendamento = Agendamento::create([
+            'unidade_id' => $unidade->id,
+            'cliente_id' => $cliente->id,
+            'profissional_id' => $prof->id,
+            'data_hora_inicio' => $inicio,
+            'data_hora_fim' => $inicio->copy()->addMinutes($duracao),
+            'status' => $status,
+            'origem' => 'equipe',
+            'valor_total' => (float) $itens->sum('preco'),
+            'observacoes' => self::MARCA_DEMO,
+        ]);
+
+        foreach ($itens as $servico) {
+            $agendamento->itens()->create([
+                'servico_id' => $servico->id,
+                'preco' => $servico->preco,
+                'duracao_minutos' => $servico->duracao_minutos,
+            ]);
         }
     }
 }
