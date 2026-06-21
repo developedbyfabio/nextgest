@@ -61,11 +61,15 @@ sugere um template de partida).
   > `Aparencia::urlArquivo($path)`.
 
 ## Como é aplicado
-O layout do portal injeta, num `style` do `<body>`:
-`--cor-principal`, `--cor-secundaria`, `--cor-fundo`, `--cor-superficie`,
-`--cor-texto`, `--cor-texto-suave`, `--cor-sobre-principal` e o `--color-accent` do
-Flux (faz botões primários/foco usarem a cor da marca). Nada de CSS por tenant
-compilado. No **painel**, aplica-se só o acento (`cssVarsAcento()`).
+O layout do portal **e o do painel** injetam, num `style` do `<body>`, as CSS vars
+completas (`cssVars()`): `--cor-principal`, `--cor-secundaria`, `--cor-fundo`,
+`--cor-superficie`, `--cor-texto`, `--cor-texto-suave`, `--cor-sobre-principal` e o
+`--color-accent` do Flux. Nada de CSS por tenant compilado.
+
+> [!info] `cssVarsAcento()` ainda existe
+> Foi pensado para "só acento" no painel. Hoje o painel usa `cssVars()` (tema
+> completo, Etapa B). `cssVarsAcento()` segue disponível para superfícies que queiram
+> só o realce (sem pintar fundo).
 
 ## Defaults
 Todo tenant nasce com tema finalizado mesmo sem registro salvo; o `nextgest:demo`
@@ -84,19 +88,32 @@ Os componentes `x-ng.option-card` e `x-ng.empty` têm a prop **`themed`**:
 > aplica `.dark`). No portal, sempre passar `themed`. Ver
 > [[Auditoria de UI (Portal e Painel)]].
 
-## Portal do cliente elevado (2026-06-21)
+## Portal do cliente elevado (Etapa A, 2026-06-21)
 UI do portal levada ao nível "de ponta": cartões/empties temáticos, transições
 suaves entre passos do wizard (`.ng-fade-in`), grade de horários e resumo com a cor
 da marca, e **cancelamento por `flux:modal`** (substitui o `wire:confirm` nativo).
 Ver [[Auditoria de UI (Portal e Painel)]] e [[Padrao de UI-UX (Design System)]].
 
+## Painel e auth tematizados (Etapa B, 2026-06-21)
+O **shell do painel** (sidebar/topbar/logo/títulos) e as **telas de auth** passam a
+refletir a identidade completa do estabelecimento via `cssVars()`.
+- **Dark-safe automático:** `Aparencia::superficieEscura()` decide pela luminância da
+  superfície; quando escura, os layouts ligam a classe **`.dark`** no `<html>` para os
+  componentes Flux (cards, inputs, dropdowns) acompanharem a marca. Antes o painel
+  seguia o modo do sistema (`@fluxAppearance`) — agora segue o tema do tenant.
+- **Classes reutilizáveis** (estendidas do portal): `.ng-surface` (card/superfície da
+  marca), `.ng-surface-muted`, `.ng-divider`, `.ng-surface-interactive`.
+- O **dashboard** foi reconstruído sobre `.ng-surface` (KPIs/gráficos), dark-safe —
+  ver [[Dashboard do Dono]].
+
 ## Pontos em aberto / próximos (Etapa 6 — polimento)
-- Aplicar a identidade também no **painel** e nas telas de **auth** do tenant (hoje o
-  acento já entra no painel via `cssVarsAcento()`; falta o polimento amplo).
-- Login/registrar ainda usam o layout "split" da marca Nextgest, não o tema do
-  estabelecimento.
+- **Telas internas do painel** (agenda, cadastros) e o **kanban** ainda usam
+  superfícies do Flux; herdam o `.dark` correto, mas o polimento temático fino fica
+  para a Etapa C (kanban) e seguintes.
 - **A confirmar:** quanto dos ganchos `menu_posicao`/`icone_estilo` já têm efeito
   visual real (estão nos presets/JSON, mas o consumo na UI pode ser parcial).
+- Possível melhoria: override de modo claro/escuro por usuário da equipe (hoje o
+  painel segue a marca do tenant).
 
 ## Relacionado
 - Templates de aparência (presets): [[Decisões de Arquitetura]] (D30) — ✅ feito.

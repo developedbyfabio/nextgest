@@ -46,6 +46,21 @@ específicas de banco. Importa para os testes (SQLite) baterem com produção (M
 O `nextgest:demo` enriquece o tenant com ~90 dias de histórico determinístico
 (semente fixa, marcado `[demo]`, idempotente) para os gráficos terem forma.
 
+## Elevação visual (Etapa B, 2026-06-21)
+Dashboard levado ao nível "de ponta", dark-safe:
+- **KPIs** (`x-ng.indicador`) e **gráficos** (`x-ng.grafico`) reconstruídos sobre
+  `.ng-surface` (superfície da marca) — ícone em chip, número maior, hover sutil.
+- **Chart.js** com eixos/legendas/**tooltips** nas cores da marca (lidas das CSS vars
+  em runtime via `ngVar()`), grade sutil legível no claro e no escuro, doughnut com
+  `cutout`. Mantém `wire:ignore` (Livewire não recria o canvas; atualiza via evento
+  `metricas-atualizadas`).
+- **Estados:** skeleton (`.ng-skeleton-portal`) nos KPIs durante o recálculo, dim nos
+  gráficos, **empty** temático por bloco e **estado de ERRO recuperável**
+  (`try/catch` em `Dashboard::dados()` → `erro=true` + botão "Tentar de novo").
+- **Filtros** período/unidade com spinner discreto; responsivo 2→3→5 colunas.
+- Ver [[Identidade Visual do Estabelecimento (Tema)]] e
+  [[Auditoria de UI (Portal e Painel)]].
+
 ## Relacionado
 - [[Decisões de Arquitetura]] (D31)
 - [[Modelo de Dados - Núcleo de Agendamento]] (agendamentos / `agendamento_servico`)

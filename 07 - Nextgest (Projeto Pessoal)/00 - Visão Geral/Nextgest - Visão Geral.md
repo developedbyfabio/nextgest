@@ -10,9 +10,9 @@ tags: [nextgest, saas, agendamento]
 # Nextgest — Visão Geral
 
 > [!note] Estado atual (21/06/2026)
-> - **Suíte verde: 146 testes** (Pest) + testes de fumaça HTTP.
-> - **Portal do cliente elevado** a UI "de ponta" (tema, modais, micro-interações,
->   estados) — ver [[Auditoria de UI (Portal e Painel)]].
+> - **Suíte verde: 151 testes** (Pest) + testes de fumaça HTTP.
+> - **Portal do cliente elevado** (Etapa A) e **painel + auth tematizados + dashboard
+>   elevado** (Etapa B), tudo dark-safe — ver [[Auditoria de UI (Portal e Painel)]].
 > - **Migrou de servidor:** saiu da VM VirtualBox (`192.168.3.100`, Ubuntu 24.04,
 >   PHP 8.4) para o **servidor de dev compartilhado `192.168.11.210`** (Ubuntu 22.04,
 >   PHP 8.5.7), com repositório no **GitHub**.
@@ -128,11 +128,16 @@ funciona, testes de fumaça HTTP adicionados. **91 testes.** Sistema navegável.
   quadros Atendimento e CRM semeados no tenant; colunas/cartões editáveis; DnD via
   SortableJS + menu "Mover para" acessível. Permissões `ver_kanban_atendimento`
   (inclui Recepção) e `gerir_kanban`. Ver [[Kanban (Atendimento e CRM)]].
-- **Etapa 6 (em andamento)** — polimento. **Portal do cliente concluído**
-  (2026-06-21): UI elevada ao nível de ponta com tema do estabelecimento, modais,
-  micro-interações e estados — ver [[Auditoria de UI (Portal e Painel)]]. **Pendente:**
-  aplicar o tema também no painel e nas telas de auth do tenant de forma ampla;
-  revisar densidade/affordances das áreas de gestão; polir dashboard e kanban.
+- **Etapa 6 (em andamento)** — polimento, em sub-etapas:
+  - **Etapa A** (✅ 2026-06-21): portal do cliente elevado (tema, modais,
+    micro-interações, estados).
+  - **Etapa B** (✅ 2026-06-21): shell do painel + telas de auth refletindo a
+    identidade completa do tenant (dark-safe via `.dark` automático por luminância da
+    superfície) e **dashboard** elevado (KPIs/gráficos em superfície da marca,
+    Chart.js nas cores da marca, estados loading/vazio/erro).
+  - **Etapa C** (pendente): kanban.
+  - Pendente também: polimento temático fino das telas internas (agenda/cadastros).
+  Ver [[Auditoria de UI (Portal e Painel)]].
 
 **Migração de servidor (junho/2026):** clone novo em `192.168.11.210` exigiu ajustes
 de ambiente (drivers `file`/`sync`, IP nos `central_domains`) e reparo de um tenant

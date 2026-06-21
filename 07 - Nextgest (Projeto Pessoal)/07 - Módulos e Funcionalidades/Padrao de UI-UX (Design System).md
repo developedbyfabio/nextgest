@@ -81,7 +81,7 @@ não um protótipo.
 - **Navegação** com `wire:navigate` (barra de progresso nativa) e estados ativos
   na sidebar via `:current`.
 
-## Portal do cliente — variantes temáticas (2026-06-21)
+## Portal do cliente — variantes temáticas (Etapa A, 2026-06-21)
 O portal reflete a marca do estabelecimento (não o `.dark` do sistema). Por isso os
 componentes compartilhados usados ali recebem a prop **`themed`** e classes próprias
 em `app.css`: `.ng-card-portal` (cartão de opção/lista), `.ng-skeleton-portal`
@@ -89,3 +89,13 @@ em `app.css`: `.ng-card-portal` (cartão de opção/lista), `.ng-skeleton-portal
 `App\Support\Aparencia` e funcionam com superfície clara OU escura. Ações destrutivas
 no portal usam `flux:modal` (não `wire:confirm` nativo). Ver
 [[Auditoria de UI (Portal e Painel)]] e [[Identidade Visual do Estabelecimento (Tema)]].
+
+## Painel + dashboard temáticos (Etapa B, 2026-06-21)
+O shell do painel e as telas de auth também refletem a marca (`cssVars()`), com a
+classe **`.dark`** ligada automaticamente quando a superfície da marca é escura
+(`Aparencia::superficieEscura()`) — assim os componentes Flux acompanham. Cards de
+superfície da marca usam `.ng-surface` (+ `.ng-surface-muted`, `.ng-divider`,
+`.ng-surface-interactive`). O dashboard foi reconstruído sobre essas classes, com
+Chart.js nas cores da marca (eixos/tooltip lidos das CSS vars em runtime) e estados
+de loading/vazio/erro. Regra de ouro mantida: **dark-safe** — nada de `bg-white`/
+`zinc` fixo onde deveria ser `--cor-superficie`. Ver [[Dashboard do Dono]].

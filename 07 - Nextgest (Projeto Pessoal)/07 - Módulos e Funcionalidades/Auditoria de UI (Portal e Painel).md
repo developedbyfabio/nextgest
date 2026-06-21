@@ -35,20 +35,26 @@ tags: [nextgest, ui, auditoria, portal, painel]
 - 🎨 **(elevado)** Sem transição entre passos do wizard; faltava hierarquia/realce
   no resumo e na grade de horários.
 
-## Painel do dono (auditoria; **não** alterado nesta etapa)
-> Passada mais leve (render smoke + testes), pois o foco desta etapa é o portal.
-- ✅ **Login** — split com tema do tenant.
-- ✅ **Dashboard** — renderiza indicadores; gráficos Chart.js aparecem com dados e
-  caem em **empty-state** ("Sem dados no período") quando não há — não está quebrado.
-  Faturamento é ESTIMADO (ver [[Dashboard do Dono]]).
-- ✅ **Kanban** — renderiza quadros/colunas; DnD via SortableJS (JS).
+## Painel do dono
+> Etapa A: auditoria. **Etapa B (2026-06-21): shell + auth tematizados e dashboard
+> elevado.**
+- ✅ **Login** — split com tema do tenant; **dark-safe** (`.dark` automático).
+- ✅ **(elevado na Etapa B) Shell do painel** — sidebar/topbar/logo/títulos refletem a
+  identidade completa do tenant (`cssVars()`); modo escuro do Flux ligado quando a
+  superfície da marca é escura. Verificado em **superfície custom escura**: 0
+  `bg-white`/`zinc` fixos no nosso markup; Flux acompanha via `.dark`.
+- ✅ **(elevado na Etapa B) Dashboard** — KPIs/gráficos em `.ng-surface` (dark-safe),
+  Chart.js nas cores da marca, estados loading/vazio/erro, filtros polidos,
+  responsivo. Faturamento ESTIMADO. Ver [[Dashboard do Dono]].
+- ✅ **Kanban** — renderiza quadros/colunas; DnD via SortableJS. Herda o shell
+  temático; polimento fino fica para a **Etapa C** (não tocado aqui).
 - ✅ **Cadastros** (unidades/serviços/equipe/horários/papéis/bloqueios) e **Agenda**
-  — cobertos por testes (1B/1D); não re-auditados tela a tela nesta rodada.
+  — cobertos por testes (1B/1D); herdam o `.dark` correto; polimento temático fino
+  pendente (rodadas futuras).
 - ✅ **Aparência/Tema** e **Onboarding** (`/admin/...`) — existem (editor + prévia;
   wizard de 5 etapas).
-- 🎨 **Pendente (Etapa 6):** aplicar a identidade do tenant também no **painel** e
-  nas telas de **auth** de forma ampla (hoje o painel usa só o acento). Dashboard e
-  kanban entram em rodadas próprias de polimento.
+- 🎨 **Pendente:** polimento temático fino das telas internas (agenda/cadastros) e do
+  kanban; possível override de claro/escuro por usuário da equipe.
 
 ## Lição (anti-divergência teste×navegador)
 `Livewire::test()` verde **não** garante boa aparência: ele não exercita tema/CSS
