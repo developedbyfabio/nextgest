@@ -168,6 +168,12 @@ funciona, testes de fumaça HTTP adicionados. **91 testes.** Sistema navegável.
     (16 fontes, Google Fonts sob demanda) e **uploads** corrigidos (limite 2 MB coerente
     com o PHP; `mimes:png,jpg,jpeg,webp`). Mesmo alinhamento no onboarding. Ver
     [[Bug - Aparencia (upload, fonte e campos desconectados)]].
+  - **Prévia = portal real** (✅ 2026-06-21): a prévia renderiza os **mesmos componentes**
+    do portal (`x-portal.cabecalho/capa/como-funciona/servico`) — fim da divergência:
+    **imagem de cabeçalho e fundo agora aparecem no portal real**. Prévia em **carrossel**
+    das 4 telas do cliente (Início/Login/Cliente/Agendar), moldura de celular, alternador
+    claro/escuro, template aceso e Salvar com reload. Ver
+    [[Identidade Visual do Estabelecimento (Tema)]].
 
 **Migração de servidor (junho/2026):** clone novo em `192.168.11.210` exigiu ajustes
 de ambiente (drivers `file`/`sync`, IP nos `central_domains`) e reparo de um tenant

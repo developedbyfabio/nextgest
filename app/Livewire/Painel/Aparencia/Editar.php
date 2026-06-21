@@ -31,6 +31,9 @@ class Editar extends Component
     use AuthorizesRequests;
     use WithFileUploads;
 
+    // Template (preset) atualmente selecionado — para destacá-lo na tela.
+    public string $template = '';
+
     public string $cor_principal = '';
 
     public string $cor_secundaria = '';
@@ -56,7 +59,15 @@ class Editar extends Component
     public function mount(): void
     {
         $this->authorize('gerir_aparencia');
-        $this->preencher(Aparencia::doTenant());
+
+        $atual = Aparencia::doTenant();
+        $this->preencher($atual);
+        $this->template = $atual['template'] ?? '';
+
+        // Mensagem de sucesso após o reload disparado pelo salvar (flash).
+        if (session('aparencia_salva')) {
+            Flux::toast('Aparência salva.', variant: 'success');
+        }
     }
 
     /** @param array<string,mixed> $a */
@@ -81,6 +92,7 @@ class Editar extends Component
         }
 
         $this->preencher(array_merge(Aparencia::doTenant(), $template));
+        $this->template = $chave;
         Flux::toast('Template aplicado — ajuste e salve.', variant: 'success');
     }
 
@@ -125,7 +137,7 @@ class Editar extends Component
         }
     }
 
-    public function salvar(): void
+    public function salvar()
     {
         $this->authorize('gerir_aparencia');
 
@@ -142,6 +154,7 @@ class Editar extends Component
         // Salva só os campos do modelo D36 (marca + tipografia + imagens). As
         // superfícies permanecem nos valores padrão e não são editadas aqui.
         Aparencia::salvar([
+            'template' => $this->template,
             'cor_principal' => $this->cor_principal,
             'cor_secundaria' => $this->cor_secundaria,
             'fonte' => $this->fonte,
@@ -151,7 +164,12 @@ class Editar extends Component
             'fundo_imagem' => $this->fundo_imagem,
         ]);
 
-        Flux::toast('Aparência salva.', variant: 'success');
+        // Recarrega a página (reload completo, não SPA) para o novo tema (acento/
+        // fonte/tamanho/imagens) aplicar no próprio painel imediatamente. A mensagem
+        // de sucesso aparece após o reload (flash → toast no mount).
+        session()->flash('aparencia_salva', true);
+
+        return $this->redirect(route('painel.aparencia', ['tenant' => tenant('id')]), navigate: false);
     }
 
     /**

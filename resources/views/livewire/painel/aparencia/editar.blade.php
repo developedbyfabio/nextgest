@@ -19,7 +19,16 @@
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     @foreach ($templates as $chave => $t)
                         <button type="button" wire:click="aplicarTemplate('{{ $chave }}')"
-                            class="ng-card-interactive flex flex-col gap-2 p-3 text-left">
+                            @class([
+                                'ng-card-interactive relative flex flex-col gap-2 p-3 text-left',
+                                'ring-2 ring-[var(--color-accent)] ring-offset-2 dark:ring-offset-zinc-900' => $template === $chave,
+                            ])
+                            aria-pressed="{{ $template === $chave ? 'true' : 'false' }}">
+                            @if ($template === $chave)
+                                <span class="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full text-white" style="background-color: var(--color-accent);">
+                                    <flux:icon name="check" class="size-3.5" />
+                                </span>
+                            @endif
                             <div class="flex gap-1">
                                 <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_principal'] }}"></span>
                                 <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_secundaria'] }}"></span>
@@ -107,8 +116,8 @@
         <div class="lg:col-span-1">
             <div class="sticky top-6 flex flex-col gap-3">
                 <flux:heading size="sm">Prévia do portal</flux:heading>
+                <flux:text class="text-xs text-zinc-500">As telas que o cliente vê — deslize entre elas.</flux:text>
                 <x-ng.previa-portal :aparencia="$aparencia" :nome="tenant('nome')" />
-                <flux:text class="text-center text-xs text-zinc-500">Alterne claro/escuro na prévia · atualiza enquanto você edita.</flux:text>
             </div>
         </div>
     </div>

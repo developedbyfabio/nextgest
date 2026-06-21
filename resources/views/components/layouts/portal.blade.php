@@ -28,41 +28,29 @@
 
     {{-- Portal do cliente: mobile-first. Coluna estreita centralizada. --}}
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col shadow-sm" style="background-color: var(--cor-superficie);">
-        <header class="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur"
-            style="background-color: color-mix(in srgb, var(--cor-superficie) 90%, transparent); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
-            <a href="{{ route('tenant.home', ['tenant' => $tenantId]) }}" class="flex items-center gap-2" wire:navigate>
-                @if ($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ tenant('nome') }}" class="size-8 rounded object-contain" />
-                @else
-                    <flux:icon name="calendar-days" class="size-6" style="color: var(--cor-principal);" />
-                @endif
-                <span class="text-base font-semibold">{{ tenant('nome') }}</span>
-            </a>
+        <x-portal.cabecalho :nome="tenant('nome')" :logoUrl="$logoUrl" :href="route('tenant.home', ['tenant' => $tenantId])">
+            <x-ng.seletor-tema />
 
-            <div class="flex items-center gap-1">
-                <x-ng.seletor-tema />
-
-                @auth('cliente')
-                    <flux:dropdown position="bottom" align="end">
-                        <flux:button variant="ghost" size="sm" icon="user-circle" />
-                        <flux:menu>
-                            <flux:menu.item icon="user">{{ auth('cliente')->user()->nome }}</flux:menu.item>
-                            <flux:menu.separator />
-                            <form method="POST" action="{{ route('cliente.logout', ['tenant' => $tenantId]) }}">
-                                @csrf
-                                <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" variant="danger" class="w-full">
-                                    Sair
-                                </flux:menu.item>
-                            </form>
-                        </flux:menu>
-                    </flux:dropdown>
-                @else
-                    <flux:button :href="route('cliente.login', ['tenant' => $tenantId])" size="sm" variant="primary" wire:navigate>
-                        Entrar
-                    </flux:button>
-                @endauth
-            </div>
-        </header>
+            @auth('cliente')
+                <flux:dropdown position="bottom" align="end">
+                    <flux:button variant="ghost" size="sm" icon="user-circle" />
+                    <flux:menu>
+                        <flux:menu.item icon="user">{{ auth('cliente')->user()->nome }}</flux:menu.item>
+                        <flux:menu.separator />
+                        <form method="POST" action="{{ route('cliente.logout', ['tenant' => $tenantId]) }}">
+                            @csrf
+                            <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" variant="danger" class="w-full">
+                                Sair
+                            </flux:menu.item>
+                        </form>
+                    </flux:menu>
+                </flux:dropdown>
+            @else
+                <flux:button :href="route('cliente.login', ['tenant' => $tenantId])" size="sm" variant="primary" wire:navigate>
+                    Entrar
+                </flux:button>
+            @endauth
+        </x-portal.cabecalho>
 
         <main class="flex-1 px-4 py-5">
             {{ $slot }}

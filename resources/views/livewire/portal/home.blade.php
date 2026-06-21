@@ -152,30 +152,13 @@
             </div>
         </flux:modal>
     @else
-        {{-- Visitante: identidade do estabelecimento + chamada para agendar --}}
-        <div class="ng-fade-in flex flex-col items-center gap-4 rounded-2xl border px-6 py-10 text-center"
-            style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); background-color: color-mix(in srgb, var(--cor-principal) 6%, var(--cor-superficie));">
-            <div class="flex size-16 items-center justify-center rounded-2xl shadow-sm" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">
-                <flux:icon name="scissors" class="size-8" />
-            </div>
-            <div>
-                <flux:heading size="xl">{{ tenant('nome') }}</flux:heading>
-                <flux:text class="mt-1" style="color: var(--cor-texto-suave);">{{ $descricao ?: 'Agende seu horário online, em poucos toques.' }}</flux:text>
-            </div>
-        </div>
+        {{-- Visitante: identidade do estabelecimento + chamada para agendar.
+             Usa os MESMOS componentes da prévia (capa com imagem de cabeçalho,
+             passos). O fundo entra pelo layout do portal. --}}
+        @php($headerUrl = \App\Support\Aparencia::urlArquivo(\App\Support\Aparencia::doTenant()['header_imagem']))
+        <x-portal.capa :nome="tenant('nome')" :descricao="$descricao" :header-url="$headerUrl" />
 
-        <div class="flex flex-col gap-3">
-            <flux:text class="text-center text-sm font-medium" style="color: var(--cor-texto-suave);">Como funciona</flux:text>
-            <div class="grid grid-cols-3 gap-2 text-center">
-                @php($passos = [['user-plus', 'Crie sua conta'], ['scissors', 'Escolha o serviço'], ['calendar-days', 'Marque o horário']])
-                @foreach ($passos as $i => [$icone, $texto])
-                    <div class="flex flex-col items-center gap-2 rounded-xl border p-3" style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent);">
-                        <span class="flex size-9 items-center justify-center rounded-full text-sm font-bold" style="background-color: color-mix(in srgb, var(--cor-principal) 12%, transparent); color: var(--cor-principal);">{{ $i + 1 }}</span>
-                        <span class="text-xs" style="color: var(--cor-texto-suave);">{{ $texto }}</span>
-                    </div>
-                @endforeach
-            </div>
-        </div>
+        <x-portal.como-funciona />
 
         <div class="flex flex-col gap-2">
             <flux:button :href="route('cliente.registrar', ['tenant' => tenant('id')])" variant="primary" icon="calendar-days" class="w-full" wire:navigate>

@@ -79,18 +79,42 @@ sugere um template de partida).
   prévia ao vivo refletir qualquer seleção antes de salvar. Lista fechada (sem
   entrada do usuário → sem injeção; a `href` ainda é escapada).
 
-## Prévia ao vivo (`x-ng.previa-portal`)
-- Componente reutilizável que renderiza um recorte do portal do cliente aplicando as
-  CSS vars correntes — como a identidade é só variáveis, a prévia reage em tempo real
-  às escolhas do form. Reutilizado pela edição e pelo onboarding
-  ([[Onboarding Guiado de Estabelecimento]]).
-- **Alternador claro/escuro PRÓPRIO (2026-06-21):** a prévia tem um toggle Claro/Escuro
-  (Alpine `x-data="{ dark }"`) que aplica a classe `is-dark` **só no container** da
-  prévia. As superfícies vêm de `.ng-previa` / `.ng-previa.is-dark` (definidas no
-  `app.css`), **independentes** do modo do painel ao redor (um `.dark` herdado do
-  `<html>` não vaza para dentro). O acento/secundária/tipografia entram inline por
-  `cssVarsAcento()`. Assim o dono vê fielmente os dois modos sem trocar o tema do painel.
-  Badge "Entrar" e CTA usam `--cor-sobre-principal` (contraste correto em acento claro).
+## Prévia = portal REAL (componentes compartilhados) + carrossel (2026-06-21)
+Antes a prévia era uma **maquete genérica** divergente do portal (por isso a imagem de
+cabeçalho/fundo "não apareciam"). Agora a prévia renderiza os **mesmos componentes** do
+portal do cliente — **fonte de verdade única**.
+
+- **Componentes Blade compartilhados** (`resources/views/components/portal/`):
+  - `x-portal.cabecalho` — barra (logo + nome + ações via slot). Usado pelo **layout do
+    portal real** e pela prévia.
+  - `x-portal.capa` — hero/capa que mostra a **imagem de cabeçalho** como banner (véu na
+    cor da marca p/ legibilidade). Usado pela **home do visitante (portal real)** e pela
+    prévia. É o que faz a imagem de cabeçalho **aparecer de verdade** no portal.
+  - `x-portal.como-funciona` — passos. `x-portal.servico` — linha de serviço.
+  - O **fundo** (`fundo_imagem`) entra no `<body>` pelo layout do portal (e na moldura da
+    prévia). Imagens servidas por `Aparencia::urlArquivo()` (rota por caminho, anti
+    path-traversal).
+  - > [!warning] Diretiva Blade dentro de tag de componente Flux quebra a compilação
+    > `<flux:heading @if(...) style=... @endif>` dá `ParseError`. Em `x-portal.capa` o
+    > estilo condicional é resolvido numa variável PHP e o título usa `<div>` simples.
+- **Carrossel das telas do cliente** (estilo Instagram, Alpine, somente leitura): 4 telas
+  — **Início** (deslogado/capa), **Login**, **Cliente** (home logado) e **Agendar** (fluxo
+  de serviços) — com setas + dots, dentro de uma **moldura de celular** (mais alta). Dados
+  de exemplo; reusa os componentes acima. Não toca no `Agendador`.
+- **Alternador claro/escuro PRÓPRIO:** toggle Alpine aplica `is-dark` **só na moldura** da
+  prévia (todas as telas). Superfícies por `.ng-previa` / `.ng-previa.is-dark` (no
+  `app.css`), **independentes** do modo do painel. Acento/secundária/tipografia inline por
+  `cssVarsAcento()`. Badge/CTA usam `--cor-sobre-principal` (contraste em acento claro).
+- **Live preview:** a prévia é re-renderizada pelo componente `Editar` a cada
+  `wire:model.live` (valores ainda **não salvos**); o estado do carrossel/toggle (Alpine)
+  sobrevive ao morph (root com `wire:key`). Por isso usamos reuso de componentes Blade, não
+  um iframe do portal real (que não mostraria valores não-salvos).
+- **Template aceso:** o template selecionado fica destacado (anel na cor de acento +
+  marca de selecionado); `Editar::$template` guarda a escolha, persiste em `aparencia` e é
+  refletido ao reabrir.
+- **Salvar recarrega:** após persistir, `Editar::salvar()` faz `redirect(..., navigate:
+  false)` (reload completo) para o novo tema aplicar no próprio painel; a mensagem de
+  sucesso aparece após o reload (flash → `Flux::toast` no `mount`).
 
 ## Uploads por tenant (Etapa 2, D35)
 - Logo/cabeçalho/fundo gravados no disco `public` isolado por tenant
