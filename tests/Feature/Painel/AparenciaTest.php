@@ -85,15 +85,22 @@ it('reflete as escolhas na prévia ao vivo (CSS vars)', function () {
         ->assertSee('--cor-principal: #abcdef', false);
 });
 
-it('renderiza o componente reutilizável de prévia com a aparência recebida', function () {
+it('renderiza a prévia: acento inline + superfícies por classe + alternador claro/escuro', function () {
     $html = Blade::render(
         '<x-ng.previa-portal :aparencia="$a" nome="Estúdio Teste" />',
-        ['a' => ['cor_principal' => '#ff0099', 'cor_texto' => '#101010']]
+        ['a' => ['cor_principal' => '#ff0099']]
     );
 
-    expect($html)->toContain('--cor-principal: #ff0099');
-    expect($html)->toContain('--cor-texto: #101010');
-    expect($html)->toContain('Estúdio Teste');
+    // A marca (acento) é inline; as superfícies vêm das classes .ng-previa /
+    // .ng-previa.is-dark (claro/escuro), alternadas pelo toggle da própria prévia.
+    expect($html)->toContain('--cor-principal: #ff0099')
+        ->toContain('ng-previa')
+        ->toContain("'is-dark': dark")
+        ->toContain('Estúdio Teste');
+
+    // Não deve fixar superfícies inline (senão o alternador claro/escuro não pegaria).
+    expect($html)->not->toContain('--cor-fundo: #')
+        ->not->toContain('--cor-superficie: #');
 });
 
 it('bloqueia quem não tem gerir_aparencia (Profissional, 403)', function () {

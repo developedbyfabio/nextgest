@@ -16,7 +16,8 @@ it('o portal respeita o modo (fluxAppearance) e oferece o seletor de tema', func
     $html = $this->get('/lojamodo')->assertOk()->content();
 
     expect($html)->toContain('Flux.applyAppearance')   // @fluxAppearance ativo
-        ->and($html)->toContain('<html lang="pt-BR">') // sem .dark forçado no servidor
+        ->and($html)->toContain('<html lang="pt-BR"')  // sem .dark forçado no servidor
+        ->and($html)->not->toContain('class="dark"')
         ->and($html)->toContain('Claro')
         ->and($html)->toContain('Escuro')
         ->and($html)->toContain('Sistema');

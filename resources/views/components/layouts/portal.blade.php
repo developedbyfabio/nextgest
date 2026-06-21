@@ -1,5 +1,10 @@
+@php($aparencia = \App\Support\Aparencia::doTenant())
+@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
+@php($fundoUrl = \App\Support\Aparencia::urlArquivo($aparencia['fundo_imagem']))
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+{{-- font-size base no <html>: faz o "tamanho base" escalar a UI inteira (os
+     utilitários do Tailwind são rem, relativos ao html). --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="font-size: {{ $aparencia['tamanho_base'] }};">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -15,9 +20,6 @@
     {{-- Tipografia da marca: carrega a fonte (Google) escolhida pelo tenant, se houver. --}}
     {!! \App\Support\Aparencia::linkFonteGoogle() !!}
 </head>
-@php($aparencia = \App\Support\Aparencia::doTenant())
-@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
-@php($fundoUrl = \App\Support\Aparencia::urlArquivo($aparencia['fundo_imagem']))
 <body
     class="min-h-screen antialiased"
     style="{{ \App\Support\Aparencia::cssVarsAcento($aparencia) }}; background-color: var(--cor-fundo); color: var(--cor-texto);@if ($fundoUrl) background-image: url('{{ $fundoUrl }}'); background-size: cover; background-position: center; background-attachment: fixed;@endif"

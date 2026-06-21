@@ -28,6 +28,13 @@ estilo de ícone).
 | Uploads (logo/cabeçalho/fundo) | **Quebrado** | Ver causa-raiz abaixo. |
 | Layout (menu_posicao / icone_estilo) | **Na tela, mas desconectado** | Salvavam no JSON, **nenhum** código consumia → controles mortos. |
 
+> [!warning] Correção posterior (2026-06-21): a causa real do 500 era outra
+> O 500 que persistiu **não** era o limite de 2 MB do PHP (hipótese abaixo,
+> incompleta). A causa real é o **disco temporário do Livewire suffixado por tenant**
+> (gravado central no upload, lido no disco do tenant no `/update`). Ver
+> [[Bug - Upload 500 (disco temp do Livewire x tenancy)]]. O limite de 2 MB segue
+> válido como restrição de tamanho, mas não era o motivo do erro 500.
+
 ## Causa-raiz do upload ("Falha no upload do arquivo headerUpload")
 O PHP do servidor tem **`upload_max_filesize = 2M`** (e `post_max_size = 8M`), mas a
 tela **prometia 4 MB** para cabeçalho e fundo. Arquivos acima de 2 MB são barrados pelo

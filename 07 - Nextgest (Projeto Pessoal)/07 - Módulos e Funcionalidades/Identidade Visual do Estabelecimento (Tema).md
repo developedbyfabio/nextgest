@@ -58,12 +58,15 @@ sugere um template de partida).
   - **Cores da marca:** só **Principal (acento)** e **Secundária (realces)**. As 4
     cores de **superfície** (fundo/superfície/texto/texto-suave) foram **removidas**
     da tela — não controlavam o app real (as superfícies seguem claro/escuro), eram
-    "campos que mentiam". A prévia mostra o portal em **modo claro**.
+    "campos que mentiam". A prévia tem um **alternador claro/escuro próprio** (ver
+    abaixo) para o dono ver os dois modos.
   - **Tipografia:** **fonte** (catálogo de 16 — `Aparencia::FONTES`, sistema +
     Google Fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito,
     Raleway, Work Sans, Space Grotesk, Playfair Display, Merriweather, Georgia,
-    JetBrains Mono) e **tamanho base** (14–18px). Ambos **aplicam** no portal e no
-    painel via `cssVarsAcento()` (font-family/font-size no `<body>`).
+    JetBrains Mono) e **tamanho base** (14–18px). A **fonte** vai no `<body>`
+    (`cssVarsAcento`); o **tamanho base** vai no **`<html>`** (font-size) — os
+    utilitários do Tailwind são `rem`, então só no `<body>` não escalava (bug
+    corrigido). Aplicam no portal e no painel.
   - **Imagens:** logo, cabeçalho, fundo — `image|mimes:png,jpg,jpeg,webp|max:2048`
     (**2 MB**), gravadas no disco `public` do tenant e referenciadas por
     `urlArquivo()`. A prévia só usa `temporaryUrl()` se o arquivo for previewável
@@ -81,6 +84,13 @@ sugere um template de partida).
   CSS vars correntes — como a identidade é só variáveis, a prévia reage em tempo real
   às escolhas do form. Reutilizado pela edição e pelo onboarding
   ([[Onboarding Guiado de Estabelecimento]]).
+- **Alternador claro/escuro PRÓPRIO (2026-06-21):** a prévia tem um toggle Claro/Escuro
+  (Alpine `x-data="{ dark }"`) que aplica a classe `is-dark` **só no container** da
+  prévia. As superfícies vêm de `.ng-previa` / `.ng-previa.is-dark` (definidas no
+  `app.css`), **independentes** do modo do painel ao redor (um `.dark` herdado do
+  `<html>` não vaza para dentro). O acento/secundária/tipografia entram inline por
+  `cssVarsAcento()`. Assim o dono vê fielmente os dois modos sem trocar o tema do painel.
+  Badge "Entrar" e CTA usam `--cor-sobre-principal` (contraste correto em acento claro).
 
 ## Uploads por tenant (Etapa 2, D35)
 - Logo/cabeçalho/fundo gravados no disco `public` isolado por tenant

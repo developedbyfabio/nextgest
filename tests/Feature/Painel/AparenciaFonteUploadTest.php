@@ -141,6 +141,41 @@ it('o link "todas as fontes" cobre cada família Google do catálogo', function 
     }
 });
 
+it('usa disco temporário CENTRAL fora da tenancy (guard do 500 do upload)', function () {
+    // Causa do 500: o endpoint /livewire/upload-file roda SEM tenancy (grava o temp
+    // no disco central), mas /update e salvar rodam COM tenancy. Se o disco temp for
+    // suffixado por tenant (ex.: 'local'), o arquivo gravado no upload "some" ao ser
+    // lido no /update → UnableToRetrieveMetadata → 500. Guard: o disco temp tem de
+    // ser um disco dedicado, local, e FORA de tenancy.filesystem.disks.
+    $disk = config('livewire.temporary_file_upload.disk');
+
+    expect($disk)->not->toBeNull()
+        ->and(config("filesystems.disks.{$disk}"))->not->toBeNull()
+        ->and(config("filesystems.disks.{$disk}.driver"))->toBe('local')
+        ->and(config('tenancy.filesystem.disks'))->not->toContain($disk);
+});
+
+it('restringe o upload temporário a imagens até 2 MB', function () {
+    $rules = (array) config('livewire.temporary_file_upload.rules');
+
+    expect($rules)->toContain('max:2048')
+        ->toContain('mimes:png,jpg,jpeg,webp');
+});
+
+it('faz upload de fundo válido, grava no disco do tenant e passa a referenciar', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    Livewire::test(Editar::class)
+        ->set('fundoUpload', UploadedFile::fake()->image('fundo.webp', 1200, 800))
+        ->call('salvar')
+        ->assertHasNoErrors();
+
+    $fundo = Aparencia::doTenant()['fundo_imagem'];
+    expect($fundo)->toStartWith('aparencia/');
+    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($fundo);
+});
+
 it('faz upload de cabeçalho válido, grava no disco do tenant e passa a referenciar', function () {
     Storage::fake('public');
     $this->actingAs(usuarioComPapel('Dono'), 'web');
@@ -156,24 +191,24 @@ it('faz upload de cabeçalho válido, grava no disco do tenant e passa a referen
     expect(Aparencia::urlArquivo($header))->toContain('/lojafonte/arquivo/aparencia/');
 });
 
-it('rejeita upload de tipo não permitido (ex.: PDF) com erro', function () {
+it('rejeita upload de tipo não permitido (ex.: PDF) já no upload temporário', function () {
     Storage::fake('public');
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 
+    // As regras do upload temporário (mimes:png,jpg,jpeg,webp) barram o PDF já no
+    // `->set` (envio), antes de salvar — rejeição mais cedo.
     Livewire::test(Editar::class)
         ->set('fundoUpload', UploadedFile::fake()->create('arquivo.pdf', 100, 'application/pdf'))
-        ->call('salvar')
         ->assertHasErrors('fundoUpload');
 });
 
-it('rejeita upload acima de 2 MB com erro', function () {
+it('rejeita upload acima de 2 MB já no upload temporário', function () {
     Storage::fake('public');
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 
-    // imagem "real" de ~3 MB (acima do limite de 2048 KB e do PHP padrão).
+    // ~3 MB > limite de 2048 KB (regra max:2048 do upload temporário).
     Livewire::test(Editar::class)
         ->set('headerUpload', UploadedFile::fake()->create('grande.jpg', 3000, 'image/jpeg'))
-        ->call('salvar')
         ->assertHasErrors('headerUpload');
 });
 

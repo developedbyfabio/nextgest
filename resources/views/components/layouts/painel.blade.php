@@ -2,7 +2,8 @@
 @php($aparencia = \App\Support\Aparencia::doTenant())
 @php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+{{-- font-size base no <html>: o "tamanho base" do tenant escala a UI (rem). --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="font-size: {{ $aparencia['tamanho_base'] }};">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

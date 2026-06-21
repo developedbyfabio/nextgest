@@ -60,7 +60,7 @@ it('o servidor não força .dark no <html> (a alternância é do cliente)', func
     $html = $this->get('/lojatema4')->assertOk()->content();
 
     // <html> sai sem classe dark; quem aplica/remove é o Flux no cliente.
-    expect($html)->toContain('<html lang="pt-BR">')
-        ->not->toContain('<html lang="pt-BR" class="dark"')
+    // (o <html> pode ter style="font-size: ..." — o que importa é não ter .dark)
+    expect($html)->toContain('<html lang="pt-BR"')
         ->not->toContain('class="dark"');
 });

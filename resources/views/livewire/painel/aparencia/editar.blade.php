@@ -108,7 +108,7 @@
             <div class="sticky top-6 flex flex-col gap-3">
                 <flux:heading size="sm">Prévia do portal</flux:heading>
                 <x-ng.previa-portal :aparencia="$aparencia" :nome="tenant('nome')" />
-                <flux:text class="text-center text-xs text-zinc-500">Em modo claro · atualiza enquanto você edita.</flux:text>
+                <flux:text class="text-center text-xs text-zinc-500">Alterne claro/escuro na prévia · atualiza enquanto você edita.</flux:text>
             </div>
         </div>
     </div>

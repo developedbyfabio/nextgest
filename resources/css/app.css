@@ -137,6 +137,27 @@
         background-color: color-mix(in srgb, var(--color-accent) 8%, var(--cor-superficie, #fff));
     }
 
+    /*
+    | Prévia do portal (editor de Aparência / onboarding) com alternador
+    | claro/escuro PRÓPRIO. As superfícies são definidas DIRETO no container
+    | (.ng-previa), então independem do modo do painel ao redor (um .dark herdado
+    | do <html> não vaza para dentro da prévia). O acento/secundária/tipografia
+    | vêm inline por cssVarsAcento(); aqui só as superfícies de cada modo.
+    */
+    .ng-previa {
+        --cor-fundo: #fafafa;
+        --cor-superficie: #ffffff;
+        --cor-texto: #18181b;
+        --cor-texto-suave: #71717a;
+    }
+
+    .ng-previa.is-dark {
+        --cor-fundo: #09090b;
+        --cor-superficie: #18181b;
+        --cor-texto: #f4f4f5;
+        --cor-texto-suave: #a1a1aa;
+    }
+
     /* Skeleton temático (segue o texto da marca, não o zinc fixo). */
     .ng-skeleton-portal {
         @apply animate-pulse rounded-md;

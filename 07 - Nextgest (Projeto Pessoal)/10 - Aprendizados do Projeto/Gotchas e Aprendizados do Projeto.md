@@ -155,6 +155,23 @@ A tipografia faz parte da marca (D36) e é emitida como `font-family` no `<body>
 dos layouts; o editor carrega **todas** (`linksFontesGoogle()`) para a prévia ao vivo.
 Lista fechada (`Aparencia::FONTES`) → sem injeção; `href` escapada.
 
+## Livewire + stancl: disco de upload TEMPORÁRIO precisa ser central (senão 500)
+O endpoint global `/livewire/upload-file` roda **sem** tenancy (só `web`, sem
+`{tenant}`); o `/update`/`salvar` rodam **com** tenancy. Se o disco temp for `local`
+(que está em `tenancy.filesystem.disks` → suffixado), o arquivo gravado no upload
+(central) "some" ao ser lido no /update (disco do tenant) → `UnableToRetrieveMetadata`
+→ **500**. Correção: disco temp **dedicado e central**, FORA de
+`tenancy.filesystem.disks` (`config/livewire.php` → `temporary_file_upload.disk`). O
+arquivo final, esse sim, vai no disco `public` do tenant. Ver
+[[Bug - Upload 500 (disco temp do Livewire x tenancy)]].
+
+## Tamanho base da tipografia vai no `<html>` (rem), não só no `<body>`
+Os utilitários de tamanho do Tailwind (`text-sm`…) são **rem** (relativos ao `<html>`).
+Pôr o `font-size` base só no `<body>` (como o `cssVarsAcento` fazia) não escala a UI —
+o "tamanho base" parecia não funcionar. Correção: emitir `font-size` no `<html>` dos
+layouts (portal/painel/auth do tenant) → escala tudo. Ver
+[[Identidade Visual do Estabelecimento (Tema)]].
+
 ## Flux/Blade: prop `value` com `value="{{ ... }}"` = escape DUPLO
 `flux:select.option` (e afins) recebe `value` como **prop** e renderiza `value="{{ $value }}"`
 (escapa). Se a view passa `value="{{ $valor }}"`, o Blade já escapa antes → o `'` vira

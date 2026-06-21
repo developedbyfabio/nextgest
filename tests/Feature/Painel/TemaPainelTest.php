@@ -31,7 +31,8 @@ it('painel emite a marca como ACENTO e não pinta a superfície com a marca', fu
 it('painel não força .dark no servidor e ativa o @fluxAppearance', function () {
     $html = $this->actingAs($this->dono, 'web')->get('/lojapainel/painel')->assertOk()->content();
 
-    expect($html)->toContain('<html lang="pt-BR">')   // sem class="dark" forçada por luminância
+    expect($html)->toContain('<html lang="pt-BR"')    // sem class="dark" forçada por luminância
+        ->and($html)->not->toContain('class="dark"')
         ->and($html)->toContain('Flux.applyAppearance'); // modo claro/escuro/sistema ativo
 });
 

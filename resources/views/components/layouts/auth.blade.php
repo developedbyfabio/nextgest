@@ -1,7 +1,8 @@
 @php($temTenant = tenancy()->initialized)
 @php($aparencia = $temTenant ? \App\Support\Aparencia::doTenant() : null)
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+{{-- No tenant, aplica o tamanho base (rem) da marca no <html>. --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"@if ($temTenant) style="font-size: {{ $aparencia['tamanho_base'] }};"@endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">

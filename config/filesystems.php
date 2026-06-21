@@ -38,6 +38,18 @@ return [
             'report' => false,
         ],
 
+        // Uploads temporários do Livewire — disco CENTRAL e FIXO. Propositalmente
+        // FORA de `tenancy.filesystem.disks` para NÃO ser suffixado por tenant: o
+        // endpoint global de upload roda sem tenancy e o /update roda com tenancy;
+        // ambos precisam apontar para o MESMO diretório (senão o temp some →
+        // UnableToRetrieveMetadata → 500). Ver config/livewire.php.
+        'livewire_tmp' => [
+            'driver' => 'local',
+            'root' => storage_path('app'), // o Livewire grava no subdir 'livewire-tmp' -> storage/app/livewire-tmp
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
