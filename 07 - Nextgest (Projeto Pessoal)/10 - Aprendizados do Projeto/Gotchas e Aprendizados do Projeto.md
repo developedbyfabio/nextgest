@@ -121,6 +121,17 @@ O `wire:confirm` usa o confirm **nativo** do browser (feio, fora do design syste
 Para ações destrutivas, usar `flux:modal` controlado por estado
 (`Flux::modal('nome')->show()/close()`), com o alvo guardado numa propriedade.
 
+## Livewire 4 NÃO auto-esconde `wire:loading` (skeleton preso)
+Diferente do Livewire 2/3, o Livewire 4 não injeta `[wire\:loading]{display:none}`: o
+diretivo só alterna o `display` inline **durante** a requisição. Um skeleton/spinner
+"mostrar-no-loading" nasce **visível** e fica preso. Conserto: regra CSS no `app.css`
+que esconde em repouso cada variante usada (`[wire\:loading], [wire\:loading\.delay],
+[wire\:loading\.delay\.flex], [wire\:loading\.flex\.delay]{display:none}`) — o `display`
+inline do loading vence a regra. O nome do atributo inclui os modificadores, então não
+há seletor único; ao criar um combo novo, adicione-o (teste
+`WireLoadingSkeletonTest` cobre). `.remove` não entra. Ver
+[[Bug - Skeleton de loading preso (wire-loading nao some)]].
+
 ## Dark-mode do sistema sobre superfície clara forçada (texto invisível)
 **Sintoma:** no portal, o nome do serviço/profissional sumia, mas a duração
 (cinza-médio) aparecia.
