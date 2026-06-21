@@ -100,6 +100,18 @@ Chart.js nas cores da marca (eixos/tooltip lidos das CSS vars em runtime) e esta
 de loading/vazio/erro. Regra de ouro mantida: **dark-safe** — nada de `bg-white`/
 `zinc` fixo onde deveria ser `--cor-superficie`. Ver [[Dashboard do Dono]].
 
+## Modo claro / escuro / sistema (Etapa D, 2026-06-21) — substitui parte de A/B
+> [!important] Correção do modelo
+> As notas das Etapas A/B abaixo falam em "superfície da marca" e "dark-safe via
+> `.dark` por luminância". Isso foi **substituído** (D36): a **marca é só o acento +
+> logo + tipografia**; as **superfícies seguem o modo claro/escuro/sistema** do Flux.
+- Tokens de superfície (`--cor-fundo/superficie/texto/texto-suave`) vivem em `app.css`
+  (`:root` claro / `.dark` escuro). As classes `.ng-*` e as views seguem o modo sem
+  alteração. Superfície e texto trocam **juntos** (evita o bug da Etapa A).
+- `@fluxAppearance` em todos os layouts (portal/painel/auth). Seletor
+  Claro/Escuro/Sistema: header do portal (`x-ng.seletor-tema`) e menu de perfil do
+  painel. Persistência por `localStorage` (Flux). Ver [[Decisões de Arquitetura]] D36.
+
 ## Kanban temático + DnD elevado (Etapa C, 2026-06-21)
 Colunas (`.ng-surface-muted`) e cartões (`.ng-surface`) seguem a marca; dark-safe.
 DnD (SortableJS) com **handle**, placeholder (`.ng-kanban-ghost`) e elevação

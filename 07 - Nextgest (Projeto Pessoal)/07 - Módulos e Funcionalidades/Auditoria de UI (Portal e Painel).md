@@ -12,6 +12,13 @@ tags: [nextgest, ui, auditoria, portal, painel]
 > Feita em 2026-06-21 com app servida (HTTP real) + render dos componentes
 > Livewire + leitura do código. Honesta: classifica o que existe de fato.
 
+> [!important] Modelo de tema atualizado (Etapa D, D36)
+> Esta nota foi escrita nas Etapas A/B, quando as **superfícies** seguiam a cor da
+> marca e o `.dark` era forçado por luminância. Isso foi **substituído**: agora a
+> marca é só **acento + logo + tipografia** e as superfícies seguem o **modo
+> claro/escuro/sistema** do Flux. Onde abaixo se lê "superfície/dark-safe da marca",
+> entenda "superfície pelo modo". Ver [[Decisões de Arquitetura]] D36.
+
 ## Método
 - App servida em porta alta (`--host=0.0.0.0`); páginas públicas verificadas por
   HTTP real; telas logadas renderizadas via `Livewire::test()->html()` (inclusive

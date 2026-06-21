@@ -1,8 +1,19 @@
 # Identidade Visual do Estabelecimento (Tema)
 
 > Projeto: [[Nextgest - Visão Geral]] · Decisões: [[Decisões de Arquitetura]]
-> (D28 tema, D30 templates, D35 arquivos) · Etapas 1–2 da evolução visual.
+> (D28 tema, D30 templates, D35 arquivos, **D36 modo claro/escuro**) ·
 > Atualizado: 2026-06-21.
+
+> [!important] Modelo ATUAL (Etapa D, D36) — substitui parte das Etapas A/B
+> - **Marca do tenant = ACENTO** (`--cor-principal` / `--color-accent`) **+ logo +
+>   tipografia**, constante nos dois modos (emitido inline por
+>   `Aparencia::cssVarsAcento()`).
+> - **Superfícies** (fundo/superfície/texto/divisores) = **tokens de claro/escuro**
+>   (`resources/css/app.css` `:root` e `.dark`), controlados pelo **modo
+>   claro/escuro/sistema** do Flux (`@fluxAppearance`).
+> - **Revogado:** pintar o fundo com a cor da marca e forçar `.dark` por luminância
+>   (era o modelo A/B). As seções abaixo que falam em "superfície da marca" valem
+>   agora **só para a prévia do editor**.
 
 ## Ideia
 Cada estabelecimento (tenant) tem sua própria aparência (cores, fonte, logo,
@@ -60,51 +71,41 @@ sugere um template de partida).
   > este projeto é por **caminho**. Para imagens do tenant use
   > `Aparencia::urlArquivo($path)`.
 
-## Como é aplicado
-O layout do portal **e o do painel** injetam, num `style` do `<body>`, as CSS vars
-completas (`cssVars()`): `--cor-principal`, `--cor-secundaria`, `--cor-fundo`,
-`--cor-superficie`, `--cor-texto`, `--cor-texto-suave`, `--cor-sobre-principal` e o
-`--color-accent` do Flux. Nada de CSS por tenant compilado.
+## Como é aplicado (modelo atual — Etapa D)
+- Os layouts (portal, painel, auth) injetam no `<body>`, via
+  **`Aparencia::cssVarsAcento()`**, só a **marca**: `--cor-principal`,
+  `--cor-secundaria`, `--cor-sobre-principal`, `--color-accent*` e a **tipografia**
+  (`font-family`/`font-size`). Constante nos dois modos.
+- As **superfícies** (`--cor-fundo`, `--cor-superficie`, `--cor-texto`,
+  `--cor-texto-suave`) são **tokens** definidos em `app.css` (`:root` claro / `.dark`
+  escuro). Como as views e as classes `.ng-*` já usavam essas vars, elas seguem o
+  **modo** automaticamente. Superfície e texto trocam **juntos** (sem texto invisível).
+- O modo (claro/escuro/sistema) é do **Flux** (`@fluxAppearance` + `.dark`), aplicado
+  no cliente. Ver [[Decisões de Arquitetura]] D36.
 
-> [!info] `cssVarsAcento()` ainda existe
-> Foi pensado para "só acento" no painel. Hoje o painel usa `cssVars()` (tema
-> completo, Etapa B). `cssVarsAcento()` segue disponível para superfícies que queiram
-> só o realce (sem pintar fundo).
+> [!info] `cssVars()` (superfícies completas) → só na PRÉVIA do editor
+> `cssVars()` ainda emite fundo/superfície/texto a partir do preset; é usado apenas
+> no `x-ng.previa-portal` (mostra um recorte em modo claro). O app de verdade usa
+> `cssVarsAcento()` + tokens.
 
 ## Defaults
 Todo tenant nasce com tema finalizado mesmo sem registro salvo; o `nextgest:demo`
 grava o tema padrão como base editável.
 
-## Componentes compartilhados temáticos (portal)
-Os componentes `x-ng.option-card` e `x-ng.empty` têm a prop **`themed`**:
-- **com `themed`** (portal): seguem a identidade do tenant via CSS vars
-  (`--cor-superficie`/`--cor-texto`/`--cor-principal`/`--color-accent`) — classe
-  CSS `.ng-card-portal` (e `.ng-skeleton-portal` para skeleton). Funciona inclusive
-  com **superfície custom escura**.
-- **sem `themed`** (painel/admin): superfícies neutras do Flux (zinc/dark), como antes.
+## Componentes compartilhados (`.ng-*`)
+`.ng-surface`, `.ng-surface-muted`, `.ng-divider`, `.ng-card-portal`,
+`.ng-skeleton-portal` etc. usam as vars de superfície (`--cor-superficie`/
+`--cor-texto`…) que **agora são tokens de claro/escuro** — portanto seguem o modo
+sem alteração. `x-ng.option-card`/`x-ng.empty` mantêm a prop `themed` (no portal usam
+`.ng-card-portal`/empty temático; no painel/admin, as neutras do Flux).
 
-> [!warning] Não use as classes neutras (`.ng-card-interactive`, `bg-white`/`zinc`) no portal
-> Elas têm cor fixa e variantes `dark:` que **não disparam** no portal (ele não
-> aplica `.dark`). No portal, sempre passar `themed`. Ver
-> [[Auditoria de UI (Portal e Painel)]].
-
-## Portal do cliente elevado (Etapa A, 2026-06-21)
-UI do portal levada ao nível "de ponta": cartões/empties temáticos, transições
-suaves entre passos do wizard (`.ng-fade-in`), grade de horários e resumo com a cor
-da marca, e **cancelamento por `flux:modal`** (substitui o `wire:confirm` nativo).
-Ver [[Auditoria de UI (Portal e Painel)]] e [[Padrao de UI-UX (Design System)]].
-
-## Painel e auth tematizados (Etapa B, 2026-06-21)
-O **shell do painel** (sidebar/topbar/logo/títulos) e as **telas de auth** passam a
-refletir a identidade completa do estabelecimento via `cssVars()`.
-- **Dark-safe automático:** `Aparencia::superficieEscura()` decide pela luminância da
-  superfície; quando escura, os layouts ligam a classe **`.dark`** no `<html>` para os
-  componentes Flux (cards, inputs, dropdowns) acompanharem a marca. Antes o painel
-  seguia o modo do sistema (`@fluxAppearance`) — agora segue o tema do tenant.
-- **Classes reutilizáveis** (estendidas do portal): `.ng-surface` (card/superfície da
-  marca), `.ng-surface-muted`, `.ng-divider`, `.ng-surface-interactive`.
-- O **dashboard** foi reconstruído sobre `.ng-surface` (KPIs/gráficos), dark-safe —
-  ver [[Dashboard do Dono]].
+## Histórico da evolução visual (Etapas A–C)
+- **Etapa A** (portal), **B** (painel + dashboard), **C** (kanban): elevaram a UI e
+  introduziram as classes `.ng-*`.
+- **Mudança da Etapa D:** o que essas etapas faziam de "pintar superfície com a cor da
+  marca" e "forçar `.dark` por luminância" foi **substituído** pelo modo
+  claro/escuro/sistema (D36). As classes `.ng-*` permaneceram, agora derivando dos
+  tokens de modo. `Aparencia::superficieEscura()` foi **removido**.
 
 ## Pontos em aberto / próximos (Etapa 6 — polimento)
 - **Telas internas do painel** (agenda, cadastros) e o **kanban** ainda usam

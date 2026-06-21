@@ -10,10 +10,13 @@ tags: [nextgest, saas, agendamento]
 # Nextgest — Visão Geral
 
 > [!note] Estado atual (21/06/2026)
-> - **Suíte verde: 157 testes** (Pest) + testes de fumaça HTTP.
-> - Evolução visual concluída (A/B/C): **portal** (A), **painel + auth + dashboard**
->   (B) e **kanban** (C), tudo dark-safe e na identidade do tenant — ver
->   [[Auditoria de UI (Portal e Painel)]].
+> - **Suíte verde: 162 testes** (Pest) + testes de fumaça HTTP.
+> - Evolução visual A/B/C (portal, painel+dashboard, kanban) + **Etapa D: modo
+>   claro/escuro/sistema** (Flux) no painel e no portal.
+> - **Modelo de tema (D36, substitui parte de A/B):** marca do tenant = **acento +
+>   logo + tipografia** (constante nos dois modos); **superfícies = tokens de
+>   claro/escuro**. Ver [[Decisões de Arquitetura]] D36 e
+>   [[Identidade Visual do Estabelecimento (Tema)]].
 > - **Próxima frente:** Fatia 2 (produtos/vendas).
 > - **Migrou de servidor:** saiu da VM VirtualBox (`192.168.3.100`, Ubuntu 24.04,
 >   PHP 8.4) para o **servidor de dev compartilhado `192.168.11.210`** (Ubuntu 22.04,
@@ -141,6 +144,11 @@ funciona, testes de fumaça HTTP adicionados. **91 testes.** Sistema navegável.
     DnD com handle/placeholder/elevação e **revert em falha**, modais (sem confirm
     nativo), "excluir" = arquivar (soft delete), estados e responsivo com snap. Ver
     [[Kanban (Atendimento e CRM)]].
+  - **Etapa D** (✅ 2026-06-21): **modo claro / escuro / sistema** (Flux) no painel e
+    no portal. Reformula o tema (D36): marca = acento + logo + tipografia; superfícies
+    = tokens de claro/escuro. Seletor no header do portal e no menu de perfil do
+    painel. **Substitui** o que A/B faziam de pintar superfície pela marca / forçar
+    `.dark` por luminância.
   - Pendente: polimento temático fino das telas internas (agenda/cadastros).
   Ver [[Auditoria de UI (Portal e Painel)]].
 

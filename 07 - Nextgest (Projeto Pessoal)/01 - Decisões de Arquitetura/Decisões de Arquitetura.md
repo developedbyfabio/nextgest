@@ -236,3 +236,32 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   tenant por **domínio** — incompatível com este projeto, que é por **caminho**.
 - **Nota:** ajusta o conselho antigo de "use `tenant_asset()`" — aqui o correto é
   `Aparencia::urlArquivo()`. Ver [[Identidade Visual do Estabelecimento (Tema)]].
+
+## D36 — Tema: marca = acento; superfícies = modo claro/escuro/sistema (Flux)
+> [!important] Substitui parte de D28 e da evolução visual (Etapas A/B)
+> As Etapas A/B pintavam as **superfícies** (fundo/superfície/texto) com a cor da
+> marca do tenant e forçavam `.dark` pela **luminância** da superfície escolhida.
+> **Essa parte está revogada.**
+- **Decisão (Etapa D):** o sistema tem **modo claro / escuro / sistema**, via o
+  sistema de aparência do Flux (`@fluxAppearance` + classe `.dark`), no **painel** e
+  no **portal do cliente**.
+  - **Marca por tenant = ACENTO** (`--cor-principal` / `--color-accent`) **+ logo +
+    tipografia**, constante nos dois modos (emitida inline via
+    `Aparencia::cssVarsAcento()`).
+  - **Superfícies** (fundo/superfície/texto/texto-suave/divisores) = **tokens de
+    claro/escuro** definidos em `resources/css/app.css` (`:root` e `.dark`).
+    `--cor-fundo/superficie/texto/texto-suave` deixaram de ser cor da marca e viraram
+    esses tokens — então as views e classes `.ng-*` que já usavam essas vars passaram
+    a seguir o modo **sem alteração**.
+- **Motivo:** preferência do Fabio; acessibilidade (respeitar o SO do usuário) e
+  legibilidade garantida nos dois modos. **Lição da Etapa A:** superfície e texto
+  agora trocam **juntos** (ambos tokens), eliminando o bug de texto invisível por
+  modo escuro meio-aplicado.
+- **Persistência:** escolha do modo em `localStorage` (padrão do Flux). Cross-device
+  por usuário fica como melhoria futura (coluna no `users`).
+- **Controles:** seletor Claro/Escuro/Sistema no **header do portal**
+  (`x-ng.seletor-tema`) e no **menu de perfil do painel**.
+- **O que permanece de D28/D30:** a aparência por tenant e os **presets** continuam —
+  expressando identidade pelo **acento** (e logo/tipografia), não mais pelas
+  superfícies. `Aparencia::cssVars()` (superfícies completas) segue só na **prévia**
+  do editor. Ver [[Identidade Visual do Estabelecimento (Tema)]].
