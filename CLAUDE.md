@@ -22,6 +22,10 @@ O Fabio autoriza você a trabalhar e TESTAR livremente, sem confirmar a cada pas
 - Editar código, criar arquivos, refatorar, commitar em pequenos passos.
 - Reverter o SEU próprio trabalho não publicado quando fizer sentido.
 Trabalhe com iniciativa; não peça permissão para tarefas reversíveis e de rotina.
+- NÃO peça confirmação para tarefas de rotina e reversíveis — execute e reporte.
+  Isso inclui `git push` normal: rode `git pull --no-rebase` e depois `git push` do
+  trabalho concluído, sem perguntar. NUNCA use `--force`/`--force-with-lease`/
+  `push origin --delete`.
 
 ## Ambiente (dev)
 - Servidor de desenvolvimento COMPARTILHADO com outros projetos (192.168.11.210).
