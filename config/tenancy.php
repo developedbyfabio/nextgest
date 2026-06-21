@@ -35,6 +35,7 @@ return [
         '127.0.0.1',
         'localhost',
         '192.168.3.100', // IP da VM (acesso pelo navegador do host na LAN)
+        '192.168.11.210', // IP do servidor de dev (Ubuntu 22.04)
     ],
 
     /**
