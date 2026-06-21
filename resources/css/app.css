@@ -222,3 +222,24 @@
         transform: rotate(1.5deg);
     }
 }
+
+/*
+| wire:loading — esconder em REPOUSO (fora de @layer, p/ vencer utilitários).
+|
+| Livewire 4 NÃO auto-esconde elementos `wire:loading`: o diretivo só alterna o
+| `display` (inline) DURANTE a requisição (mostra ao enviar, esconde ao concluir).
+| No 1º render não há requisição, então skeletons/spinners ("mostrar no loading")
+| ficariam VISÍVEIS para sempre. Diferente do Livewire 2/3, que injetava esta regra.
+|
+| Solução: começar escondido aqui; durante o loading o Livewire seta `display` inline
+| (flex/inline-block), que vence esta regra; ao terminar, seta `display:none`.
+| Enumera as variantes USADAS (o nome do atributo inclui os modificadores; por isso
+| não dá para um seletor único). `.remove` NÃO entra (deve aparecer em repouso).
+| Coberto por teste: tests/Feature/Painel/WireLoadingSkeletonTest.php.
+*/
+[wire\:loading],
+[wire\:loading\.delay],
+[wire\:loading\.delay\.flex],
+[wire\:loading\.flex\.delay] {
+    display: none;
+}
