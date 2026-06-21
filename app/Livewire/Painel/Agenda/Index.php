@@ -68,6 +68,19 @@ class Index extends Component
         'nao_compareceu' => 'Não compareceu',
     ];
 
+    /** Cor semântica do status (barra de acento dos cartões). Não é tema da marca. */
+    public const STATUS_HEX = [
+        'pendente' => '#f59e0b',
+        'confirmado' => '#22c55e',
+        'em_andamento' => '#3b82f6',
+        'concluido' => '#14b8a6',
+        'cancelado' => '#ef4444',
+        'nao_compareceu' => '#f97316',
+    ];
+
+    /** Falha ao carregar a lista (estado de erro recuperável). */
+    public bool $erro = false;
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()->canAny(['ver_agenda', 'ver_agenda_propria']), 403);
@@ -123,6 +136,20 @@ class Index extends Component
         }
 
         Flux::toast('Status atualizado.', variant: 'success');
+    }
+
+    /** Abre o modal de confirmação de cancelamento (sem confirm nativo). */
+    public function pedirCancelar(): void
+    {
+        $this->authorize('gerir_agenda');
+        Flux::modal('cancelar-agendamento')->show();
+    }
+
+    /** Confirma o cancelamento (usa a mesma regra de transição do Agendador). */
+    public function cancelarAgendamento(Agendador $agendador): void
+    {
+        $this->mudarStatus('cancelado', $agendador);
+        Flux::modal('cancelar-agendamento')->close();
     }
 
     public function iniciarRemarcacao(): void
@@ -205,11 +232,19 @@ class Index extends Component
             $ate = $inicio->copy()->endOfDay();
         }
 
-        $agendamentos = $this->escopo()
-            ->with(['cliente', 'profissional', 'unidade', 'itens.servico'])
-            ->whereBetween('data_hora_inicio', [$de, $ate])
-            ->orderBy('data_hora_inicio')
-            ->get();
+        // Carregamento da lista resiliente (estado de erro recuperável na UI).
+        try {
+            $this->erro = false;
+            $agendamentos = $this->escopo()
+                ->with(['cliente', 'profissional', 'unidade', 'itens.servico'])
+                ->whereBetween('data_hora_inicio', [$de, $ate])
+                ->orderBy('data_hora_inicio')
+                ->get();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->erro = true;
+            $agendamentos = collect();
+        }
 
         $detalhe = $this->detalheId
             ? $this->escopo()->with(['cliente', 'profissional', 'unidade', 'itens.servico'])->find($this->detalheId)
@@ -237,6 +272,7 @@ class Index extends Component
             'unidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
             'statusCor' => self::STATUS_COR,
             'statusLabel' => self::STATUS_LABEL,
+            'statusHex' => self::STATUS_HEX,
         ]);
     }
 
