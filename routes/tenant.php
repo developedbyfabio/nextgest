@@ -16,6 +16,7 @@ use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
+use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
 use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Portal\Agendar as PortalAgendar;
@@ -99,6 +100,11 @@ Route::middleware(['tenant'])
                 Route::get('servicos', ServicosIndex::class)
                     ->middleware('can:editar_servico')
                     ->name('servicos');
+
+                // Catálogo (editar_produto) + estoque (gerir_estoque, inclui Recepção).
+                // O gate combinado é reconferido no mount do componente.
+                Route::get('produtos', ProdutosIndex::class)
+                    ->name('produtos');
 
                 Route::get('bloqueios', BloqueiosIndex::class)
                     ->middleware('can:gerir_agenda')

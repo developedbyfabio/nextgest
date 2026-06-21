@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Agendamento;
+use App\Models\CategoriaProduto;
 use App\Models\Cliente;
 use App\Models\KanbanCartao;
 use App\Models\KanbanQuadro;
+use App\Models\Produto;
 use App\Models\Servico;
 use App\Models\Tenant;
 use App\Models\Unidade;
 use App\Models\User;
+use App\Services\Estoque\MovimentadorEstoque;
 use App\Support\Aparencia;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -65,6 +68,7 @@ class SemearDemo extends Command
             $this->equipeDeApoio($unidade, $senha);
             $this->dono($senha);
             Aparencia::salvar([]); // grava o tema padrão (base editável)
+            $this->catalogoProdutos($unidade);
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
             $this->kanban($clientes, $profissionais);
@@ -95,6 +99,49 @@ class SemearDemo extends Command
             ['nome' => 'Matriz Centro'],
             ['endereco' => 'Rua Principal, 100', 'telefone' => '(11) 3333-0000', 'ativo' => true],
         );
+    }
+
+    /**
+     * Catálogo de demonstração (Fatia 2A): categorias, produtos (com e sem controle
+     * de estoque) e estoque inicial por unidade via movimentação. Idempotente.
+     */
+    private function catalogoProdutos(Unidade $unidade): void
+    {
+        $categorias = collect(['Pomadas e ceras', 'Cuidados', 'Bebidas'])
+            ->mapWithKeys(fn ($nome) => [$nome => CategoriaProduto::firstOrCreate(['nome' => $nome], ['ativo' => true])]);
+
+        // [nome, categoria|null, preco_venda, preco_custo|null, controla_estoque, % comissão, estoque inicial|null]
+        $itens = [
+            ['Pomada modeladora', 'Pomadas e ceras', 39.90, 18.00, true, 10, 24],
+            ['Cera fixação forte', 'Pomadas e ceras', 45.00, 20.00, true, 10, 15],
+            ['Óleo para barba', 'Cuidados', 35.00, 15.00, true, 10, 12],
+            ['Shampoo masculino', 'Cuidados', 29.90, 12.00, true, 5, 0],   // esgotado (demo)
+            ['Água 500ml', 'Bebidas', 5.00, 2.00, true, 0, 40],
+            ['Cerveja long neck', 'Bebidas', 12.00, 6.00, true, 0, 30],
+            ['Vale-presente', null, 100.00, null, false, 0, null],          // não controla estoque
+        ];
+
+        $movimentador = app(MovimentadorEstoque::class);
+
+        foreach ($itens as [$nome, $cat, $venda, $custo, $controla, $comissao, $estoque]) {
+            $produto = Produto::firstOrCreate(
+                ['nome' => $nome],
+                [
+                    'categoria_id' => $cat ? $categorias[$cat]->id : null,
+                    'preco_venda' => $venda,
+                    'preco_custo' => $custo,
+                    'controla_estoque' => $controla,
+                    'percentual_comissao' => $comissao ?: null,
+                    'ativo' => true,
+                ],
+            );
+
+            // Estoque inicial: só quando controla estoque, tem quantidade e ainda não
+            // há movimentação (idempotente e retroativo, sem duplicar em re-run).
+            if ($controla && $estoque && $produto->movimentacoes()->doesntExist()) {
+                $movimentador->entrada($produto->id, $unidade->id, $estoque, 'Estoque inicial (demo)');
+            }
+        }
     }
 
     /** @return array<string, Servico> */

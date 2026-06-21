@@ -37,6 +37,7 @@ class TenantDatabaseSeeder extends Seeder
         'editar_servico',
         'criar_produto',
         'editar_produto',
+        'gerir_estoque',
         'criar_usuario',
         'editar_usuario',
         'editar_permissoes',
@@ -71,7 +72,7 @@ class TenantDatabaseSeeder extends Seeder
             'editar_permissoes',
         ]));
 
-        // Recepção: agenda, clientes, vendas e kanban de atendimento (balcão).
+        // Recepção: agenda, clientes, vendas, estoque e kanban de atendimento (balcão).
         $recepcao = Role::findOrCreate('Recepção', 'web');
         $recepcao->syncPermissions([
             'ver_agenda',
@@ -80,6 +81,7 @@ class TenantDatabaseSeeder extends Seeder
             'gerir_agenda',
             'ver_clientes',
             'criar_venda',
+            'gerir_estoque',
             'usar_kanban',
             'ver_kanban_atendimento',
         ]);

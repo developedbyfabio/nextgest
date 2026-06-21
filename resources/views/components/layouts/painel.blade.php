@@ -60,6 +60,9 @@
                 @can('editar_servico')
                     <flux:navlist.item icon="scissors" :href="route('painel.servicos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.servicos')" wire:navigate>Serviços</flux:navlist.item>
                 @endcan
+                @canany(['editar_produto', 'gerir_estoque'])
+                    <flux:navlist.item icon="cube" :href="route('painel.produtos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.produtos')" wire:navigate>Produtos</flux:navlist.item>
+                @endcanany
                 @can('gerir_agenda')
                     <flux:navlist.item icon="no-symbol" :href="route('painel.bloqueios', ['tenant' => $tenantId])" :current="request()->routeIs('painel.bloqueios')" wire:navigate>Bloqueios</flux:navlist.item>
                 @endcan
