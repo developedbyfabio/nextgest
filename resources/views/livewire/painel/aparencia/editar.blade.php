@@ -73,7 +73,7 @@
             {{-- Imagens --}}
             <div class="flex flex-col gap-3">
                 <flux:heading size="sm">Imagens</flux:heading>
-                <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP, até 2 MB cada.</flux:text>
+                <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP, até 5 MB cada.</flux:text>
 
                 @foreach ([
                     ['campo' => 'logo', 'upload' => 'logoUpload', 'url' => 'logo_url', 'rotulo' => 'Logo'],

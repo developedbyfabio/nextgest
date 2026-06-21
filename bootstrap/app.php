@@ -31,6 +31,16 @@ return Application::configure(basePath: dirname(__DIR__))
         | O endpoint de update do Livewire é central; o tenancy é reaplicado lá via
         | persistent middleware (ver App\Providers\AppServiceProvider).
         */
+        // O endpoint global de upload do Livewire recebe o
+        // InicializarTenancyArquivosLivewire, mas o Laravel ordena por PRIORIDADE
+        // e puxava o ThrottleRequests (que resolve $request->user()) para ANTES
+        // dele — o usuário do tenant era procurado no banco central → 500. Aqui
+        // garantimos que a tenancy inicialize ANTES do throttle.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            prepend: \App\Http\Middleware\InicializarTenancyArquivosLivewire::class,
+        );
+
         $middleware->group('tenant', [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,

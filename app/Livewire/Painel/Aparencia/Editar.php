@@ -88,10 +88,10 @@ class Editar extends Component
     {
         $hex = ['required', 'string', 'regex:/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'];
 
-        // mimes/max coerentes com o que a tela promete e com o limite do PHP
-        // (upload_max_filesize). 2 MB cabe no default do servidor; tipos restritos
-        // a imagens rasterizadas (sem SVG, que pode carregar script).
-        $imagem = ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'];
+        // Tipos restritos a imagens rasterizadas (sem SVG, que pode carregar
+        // script). 5 MB exige que o PHP (upload_max_filesize/post_max_size) também
+        // permita — ver doc/gotcha; em dev, servir com `php -d ...`.
+        $imagem = ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'];
 
         return [
             'cor_principal' => $hex,
@@ -107,9 +107,9 @@ class Editar extends Component
     protected function messages(): array
     {
         return [
-            'logoUpload.max' => 'A logo deve ter no máximo 2 MB.',
-            'headerUpload.max' => 'A imagem de cabeçalho deve ter no máximo 2 MB.',
-            'fundoUpload.max' => 'A imagem de fundo deve ter no máximo 2 MB.',
+            'logoUpload.max' => 'A logo deve ter no máximo 5 MB.',
+            'headerUpload.max' => 'A imagem de cabeçalho deve ter no máximo 5 MB.',
+            'fundoUpload.max' => 'A imagem de fundo deve ter no máximo 5 MB.',
             'logoUpload.mimes' => 'Use PNG, JPG ou WebP.',
             'headerUpload.mimes' => 'Use PNG, JPG ou WebP.',
             'fundoUpload.mimes' => 'Use PNG, JPG ou WebP.',

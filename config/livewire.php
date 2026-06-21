@@ -137,9 +137,12 @@ return [
         // UnableToRetrieveMetadata → 500. Um disco dedicado, fora de
         // `tenancy.filesystem.disks`, é o mesmo caminho nos dois contextos.
         'disk' => env('LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK', 'livewire_tmp'),
-        'rules' => ['required', 'file', 'mimes:png,jpg,jpeg,webp', 'max:2048'], // imagens até 2 MB (cabe no upload_max_filesize do PHP)
+        'rules' => ['required', 'file', 'mimes:png,jpg,jpeg,webp', 'max:5120'], // imagens até 5 MB (exige upload_max_filesize/post_max_size do PHP >= isto)
         'directory' => null,                                  // Example: 'tmp'                     | Default: 'livewire-tmp'
-        'middleware' => null,                                 // Example: 'throttle:5,1'            | Default: 'throttle:60,1'
+        // Inicializa o tenancy ANTES do throttle (que resolve $request->user()).
+        // Sem isto, o usuário do tenant é procurado no banco central → 500. Ver
+        // App\Http\Middleware\InicializarTenancyArquivosLivewire.
+        'middleware' => [\App\Http\Middleware\InicializarTenancyArquivosLivewire::class, 'throttle:60,1'],
         'preview_mimes' => [                                  // Supported file types for temporary pre-signed file URLs...
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
             'mov', 'avi', 'wmv', 'mp3', 'm4a',

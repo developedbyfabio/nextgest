@@ -155,10 +155,10 @@ it('usa disco temporário CENTRAL fora da tenancy (guard do 500 do upload)', fun
         ->and(config('tenancy.filesystem.disks'))->not->toContain($disk);
 });
 
-it('restringe o upload temporário a imagens até 2 MB', function () {
+it('restringe o upload temporário a imagens até 5 MB', function () {
     $rules = (array) config('livewire.temporary_file_upload.rules');
 
-    expect($rules)->toContain('max:2048')
+    expect($rules)->toContain('max:5120')
         ->toContain('mimes:png,jpg,jpeg,webp');
 });
 
@@ -202,13 +202,13 @@ it('rejeita upload de tipo não permitido (ex.: PDF) já no upload temporário',
         ->assertHasErrors('fundoUpload');
 });
 
-it('rejeita upload acima de 2 MB já no upload temporário', function () {
+it('rejeita upload acima de 5 MB já no upload temporário', function () {
     Storage::fake('public');
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 
-    // ~3 MB > limite de 2048 KB (regra max:2048 do upload temporário).
+    // ~6 MB > limite de 5120 KB (regra max:5120 do upload temporário).
     Livewire::test(Editar::class)
-        ->set('headerUpload', UploadedFile::fake()->create('grande.jpg', 3000, 'image/jpeg'))
+        ->set('headerUpload', UploadedFile::fake()->create('grande.jpg', 6000, 'image/jpeg'))
         ->assertHasErrors('headerUpload');
 });
 

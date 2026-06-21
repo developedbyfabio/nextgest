@@ -161,7 +161,7 @@
                         @endif
                     </div>
                     <div class="flex flex-1 flex-col gap-1">
-                        <flux:label>Logo (opcional) — PNG, JPG ou WebP, até 2 MB</flux:label>
+                        <flux:label>Logo (opcional) — PNG, JPG ou WebP, até 5 MB</flux:label>
                         <input type="file" wire:model="logoUpload" accept="image/png,image/jpeg,image/webp"
                             class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
                         <div wire:loading wire:target="logoUpload" class="text-xs text-zinc-500">Enviando…</div>

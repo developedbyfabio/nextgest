@@ -220,7 +220,7 @@ class OnboardingEstabelecimento extends Component
                 'cor_secundaria' => $hex,
                 'fonte' => ['required', 'string', Rule::in(array_keys(Aparencia::FONTES))],
                 'tamanho_base' => ['required', 'string', 'regex:/^\d{2}px$/'],
-                'logoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+                'logoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             ],
             default => [],
         };

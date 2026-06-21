@@ -155,6 +155,26 @@ A tipografia faz parte da marca (D36) e é emitida como `font-family` no `<body>
 dos layouts; o editor carrega **todas** (`linksFontesGoogle()`) para a prévia ao vivo.
 Lista fechada (`Aparencia::FONTES`) → sem injeção; `href` escapada.
 
+## Livewire + stancl: endpoints de arquivo precisam de tenancy ANTES do throttle
+O `upload-file`/`preview-file` do Livewire são globais (grupo `web`, COM sessão, SEM
+tenancy — não passam pelo persistent middleware do `/update`). O `ThrottleRequests`
+chama `$request->user()` p/ a chave de rate-limit; logado no painel, o usuário do tenant
+é procurado no banco CENTRAL (`nextgest_central.users` não existe) → **500** ("Falha no
+upload"). Pegadinha dupla: (1) precisa um middleware que inicialize a tenancy nesses
+endpoints (por `_tenant_sessao` na sessão, fallback Referer); (2) o Laravel ordena por
+PRIORIDADE e puxa o `ThrottleRequests` para frente — use
+`$middleware->prependToPriorityList(before: ThrottleRequests::class, prepend: ...)` p/
+garantir tenancy ANTES do throttle. Reproduzir **logado** (deslogado dá 200 e esconde o
+bug). Ver [[Bug - Upload 500 (usuario do tenant resolvido no banco central)]].
+
+## `php artisan serve`: `-d ini` NÃO chega ao servidor; use PHP_INI_SCAN_DIR
+`php -d upload_max_filesize=6M artisan serve` não eleva o limite: o `serve` lança um
+`php -S` FILHO que ignora o `-d` (segue no php.ini da CLI, ~2 MB; uploads maiores dão um
+302 de redirect). O que funciona em dev:
+`PHP_INI_SCAN_DIR=":/dir/com/uploads.ini" php artisan serve ...` (o filho honra o scan
+dir). Em produção (php-fpm), ajustar o php.ini/pool. A validação do app é 5 MB
+(`max:5120`), mas o teto efetivo é o do PHP.
+
 ## Livewire + stancl: disco de upload TEMPORÁRIO precisa ser central (senão 500)
 O endpoint global `/livewire/upload-file` roda **sem** tenancy (só `web`, sem
 `{tenant}`); o `/update`/`salvar` rodam **com** tenancy. Se o disco temp for `local`

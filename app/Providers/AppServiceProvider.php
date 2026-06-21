@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Middleware\InicializarTenancyArquivosLivewire;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Features\SupportFileUploads\FilePreviewController;
 use Livewire\Livewire;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
@@ -32,5 +34,17 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addPersistentMiddleware([
             InitializeTenancyByPath::class,
         ]);
+
+        /*
+        | Endpoints GLOBAIS de arquivo do Livewire (upload-file / preview-file) não
+        | passam pelo persistent middleware acima (são controllers próprios) nem têm
+        | {tenant} no caminho. Sem tenancy, o guard `web` resolve o usuário do tenant
+        | contra o banco central → 500. O upload-file recebe o middleware via
+        | config/livewire.php (temporary_file_upload.middleware); o preview-file usa
+        | esta lista estática — então o injetamos aqui também.
+        */
+        if (! in_array(InicializarTenancyArquivosLivewire::class, FilePreviewController::$middleware, true)) {
+            FilePreviewController::$middleware[] = InicializarTenancyArquivosLivewire::class;
+        }
     }
 }
