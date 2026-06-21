@@ -112,6 +112,17 @@ de loading/vazio/erro. Regra de ouro mantida: **dark-safe** — nada de `bg-whit
   Claro/Escuro/Sistema: header do portal (`x-ng.seletor-tema`) e menu de perfil do
   painel. Persistência por `localStorage` (Flux). Ver [[Decisões de Arquitetura]] D36.
 
+## Cadastros elevados (Polimento 2, 2026-06-22)
+As seis telas de cadastro (unidades, serviços, equipe, horários, papéis, bloqueios)
+no mesmo padrão: tokens da Etapa D (sem zinc fixo), **estado vazio temático**
+(`x-ng.empty themed` com CTA, fora da tabela), **confirmação por `flux:modal`**
+(componente reutilizável **`x-ng.confirmar`**, sem `confirm` nativo em nenhuma),
+inativar = não apaga. **Busca + skeleton** em serviços e equipe (listas que crescem);
+serviços mostra a **% de comissão** (2C). Regras/dados de agendamento e permissões
+spatie **intactos** — só apresentação. **Priorização:** papéis já estava consistente
+(deixei como estava; rótulos amigáveis de permissão ficam como micro-polimento
+futuro); unidades/papéis/bloqueios sem busca por terem poucas linhas.
+
 ## Agenda elevada (Polimento 1, 2026-06-22)
 Tela de maior uso diária, levada ao padrão das demais (tokens da Etapa D, sem zinc
 fixo): cartões em `.ng-surface`/`.ng-surface-interactive` com **barra de acento por

@@ -68,9 +68,12 @@ tags: [nextgest, ui, auditoria, portal, painel]
   status**, modal de detalhe com ações (incl. cancelar por `flux:modal`, sem confirm
   nativo, e "gerar comanda" no concluído), estados loading/vazio/erro e **semana com
   scroll+snap** no mobile. Regras (`MotorDisponibilidade`/`Agendador`) **intactas**.
-- 🎨 **Pendente:** polimento temático fino dos **cadastros** (unidades/serviços/equipe/
-  horários/papéis/bloqueios — herdam o `.dark` correto, mas sem o acabamento das telas
-  elevadas); possível override de claro/escuro por usuário da equipe.
+- ✅ **(elevados — Polimento 2, 2026-06-22) Cadastros** (unidades/serviços/equipe/
+  horários/papéis/bloqueios): tokens da Etapa D, **estado vazio temático**,
+  **confirmação por `flux:modal`** (`x-ng.confirmar`, sem `confirm` nativo), busca em
+  serviços/equipe, % de comissão nos serviços. Regras/permissões intactas.
+- 🟢 **Telas internas completas.** Pendências menores: rótulos amigáveis de permissão
+  na tela de papéis; possível override de claro/escuro por usuário da equipe.
 
 ## Lição (anti-divergência teste×navegador)
 `Livewire::test()` verde **não** garante boa aparência: ele não exercita tema/CSS

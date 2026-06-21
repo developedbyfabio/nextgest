@@ -10,10 +10,11 @@ tags: [nextgest, saas, agendamento]
 # Nextgest — Visão Geral
 
 > [!note] Estado atual (22/06/2026)
-> - **Suíte verde: 208 testes** (Pest) + testes de fumaça HTTP.
-> - **Polimento 1:** a **agenda** foi elevada ao padrão das telas de ponta (tokens,
->   cartões com acento de status, modal de detalhe, estados, semana responsiva) sem
->   tocar nas regras (`MotorDisponibilidade`/`Agendador`). Próximo: cadastros.
+> - **Suíte verde: 213 testes** (Pest) + testes de fumaça HTTP.
+> - **Polimento concluído:** **agenda** (Polimento 1) e **cadastros** (Polimento 2 —
+>   unidades/serviços/equipe/horários/papéis/bloqueios) elevados ao padrão de ponta
+>   (tokens, estados, `flux:modal` sem confirm nativo, busca onde cabe). **Todas as
+>   telas internas agora no nível do resto.** Regras/permissões intactas.
 > - **Fatia 2 completa:** 2A produtos/estoque, 2B venda/comanda, 2C comissões, 2D
 >   dashboard com faturamento REAL. **Pagamentos etapa 1 (presencial)** entregue:
 >   fechar comanda registra pagamento(s) (dinheiro/cartão/pix/maquininha, dividido),
@@ -25,9 +26,9 @@ tags: [nextgest, saas, agendamento]
 >   logo + tipografia** (constante nos dois modos); **superfícies = tokens de
 >   claro/escuro**. Ver [[Decisões de Arquitetura]] D36 e
 >   [[Identidade Visual do Estabelecimento (Tema)]].
-> - **Próxima frente:** polir os **cadastros** (Polimento 2) e/ou **Pagamentos etapa 2**
->   (gateway Mercado Pago — exige direção do Fabio). Depois: Clube de assinatura.
->   Pendente menor: desconto por item.
+> - **Próxima frente:** **Pagamentos etapa 2** (gateway Mercado Pago — exige direção do
+>   Fabio: conta/credenciais/VPS) e/ou **Clube de assinatura**. Pendentes menores:
+>   desconto por item; rótulos amigáveis de permissão na tela de papéis.
 > - **Migrou de servidor:** saiu da VM VirtualBox (`192.168.3.100`, Ubuntu 24.04,
 >   PHP 8.4) para o **servidor de dev compartilhado `192.168.11.210`** (Ubuntu 22.04,
 >   PHP 8.5.7), com repositório no **GitHub**.
