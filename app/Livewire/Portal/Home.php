@@ -20,6 +20,16 @@ use Livewire\Component;
 #[Layout('components.layouts.portal')]
 class Home extends Component
 {
+    /** Agendamento aguardando confirmação de cancelamento (modal). */
+    public ?int $cancelandoId = null;
+
+    /** Abre o modal de confirmação de cancelamento (UI bonita, sem confirm nativo). */
+    public function pedirCancelamento(int $id): void
+    {
+        $this->cancelandoId = $id;
+        Flux::modal('cancelar-agendamento')->show();
+    }
+
     public function cancelar(int $id): void
     {
         $cliente = auth('cliente')->user();
@@ -31,12 +41,16 @@ class Home extends Component
         $agendador = app(Agendador::class);
 
         if (! $agendador->podeCancelar($agendamento)) {
+            Flux::modal('cancelar-agendamento')->close();
+            $this->cancelandoId = null;
             Flux::toast('Não é possível cancelar com menos de algumas horas de antecedência.', variant: 'danger');
 
             return;
         }
 
         $agendador->cancelar($agendamento);
+        Flux::modal('cancelar-agendamento')->close();
+        $this->cancelandoId = null;
         Flux::toast('Agendamento cancelado.', variant: 'success');
     }
 

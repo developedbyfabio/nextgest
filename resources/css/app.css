@@ -73,4 +73,66 @@
     .ng-skeleton {
         @apply animate-pulse rounded-md bg-zinc-200/70 dark:bg-zinc-700/50;
     }
+
+    /*
+    | PORTAL DO CLIENTE — variantes "temáticas" que seguem a identidade do
+    | estabelecimento (CSS vars de Aparencia: --cor-superficie/--cor-texto/
+    | --cor-principal/--color-accent). Usadas onde o portal precisa parecer "a
+    | marca daquele negócio", inclusive com superfície custom (clara OU escura).
+    | O painel continua usando as classes neutras acima (zinc/dark do Flux).
+    */
+    .ng-card-portal {
+        width: 100%;
+        text-align: left;
+        border-radius: 0.85rem;
+        background-color: var(--cor-superficie, #fff);
+        color: var(--cor-texto, #18181b);
+        border: 1px solid color-mix(in srgb, var(--cor-texto, #18181b) 12%, transparent);
+        transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+    }
+
+    .ng-card-portal:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-soft);
+        border-color: color-mix(in srgb, var(--cor-principal, var(--color-accent)) 45%, transparent);
+    }
+
+    .ng-card-portal:active {
+        transform: translateY(0);
+    }
+
+    .ng-card-portal:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--cor-superficie, #fff), 0 0 0 4px var(--color-accent);
+    }
+
+    /* Cartão de opção selecionado (wizard): realce com a cor da marca. */
+    .ng-card-portal[aria-pressed='true'] {
+        border-color: var(--color-accent);
+        box-shadow: inset 0 0 0 1.5px var(--color-accent);
+        background-color: color-mix(in srgb, var(--color-accent) 8%, var(--cor-superficie, #fff));
+    }
+
+    /* Skeleton temático (segue o texto da marca, não o zinc fixo). */
+    .ng-skeleton-portal {
+        @apply animate-pulse rounded-md;
+        background-color: color-mix(in srgb, var(--cor-texto, #18181b) 10%, transparent);
+    }
+
+    /* Entrada suave de conteúdo trocado pelo Livewire (wire:transition). */
+    .ng-fade-in {
+        animation: ng-fade-in 0.25s ease-out both;
+    }
+
+    @keyframes ng-fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 }
