@@ -48,10 +48,24 @@ class MovimentadorEstoque
         });
     }
 
-    /** Entrada de estoque (reposição/compra): soma `$quantidade` (>0). */
-    public function entrada(int $produtoId, int $unidadeId, int $quantidade, ?string $motivo = null, ?int $userId = null): MovimentacaoEstoque
+    /** Entrada de estoque (reposição/compra/estorno): soma `$quantidade` (>0). */
+    public function entrada(int $produtoId, int $unidadeId, int $quantidade, ?string $motivo = null, ?int $userId = null, ?int $vendaId = null): MovimentacaoEstoque
     {
-        return $this->aplicar($produtoId, $unidadeId, 'entrada', abs($quantidade), $motivo ?: 'Entrada', $userId);
+        return $this->aplicar($produtoId, $unidadeId, 'entrada', abs($quantidade), $motivo ?: 'Entrada', $userId, $vendaId);
+    }
+
+    /** Saída de estoque (venda): subtrai `$quantidade` (>0). Grava `venda_id`. */
+    public function saida(int $produtoId, int $unidadeId, int $quantidade, ?string $motivo = null, ?int $userId = null, ?int $vendaId = null): MovimentacaoEstoque
+    {
+        return $this->aplicar($produtoId, $unidadeId, 'saida', -abs($quantidade), $motivo ?: 'Venda', $userId, $vendaId);
+    }
+
+    /** Estoque atual de um produto numa filial. */
+    public function disponivel(int $produtoId, int $unidadeId): int
+    {
+        return (int) (ProdutoUnidade::where('produto_id', $produtoId)
+            ->where('unidade_id', $unidadeId)
+            ->value('quantidade') ?? 0);
     }
 
     /** Ajuste para um valor ABSOLUTO (ex.: contagem): delta = alvo − atual. */

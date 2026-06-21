@@ -1,0 +1,190 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Livewire\Painel\Vendas;
+
+use App\Models\Produto;
+use App\Models\Servico;
+use App\Models\User;
+use App\Models\Venda;
+use App\Models\VendaItem;
+use App\Services\Venda\Comanda;
+use App\Services\Venda\EstoqueInsuficienteException;
+use App\Services\Venda\VendaNaoEditavelException;
+use Flux\Flux;
+use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+/**
+ * Detalhe da comanda (Fatia 2B): itens (add/remover), profissional por item,
+ * desconto, totais ao vivo e ações fechar/pagar / cancelar. Permissão: criar_venda.
+ */
+#[Layout('components.layouts.painel')]
+#[Title('Comanda')]
+class Detalhe extends Component
+{
+    use AuthorizesRequests;
+
+    public int $vendaId;
+
+    public ?string $desconto = null;
+
+    // Modal de item.
+    public bool $mostrarItem = false;
+
+    public string $tipoItem = 'produto'; // produto | servico
+
+    public ?string $itemRefId = null;
+
+    public int $itemQtd = 1;
+
+    public ?string $itemProfissionalId = null;
+
+    public function mount(int $venda): void
+    {
+        $this->authorize('criar_venda');
+        $this->vendaId = Venda::findOrFail($venda)->id;
+        $this->desconto = (string) $this->venda()->desconto;
+    }
+
+    private function venda(): Venda
+    {
+        return Venda::findOrFail($this->vendaId);
+    }
+
+    public function abrirItem(): void
+    {
+        $this->reset(['itemRefId', 'itemQtd', 'itemProfissionalId']);
+        $this->itemQtd = 1;
+        $this->tipoItem = 'produto';
+        $this->resetValidation();
+        $this->mostrarItem = true;
+    }
+
+    public function adicionarItem(Comanda $comanda): void
+    {
+        $this->authorize('criar_venda');
+
+        $dados = $this->validate([
+            'tipoItem' => ['required', 'in:produto,servico'],
+            'itemRefId' => ['required', 'integer'],
+            'itemQtd' => ['required', 'integer', 'min:1'],
+            'itemProfissionalId' => ['nullable', 'integer', 'exists:users,id'],
+        ], attributes: ['itemRefId' => 'item', 'itemQtd' => 'quantidade']);
+
+        $venda = $this->venda();
+        $profId = $dados['itemProfissionalId'] ? (int) $dados['itemProfissionalId'] : null;
+
+        try {
+            if ($dados['tipoItem'] === 'produto') {
+                $produto = Produto::where('ativo', true)->findOrFail((int) $dados['itemRefId']);
+                $comanda->adicionarProduto($venda, $produto, (int) $dados['itemQtd'], $profId);
+            } else {
+                $servico = Servico::where('ativo', true)->findOrFail((int) $dados['itemRefId']);
+                $comanda->adicionarServico($venda, $servico, $profId);
+            }
+        } catch (EstoqueInsuficienteException|VendaNaoEditavelException $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        $this->sincronizar();
+        $this->mostrarItem = false;
+        Flux::toast('Item adicionado.', variant: 'success');
+    }
+
+    public function removerItem(int $itemId, Comanda $comanda): void
+    {
+        $this->authorize('criar_venda');
+        $item = VendaItem::where('venda_id', $this->vendaId)->findOrFail($itemId);
+
+        try {
+            $comanda->removerItem($item);
+        } catch (VendaNaoEditavelException $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        $this->sincronizar();
+        Flux::toast('Item removido.');
+    }
+
+    public function updatedDesconto(Comanda $comanda): void
+    {
+        $venda = $this->venda();
+
+        if ($venda->status !== 'aberta') {
+            return;
+        }
+
+        $comanda->definirDesconto($venda, (float) str_replace(',', '.', (string) $this->desconto));
+        $this->sincronizar();
+    }
+
+    public function pedirPagar(): void
+    {
+        Flux::modal('pagar-comanda')->show();
+    }
+
+    public function pagar(Comanda $comanda): void
+    {
+        $this->authorize('criar_venda');
+
+        try {
+            $comanda->pagar($this->venda(), auth('web')->id());
+        } catch (EstoqueInsuficienteException|VendaNaoEditavelException $e) {
+            Flux::modal('pagar-comanda')->close();
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        Flux::modal('pagar-comanda')->close();
+        Flux::toast('Comanda paga. Estoque e comissão atualizados.', variant: 'success');
+    }
+
+    public function pedirCancelar(): void
+    {
+        Flux::modal('cancelar-comanda')->show();
+    }
+
+    public function cancelar(Comanda $comanda): void
+    {
+        $this->authorize('criar_venda');
+        $comanda->cancelar($this->venda(), auth('web')->id());
+        Flux::modal('cancelar-comanda')->close();
+        Flux::toast('Comanda cancelada.');
+    }
+
+    /** Re-sincroniza o campo de desconto com o valor (possivelmente clampado) no banco. */
+    private function sincronizar(): void
+    {
+        $this->desconto = (string) $this->venda()->desconto;
+    }
+
+    public function render(): View
+    {
+        $venda = Venda::with([
+            'itens.produto:id,nome',
+            'itens.servico:id,nome',
+            'itens.profissional:id,name',
+            'cliente:id,nome,telefone',
+            'unidade:id,nome',
+        ])->findOrFail($this->vendaId);
+
+        return view('livewire.painel.vendas.detalhe', [
+            'venda' => $venda,
+            'editavel' => $venda->status === 'aberta',
+            'produtos' => Produto::where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'preco_venda', 'controla_estoque']),
+            'servicos' => Servico::where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'preco']),
+            'profissionais' => User::where('e_profissional', true)->where('ativo', true)->orderBy('name')->get(['id', 'name']),
+            'comissaoTotal' => (float) $venda->itens->sum('valor_comissao'),
+        ]);
+    }
+}

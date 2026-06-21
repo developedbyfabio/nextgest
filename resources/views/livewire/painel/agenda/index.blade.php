@@ -165,6 +165,13 @@
                         @if (! in_array($detalhe->status, \App\Models\Agendamento::STATUS_LIVRES, true) && $detalhe->status !== 'concluido')
                             <flux:button wire:click="iniciarRemarcacao" size="sm" variant="subtle" icon="arrow-path">Remarcar</flux:button>
                         @endif
+
+                        {{-- Gerar comanda do atendimento concluído (financeiro) --}}
+                        @if ($detalhe->status === 'concluido')
+                            @can('criar_venda')
+                                <flux:button wire:click="gerarComanda" size="sm" variant="primary" icon="shopping-cart">Gerar comanda</flux:button>
+                            @endcan
+                        @endif
                     @else
                         {{-- Modo remarcar --}}
                         <div class="flex flex-col gap-3">

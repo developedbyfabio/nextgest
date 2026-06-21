@@ -19,6 +19,8 @@ use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
 use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
+use App\Livewire\Painel\Vendas\Detalhe as VendasDetalhe;
+use App\Livewire\Painel\Vendas\Index as VendasIndex;
 use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\Home as PortalHome;
 use Illuminate\Support\Facades\Route;
@@ -105,6 +107,15 @@ Route::middleware(['tenant'])
                 // O gate combinado é reconferido no mount do componente.
                 Route::get('produtos', ProdutosIndex::class)
                     ->name('produtos');
+
+                // Vendas / comandas (2B). Balcão e a partir de agendamento.
+                Route::get('vendas', VendasIndex::class)
+                    ->middleware('can:criar_venda')
+                    ->name('vendas');
+
+                Route::get('vendas/{venda}', VendasDetalhe::class)
+                    ->middleware('can:criar_venda')
+                    ->name('vendas.detalhe');
 
                 Route::get('bloqueios', BloqueiosIndex::class)
                     ->middleware('can:gerir_agenda')

@@ -11,6 +11,7 @@ use App\Services\Agendamento\Agendador;
 use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Agendamento\SlotIndisponivelException;
 use App\Services\Agendamento\TransicaoInvalidaException;
+use App\Services\Venda\Comanda;
 use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
@@ -152,6 +153,26 @@ class Index extends Component
 
         $this->modoRemarcar = false;
         Flux::toast('Agendamento remarcado.', variant: 'success');
+    }
+
+    /**
+     * Gera (ou reabre) a comanda do atendimento concluído e leva ao detalhe. A
+     * agenda guarda o atendimento; a venda guarda o financeiro (doc seção 6).
+     */
+    public function gerarComanda(Comanda $comanda)
+    {
+        $this->authorize('criar_venda');
+        $agendamento = $this->escopo()->whereKey($this->detalheId)->firstOrFail();
+
+        if ($agendamento->status !== 'concluido') {
+            Flux::toast('Conclua o atendimento antes de gerar a comanda.', variant: 'warning');
+
+            return;
+        }
+
+        $venda = $comanda->apartirDeAgendamento($agendamento, auth('web')->id());
+
+        return $this->redirectRoute('painel.vendas.detalhe', ['tenant' => tenant('id'), 'venda' => $venda->id], navigate: true);
     }
 
     #[On('agenda-atualizada')]

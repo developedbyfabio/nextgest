@@ -14,7 +14,9 @@ use App\Models\Servico;
 use App\Models\Tenant;
 use App\Models\Unidade;
 use App\Models\User;
+use App\Models\Venda;
 use App\Services\Estoque\MovimentadorEstoque;
+use App\Services\Venda\Comanda;
 use App\Support\Aparencia;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -71,6 +73,7 @@ class SemearDemo extends Command
             $this->catalogoProdutos($unidade);
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
+            $this->comandas($unidade, $servicos, $profissionais, $clientes);
             $this->kanban($clientes, $profissionais);
         });
 
@@ -141,6 +144,53 @@ class SemearDemo extends Command
             if ($controla && $estoque && $produto->movimentacoes()->doesntExist()) {
                 $movimentador->entrada($produto->id, $unidade->id, $estoque, 'Estoque inicial (demo)');
             }
+        }
+    }
+
+    /**
+     * Comandas de demonstração (Fatia 2B): uma paga de balcão (produto + serviço,
+     * com desconto → baixa estoque + comissão), uma aberta, e uma a partir de um
+     * atendimento concluído. Idempotente: só semeia se ainda não houver vendas.
+     *
+     * @param  array<string, Servico>  $servicos
+     * @param  array<int, User>  $profissionais
+     * @param  array<int, Cliente>  $clientes
+     */
+    private function comandas(Unidade $unidade, array $servicos, array $profissionais, array $clientes): void
+    {
+        if (Venda::exists()) {
+            return;
+        }
+
+        $comanda = app(Comanda::class);
+        $jorge = $profissionais[0] ?? null;
+        $maria = $clientes[0] ?? null;
+        $pomada = Produto::where('nome', 'Pomada modeladora')->first();
+        $agua = Produto::where('nome', 'Água 500ml')->first();
+        $corte = $servicos['Corte masculino'] ?? null;
+
+        // 1) Balcão PAGA (produto + serviço, com desconto).
+        $v1 = $comanda->abrir($unidade->id, $maria?->id, $jorge?->id);
+        if ($pomada) {
+            $comanda->adicionarProduto($v1, $pomada, 1, $jorge?->id);
+        }
+        if ($corte) {
+            $comanda->adicionarServico($v1, $corte, $jorge?->id);
+        }
+        $comanda->definirDesconto($v1, 5);
+        $comanda->pagar($v1, $jorge?->id);
+
+        // 2) ABERTA (em montagem no balcão).
+        $v2 = $comanda->abrir($unidade->id, null, $jorge?->id);
+        if ($agua) {
+            $comanda->adicionarProduto($v2, $agua, 2, null);
+        }
+
+        // 3) A partir de um atendimento concluído (o financeiro do atendimento).
+        $ag = Agendamento::where('status', 'concluido')->whereHas('itens')->orderBy('id')->first();
+        if ($ag) {
+            $v3 = $comanda->apartirDeAgendamento($ag, $jorge?->id);
+            $comanda->pagar($v3, $jorge?->id);
         }
     }
 
