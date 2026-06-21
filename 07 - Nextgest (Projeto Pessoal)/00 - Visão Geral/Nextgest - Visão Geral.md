@@ -25,6 +25,10 @@ tags: [nextgest, saas, agendamento]
 >   **cliente e profissional travados**; nas avulsas há campo **"quem vendeu"** que
 >   pré-preenche os itens. Permissão `finalizar_atendimento_proprio` + `VendaPolicy`
 >   (profissional só os próprios). Ver [[Vendas e Comanda]].
+> - **Senhas** (✅ 2026-06-22): Dono criado no onboarding com **troca obrigatória no 1º
+>   login** (flag `deve_trocar_senha` + middleware `ForcarTrocaSenha`, só painel); e
+>   **"Alterar senha"** self-service no menu de perfil (todos os papéis, exige a senha
+>   atual). Ver [[Senhas (1o login e self-service)]].
 > - Evolução visual A/B/C (portal, painel+dashboard, kanban) + **Etapa D: modo
 >   claro/escuro/sistema** (Flux) no painel e no portal.
 > - **Modelo de tema (D36, substitui parte de A/B):** marca do tenant = **acento +

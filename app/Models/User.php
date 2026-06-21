@@ -28,6 +28,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'deve_trocar_senha',
         'e_profissional',
         'ativo',
     ];
@@ -41,6 +42,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'deve_trocar_senha' => 'boolean',
             'e_profissional' => 'boolean',
             'ativo' => 'boolean',
         ];

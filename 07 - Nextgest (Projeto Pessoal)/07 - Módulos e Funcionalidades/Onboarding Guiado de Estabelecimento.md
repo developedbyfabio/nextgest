@@ -41,7 +41,9 @@ travar a escolha do operador:
 
 ## O que acontece ao confirmar
 - **Provisiona o tenant** (dispara CreateDatabase → MigrateDatabase → SeedDatabase).
-- **Cria o Dono** (guard `web`, papel Dono).
+- **Cria o Dono** (guard `web`, papel Dono) com a **senha inicial** (hasheada) e
+  **`deve_trocar_senha = true`** → no 1º login é forçado a definir uma senha própria. Ver
+  [[Senhas (1o login e self-service)]].
 - **Aplica a aparência** escolhida (`configuracoes.aparencia`).
 - **Semeia o horário** de funcionamento.
 

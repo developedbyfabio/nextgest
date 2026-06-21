@@ -111,9 +111,12 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
         ->and($tenant->segmento)->toBe('estetica');
 
     $dados = $tenant->run(function () {
+        $dono = User::where('email', 'ana@studiolumiere.com')->first();
+
         return [
             'papeis' => Role::count(),
-            'dono' => User::where('email', 'ana@studiolumiere.com')->first()?->hasRole('Dono'),
+            'dono' => $dono?->hasRole('Dono'),
+            'deveTrocar' => $dono?->deve_trocar_senha,
             'cor' => Aparencia::doTenant()['cor_principal'],
             'descricao' => Configuracao::valor('descricao'),
             'horario' => Configuracao::valor('horario_funcionamento'),
@@ -122,6 +125,7 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
 
     expect($dados['papeis'])->toBeGreaterThan(0)
         ->and($dados['dono'])->toBeTrue()
+        ->and($dados['deveTrocar'])->toBeTrue() // troca obrigatória no 1º login
         ->and($dados['cor'])->toBe('#111827') // template premium (segmento estética)
         ->and($dados['descricao'])->toBe('Estética avançada com hora marcada.');
 

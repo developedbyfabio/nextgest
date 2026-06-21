@@ -106,6 +106,11 @@
 
                 <flux:menu.separator />
 
+                {{-- Alterar a própria senha (abre o modal embutido x-livewire abaixo). --}}
+                <flux:menu.item icon="key" x-on:click="$flux.modal('alterar-senha').show()">Alterar senha</flux:menu.item>
+
+                <flux:menu.separator />
+
                 {{-- x-model DIRETO em $flux.appearance (não uma cópia local, que ficaria inerte). --}}
                 <flux:menu.radio.group x-data x-model="$flux.appearance" heading="Tema">
                     <flux:menu.radio value="light" icon="sun">Claro</flux:menu.radio>
@@ -137,6 +142,9 @@
     <flux:main>
         {{ $slot }}
     </flux:main>
+
+    {{-- Modal de alterar senha (self-service, todos os papéis) — aberto pelo menu de perfil. --}}
+    <livewire:painel.alterar-senha />
 
     <flux:toast position="top right" />
 

@@ -343,6 +343,7 @@ class OnboardingEstabelecimento extends Component
                     'name' => $this->donoNome,
                     'email' => $this->donoEmail,
                     'password' => $this->donoSenha, // cast 'hashed'
+                    'deve_trocar_senha' => true,    // troca obrigatória no 1º login
                     'e_profissional' => false,
                     'ativo' => true,
                 ])->assignRole('Dono');

@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\SuporteController;
 use App\Http\Controllers\TenantArquivoController;
+use App\Http\Middleware\ForcarTrocaSenha;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\PainelLogin;
+use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
@@ -83,10 +85,15 @@ Route::middleware(['tenant'])
                 ->middleware('guest:web')
                 ->name('login');
 
-            Route::middleware('auth:web')->group(function () {
+            // ForcarTrocaSenha: 1º login com `deve_trocar_senha` cai na tela de troca
+            // (exceto a própria rota, logout e sair do suporte). Só painel (guard web).
+            Route::middleware(['auth:web', ForcarTrocaSenha::class])->group(function () {
                 Route::get('/', PainelDashboard::class)->name('dashboard');
 
                 Route::post('sair', [LogoutController::class, 'painel'])->name('logout');
+
+                // Troca de senha obrigatória no 1º login (isenta do middleware acima).
+                Route::get('senha', TrocarSenha::class)->name('senha');
 
                 // Encerrar o modo suporte (impersonação) e voltar ao /admin.
                 Route::post('suporte/sair', [SuporteController::class, 'sair'])->name('suporte.sair');
