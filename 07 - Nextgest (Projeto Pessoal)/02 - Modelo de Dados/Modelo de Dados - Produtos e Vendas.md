@@ -24,6 +24,16 @@ tags: [nextgest, modelo-de-dados, produtos, vendas, comissao, estoque]
 > **A confirmar (entra na 2B):** `vendas`, `venda_itens`, `comissoes_profissional`
 > (tabelas já existem no scaffold, mas sem models/UI ainda).
 
+> [!check] Confirmado na Fatia 2B (2026-06-21)
+> **3.5 `vendas`** e **3.6 `venda_itens`** confirmadas (migration **190004**, batem
+> com o doc) — models `Venda`/`VendaItem` e serviço `App\Services\Venda\Comanda`
+> implementados. Regras: snapshot de descrição/preço no item, `subtotal = preço × qtd`,
+> `valor_total = bruto − desconto`, **baixa de estoque ao pagar** (com `venda_id`),
+> **comissão básica snapshot** (produto via `percentual_comissao`; serviço sem comissão
+> nesta fatia) e **estorno** ao cancelar venda paga. Ver [[Vendas e Comanda]].
+> **A confirmar (2C):** **3.7 `comissoes_profissional`** (override por profissional) e
+> a % padrão de serviço; desconto por item.
+
 ---
 
 ## 1. Decisões deste bloco

@@ -10,16 +10,18 @@ tags: [nextgest, saas, agendamento]
 # Nextgest — Visão Geral
 
 > [!note] Estado atual (21/06/2026)
-> - **Suíte verde: 171 testes** (Pest) + testes de fumaça HTTP.
-> - **Fatia 2A iniciada:** produtos, categorias e estoque por unidade no painel
->   (`painel.produtos`) — ver [[Produtos e Estoque]]. Falta a **2B** (venda/comanda).
+> - **Suíte verde: 181 testes** (Pest) + testes de fumaça HTTP.
+> - **Fatia 2A+2B entregues:** produtos/categorias/estoque (`painel.produtos`) e
+>   **venda/comanda** (`painel.vendas`) com baixa de estoque + comissão básica ao
+>   pagar e estorno — ver [[Produtos e Estoque]] e [[Vendas e Comanda]].
 > - Evolução visual A/B/C (portal, painel+dashboard, kanban) + **Etapa D: modo
 >   claro/escuro/sistema** (Flux) no painel e no portal.
 > - **Modelo de tema (D36, substitui parte de A/B):** marca do tenant = **acento +
 >   logo + tipografia** (constante nos dois modos); **superfícies = tokens de
 >   claro/escuro**. Ver [[Decisões de Arquitetura]] D36 e
 >   [[Identidade Visual do Estabelecimento (Tema)]].
-> - **Próxima frente:** Fatia 2B (venda/comanda + comissão + baixa de estoque).
+> - **Próxima frente:** Fatia 2C (relatório de comissões + override por profissional;
+>   % padrão de serviço; desconto por item) e o bloco **Pagamentos**.
 > - **Migrou de servidor:** saiu da VM VirtualBox (`192.168.3.100`, Ubuntu 24.04,
 >   PHP 8.4) para o **servidor de dev compartilhado `192.168.11.210`** (Ubuntu 22.04,
 >   PHP 8.5.7), com repositório no **GitHub**.
