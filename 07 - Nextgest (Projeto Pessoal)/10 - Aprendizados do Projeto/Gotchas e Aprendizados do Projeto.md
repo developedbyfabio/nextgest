@@ -103,6 +103,24 @@ este projeto é por **caminho**. Para logo/cabeçalho/fundo usa-se a rota própr
 `/{tenant}/arquivo/{path}` via `Aparencia::urlArquivo($path)` (D35). Isso **substitui**
 o conselho antigo de usar `tenant_asset()` para imagens do tenant.
 
+## Componente compartilhado com cor fixa não segue o tema do tenant
+`x-ng.option-card`/`x-ng.empty` usavam `bg-white`/`zinc` e variantes `dark:`. No
+portal (que aplica o tema do tenant por CSS vars e **não** usa `.dark`), isso fica
+off-brand — e quebra se o dono escolher superfície escura (cartões brancos no
+escuro). Passou despercebido porque todos os presets têm superfície branca. Solução:
+prop `themed` que ativa `.ng-card-portal` (usa `--cor-superficie`/`--cor-texto`/
+`--color-accent`). Ver [[Identidade Visual do Estabelecimento (Tema)]].
+
+## Auditar UI rendendo com tema escuro custom (não só teste verde)
+`Livewire::test()` verde não prova boa aparência (não exercita CSS/tema nem HTTP
+real). Para auditar UI, renderizar o HTML aplicando uma **superfície escura custom**
+expõe cores fixas que o tema padrão (claro) esconde. Ver [[Auditoria de UI (Portal e Painel)]].
+
+## Cancelar/confirmar destrutivo: modal, não `wire:confirm`
+O `wire:confirm` usa o confirm **nativo** do browser (feio, fora do design system).
+Para ações destrutivas, usar `flux:modal` controlado por estado
+(`Flux::modal('nome')->show()/close()`), com o alvo guardado numa propriedade.
+
 ## Dark-mode do sistema sobre superfície clara forçada (texto invisível)
 **Sintoma:** no portal, o nome do serviço/profissional sumia, mas a duração
 (cinza-médio) aparecia.

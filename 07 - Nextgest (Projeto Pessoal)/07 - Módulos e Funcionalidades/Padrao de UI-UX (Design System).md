@@ -80,3 +80,12 @@ não um protótipo.
   navlist, sidebar, callout).
 - **Navegação** com `wire:navigate` (barra de progresso nativa) e estados ativos
   na sidebar via `:current`.
+
+## Portal do cliente — variantes temáticas (2026-06-21)
+O portal reflete a marca do estabelecimento (não o `.dark` do sistema). Por isso os
+componentes compartilhados usados ali recebem a prop **`themed`** e classes próprias
+em `app.css`: `.ng-card-portal` (cartão de opção/lista), `.ng-skeleton-portal`
+(skeleton) e `.ng-fade-in` (transição de conteúdo). Todas usam as CSS vars de
+`App\Support\Aparencia` e funcionam com superfície clara OU escura. Ações destrutivas
+no portal usam `flux:modal` (não `wire:confirm` nativo). Ver
+[[Auditoria de UI (Portal e Painel)]] e [[Identidade Visual do Estabelecimento (Tema)]].

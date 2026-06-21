@@ -71,6 +71,25 @@ compilado. No **painel**, aplica-se só o acento (`cssVarsAcento()`).
 Todo tenant nasce com tema finalizado mesmo sem registro salvo; o `nextgest:demo`
 grava o tema padrão como base editável.
 
+## Componentes compartilhados temáticos (portal)
+Os componentes `x-ng.option-card` e `x-ng.empty` têm a prop **`themed`**:
+- **com `themed`** (portal): seguem a identidade do tenant via CSS vars
+  (`--cor-superficie`/`--cor-texto`/`--cor-principal`/`--color-accent`) — classe
+  CSS `.ng-card-portal` (e `.ng-skeleton-portal` para skeleton). Funciona inclusive
+  com **superfície custom escura**.
+- **sem `themed`** (painel/admin): superfícies neutras do Flux (zinc/dark), como antes.
+
+> [!warning] Não use as classes neutras (`.ng-card-interactive`, `bg-white`/`zinc`) no portal
+> Elas têm cor fixa e variantes `dark:` que **não disparam** no portal (ele não
+> aplica `.dark`). No portal, sempre passar `themed`. Ver
+> [[Auditoria de UI (Portal e Painel)]].
+
+## Portal do cliente elevado (2026-06-21)
+UI do portal levada ao nível "de ponta": cartões/empties temáticos, transições
+suaves entre passos do wizard (`.ng-fade-in`), grade de horários e resumo com a cor
+da marca, e **cancelamento por `flux:modal`** (substitui o `wire:confirm` nativo).
+Ver [[Auditoria de UI (Portal e Painel)]] e [[Padrao de UI-UX (Design System)]].
+
 ## Pontos em aberto / próximos (Etapa 6 — polimento)
 - Aplicar a identidade também no **painel** e nas telas de **auth** do tenant (hoje o
   acento já entra no painel via `cssVarsAcento()`; falta o polimento amplo).
