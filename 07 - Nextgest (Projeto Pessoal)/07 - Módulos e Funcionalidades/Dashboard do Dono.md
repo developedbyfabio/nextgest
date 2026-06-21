@@ -25,16 +25,22 @@ Painel do tenant com indicadores e gráficos sobre **dados reais**, para Dono/Ge
 - Mudar filtro atualiza os gráficos **ao vivo** (canvas em `wire:ignore`), sem recarregar.
 
 ## Indicadores e gráficos
-- Série de agendamentos no período; **taxa de comparecimento**
-  (`concluido` / `nao_compareceu` / `cancelado`); clientes novos; top
-  serviços/profissionais; distribuição por hora.
-- **Gráficos com Chart.js** (via Vite), usando as cores do tema do estabelecimento.
+Dois grupos de KPIs (reusam `x-ng.indicador`):
+- **Financeiro (fonte: vendas pagas — Fatia 2D):** **Faturamento** (real, com variação
+  vs. período anterior), **Vendas pagas**, **Ticket médio** (faturamento ÷ nº vendas),
+  **Comissão a pagar** (soma de `venda_itens.valor_comissao` das vendas pagas).
+- **Operação (fonte: agendamentos):** Agendamentos (com tendência), Comparecimento,
+  Clientes novos, Clientes recorrentes.
+- **Gráficos** (Chart.js, cores do tema, reusam `x-ng.grafico`): **Faturamento por dia**
+  e **Mais vendidos (R$)** (vendas pagas); Agendamentos por dia; Taxa de comparecimento;
+  Serviços mais agendados; Horários mais movimentados.
 
-> [!warning] Faturamento é ESTIMADO
-> Não há módulo de Vendas/Clube ainda. O faturamento é **estimado** a partir dos
-> snapshots de preço em `agendamento_servico` dos agendamentos com status
-> `concluido` no período. Quando a Fatia 2 (vendas) existir, a fonte deve migrar para
-> as vendas reais.
+> [!check] Faturamento agora é REAL (Fatia 2D, 2026-06-21)
+> Faturamento = soma de `vendas.valor_total` das vendas com `status = paga` no
+> período/unidade. **Atendimento sem comanda NÃO vira faturamento** (só conta o que foi
+> efetivamente cobrado) — o correto. Substitui o "ESTIMADO" antigo (que somava
+> `agendamento_servico` de concluídos). `Metricas` lê de `vendas`/`venda_itens`. Empty-
+> state quando não há vendas no período (sem inventar número). Ver [[Vendas e Comanda]].
 
 ## Portabilidade das consultas
 As agregações usam apenas `count`/`sum`/`groupBy` por coluna (iguais em SQLite de
@@ -44,7 +50,10 @@ específicas de banco. Importa para os testes (SQLite) baterem com produção (M
 
 ## Dados de demonstração
 O `nextgest:demo` enriquece o tenant com ~90 dias de histórico determinístico
-(semente fixa, marcado `[demo]`, idempotente) para os gráficos terem forma.
+(semente fixa, idempotente): agendamentos e, na **2D**, **vendas pagas** ao longo do
+tempo — ~70% dos atendimentos concluídos viram comanda paga (serviços), parte com um
+produto de balcão (se houver estoque), com a `data` da venda retroagida ao atendimento.
+Coerente: usa `Comanda`/`MovimentadorEstoque` (baixa de estoque e comissão batem).
 
 ## Elevação visual (Etapa B, 2026-06-21)
 Dashboard levado ao nível "de ponta", dark-safe:
@@ -63,4 +72,5 @@ Dashboard levado ao nível "de ponta", dark-safe:
 
 ## Relacionado
 - [[Decisões de Arquitetura]] (D31)
+- [[Vendas e Comanda]] (fonte do faturamento real) · [[Produtos e Estoque]]
 - [[Modelo de Dados - Núcleo de Agendamento]] (agendamentos / `agendamento_servico`)
