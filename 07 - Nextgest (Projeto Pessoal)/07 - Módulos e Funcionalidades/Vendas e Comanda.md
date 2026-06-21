@@ -36,10 +36,11 @@ A comanda/venda: produtos + serviços, **avulsa** (balcão) **ou** a partir de u
 - **Bloqueio:** não vende produto acima do estoque da unidade — `adicionarProduto`
   (soma o que já está na comanda) e `pagar` (confere agregado) lançam
   `EstoqueInsuficienteException` com mensagem clara.
-- **Comissão básica (snapshot):** ao pagar, por item — produto usa
-  `percentual_comissao` do cadastro; **serviço fica sem comissão** (a % padrão de
-  serviço e o **override por profissional ficam para a 2C**). Grava
-  `percentual_comissao` e `valor_comissao`; `profissional_id` = quem executou/vendeu.
+- **Comissão (snapshot, completa na 2C):** ao pagar, por item, grava
+  `percentual_comissao` e `valor_comissao` resolvendo a **precedência**: (1) override
+  do profissional (`comissoes_profissional`) para aquele serviço/produto → (2) %
+  padrão do cadastro (`produtos.percentual_comissao` / `servicos.percentual_comissao`)
+  → (3) nenhuma. `profissional_id` = quem executou/vendeu. Ver [[Comissões]].
 - **Cancelar:** vira `cancelada` (não apaga). Se estava **paga**, **estorna** o estoque
   (entrada com `venda_id`) para não furar.
 - **Comanda só edita quando `aberta`** (`VendaNaoEditavelException`).
@@ -75,8 +76,9 @@ editar paga, e permissão (Profissional 403). Suíte **181 verde**.
 
 ## Fora do escopo (próximas)
 - **Pagamentos** (forma/gateway/status de pagamento) — "pagar" aqui só muda status.
-- **2C:** relatório de comissões e **override por profissional** (`comissoes_profissional`,
-  tabela já existe); % padrão de serviço; desconto por item.
+- ~~2C: comissões~~ — ✅ feito (override por profissional + % padrão de serviço +
+  relatório). Ver [[Comissões]].
+- Ainda pendente: **desconto por item** (hoje o desconto é só no total da venda).
 
 ## Relacionado
 - [[Produtos e Estoque]] · [[Modelo de Dados - Produtos e Vendas]] ·

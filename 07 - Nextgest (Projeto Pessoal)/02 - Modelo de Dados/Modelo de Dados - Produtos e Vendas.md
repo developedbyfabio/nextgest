@@ -34,6 +34,15 @@ tags: [nextgest, modelo-de-dados, produtos, vendas, comissao, estoque]
 > **A confirmar (2C):** **3.7 `comissoes_profissional`** (override por profissional) e
 > a % padrão de serviço; desconto por item.
 
+> [!check] Confirmado na Fatia 2C (2026-06-22)
+> **3.7 `comissoes_profissional`** confirmada (190003) — model `ComissaoProfissional`
+> (override por `user×serviço`/`user×produto`). Adicionada **`servicos.percentual_comissao`**
+> (migration aditiva, espelha `produtos.percentual_comissao`). Precedência da comissão:
+> override → % padrão (produto/serviço) → nenhuma, gravada como snapshot no item ao
+> pagar. Relatório por profissional em `painel.comissoes`. Ver [[Comissões]].
+> **Ainda pendente:** **desconto por item** (hoje só no total da venda — `venda_itens`
+> não tem coluna de desconto).
+
 ---
 
 ## 1. Decisões deste bloco
