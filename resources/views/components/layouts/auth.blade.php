@@ -1,12 +1,14 @@
+@php($temTenant = tenancy()->initialized)
+@php($aparencia = $temTenant ? \App\Support\Aparencia::doTenant() : null)
+@php($temaEscuro = $temTenant && \App\Support\Aparencia::superficieEscura($aparencia))
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $temaEscuro])>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- Tenant: título do estabelecimento; central (admin): marca Nextgest. --}}
-    @php($temTenant = tenancy()->initialized)
     <title>{{ $title ?? 'Acesso' }} · {{ $temTenant ? tenant('nome') : 'Nextgest' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -18,7 +20,6 @@
     @endunless
 </head>
 
-@php($aparencia = $temTenant ? \App\Support\Aparencia::doTenant() : null)
 @php($logoUrl = $temTenant ? \App\Support\Aparencia::urlArquivo($aparencia['logo']) : null)
 @php($marca = $temTenant ? tenant('nome') : ($brand ?? 'Nextgest'))
 

@@ -6,26 +6,30 @@
     'tendencia' => null, // float (%) — positivo verde, negativo âmbar; null oculta
 ])
 
-{{-- Cartão de indicador (KPI) reutilizável do dashboard. --}}
-<flux:card class="flex flex-col gap-1">
-    <div class="flex items-center justify-between">
-        <flux:text class="text-sm text-zinc-500">{{ $titulo }}</flux:text>
+{{-- Cartão de indicador (KPI) do dashboard. Superfície da marca (dark-safe). --}}
+<div class="ng-surface ng-surface-interactive flex flex-col gap-3 p-5">
+    <div class="flex items-start justify-between gap-2">
+        <flux:text class="text-sm font-medium" style="color: var(--cor-texto-suave);">{{ $titulo }}</flux:text>
         @if ($icone)
-            <flux:icon :name="$icone" class="size-4 text-zinc-400" />
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-xl" style="background-color: color-mix(in srgb, var(--cor-principal) 14%, transparent); color: var(--cor-principal);">
+                <flux:icon :name="$icone" class="size-5" />
+            </span>
         @endif
     </div>
 
-    <div class="text-2xl font-semibold tabular-nums">{{ $valor }}</div>
+    <div class="text-3xl font-bold tracking-tight tabular-nums" style="color: var(--cor-texto);">{{ $valor }}</div>
 
-    <div class="flex items-center gap-2">
-        @if (! is_null($tendencia))
-            @php($pos = $tendencia >= 0)
-            <flux:badge :color="$pos ? 'green' : 'amber'" size="sm" :icon="$pos ? 'arrow-trending-up' : 'arrow-trending-down'">
-                {{ $pos ? '+' : '' }}{{ number_format($tendencia, 0) }}%
-            </flux:badge>
-        @endif
-        @if ($sub)
-            <flux:text class="text-xs text-zinc-500">{{ $sub }}</flux:text>
-        @endif
-    </div>
-</flux:card>
+    @if (! is_null($tendencia) || $sub)
+        <div class="flex flex-wrap items-center gap-2">
+            @if (! is_null($tendencia))
+                @php($pos = $tendencia >= 0)
+                <flux:badge :color="$pos ? 'green' : 'amber'" size="sm" :icon="$pos ? 'arrow-trending-up' : 'arrow-trending-down'">
+                    {{ $pos ? '+' : '' }}{{ number_format($tendencia, 0) }}%
+                </flux:badge>
+            @endif
+            @if ($sub)
+                <flux:text class="text-xs" style="color: var(--cor-texto-suave);">{{ $sub }}</flux:text>
+            @endif
+        </div>
+    @endif
+</div>

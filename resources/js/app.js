@@ -61,25 +61,54 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
+/** Lê uma CSS var da marca (definida no <body>), com fallback. */
+function ngVar(nome, fallback) {
+    const v = getComputedStyle(document.body).getPropertyValue(nome).trim();
+    return v || fallback;
+}
+
 function opcoes(config) {
     const categorico = config.tipo === 'doughnut' || config.tipo === 'pie';
+    const textoSuave = ngVar('--cor-texto-suave', '#71717a');
+    const texto = ngVar('--cor-texto', '#18181b');
+    const superficie = ngVar('--cor-superficie', '#ffffff');
+    const grade = 'rgba(128, 128, 128, 0.15)'; // sutil e legível no claro e no escuro
 
     return {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: 4 },
+        cutout: categorico ? '62%' : undefined, // doughnut mais elegante
         plugins: {
             legend: {
                 display: config.legenda ?? categorico,
                 position: 'bottom',
-                labels: { boxWidth: 12, usePointStyle: true },
+                labels: { boxWidth: 10, usePointStyle: true, color: textoSuave, padding: 16 },
             },
-            tooltip: { enabled: true },
+            tooltip: {
+                backgroundColor: texto,
+                titleColor: superficie,
+                bodyColor: superficie,
+                padding: 10,
+                cornerRadius: 8,
+                boxPadding: 4,
+                displayColors: categorico,
+            },
         },
         scales: categorico
             ? {}
             : {
-                  x: { grid: { display: false }, ticks: { autoSkip: true, maxRotation: 0 } },
-                  y: { beginAtZero: true, ticks: { precision: 0 } },
+                  x: {
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: { color: textoSuave, autoSkip: true, maxRotation: 0 },
+                  },
+                  y: {
+                      beginAtZero: true,
+                      grid: { color: grade },
+                      border: { display: false },
+                      ticks: { color: textoSuave, precision: 0, maxTicksLimit: 5 },
+                  },
               },
     };
 }

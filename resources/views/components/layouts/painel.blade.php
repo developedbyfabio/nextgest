@@ -1,5 +1,9 @@
+@php($tenantId = tenant('id'))
+@php($aparencia = \App\Support\Aparencia::doTenant())
+@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
+@php($temaEscuro = \App\Support\Aparencia::superficieEscura($aparencia))
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $temaEscuro])>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +12,14 @@
     <title>{{ $title ?? 'Painel' }} · {{ tenant('nome') ?? 'Nextgest' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @fluxAppearance
+    {{-- O painel reflete o TEMA do estabelecimento (como o portal): cores e
+         superfície vêm das CSS vars de Aparencia. O modo escuro do Flux é ligado
+         pela classe `dark` no <html> quando a superfície da marca é escura, para
+         os componentes Flux acompanharem. Não seguimos o tema do sistema. --}}
 </head>
-@php($tenantId = tenant('id'))
-@php($aparencia = \App\Support\Aparencia::doTenant())
-@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
-{{-- Painel: superfícies neutras do Flux (claro/escuro) + a marca do
-     estabelecimento apenas como ACENTO (botões/foco/links/estado ativo). Não
-     pintamos fundos com cor custom — legibilidade da ferramenta vem primeiro. --}}
-<body class="min-h-screen bg-white dark:bg-zinc-800" style="{{ \App\Support\Aparencia::cssVarsAcento($aparencia) }}">
+{{-- Superfície/identidade da marca em todo o shell; o accent já alimenta os
+     componentes Flux (botões/foco/estado ativo). --}}
+<body class="min-h-screen" style="{{ \App\Support\Aparencia::cssVars($aparencia) }}; background-color: var(--cor-fundo); color: var(--cor-texto);">
 
     @if (session('suporte_ativo'))
         <div class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
@@ -31,7 +34,7 @@
         </div>
     @endif
 
-    <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <flux:sidebar sticky stashable class="ng-surface border-e" style="background-color: color-mix(in srgb, var(--cor-texto) 3%, var(--cor-superficie)); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
         {{-- Marca do estabelecimento (logo enviado ou ícone na cor da marca). --}}
@@ -43,7 +46,7 @@
                     <flux:icon name="calendar-days" class="size-5" />
                 </span>
             @endif
-            <span class="truncate font-semibold text-zinc-900 dark:text-white">{{ tenant('nome') }}</span>
+            <span class="truncate font-semibold" style="color: var(--cor-texto);">{{ tenant('nome') }}</span>
         </a>
 
         <flux:navlist variant="outline">
@@ -92,14 +95,6 @@
 
                 <flux:menu.separator />
 
-                <flux:menu.radio.group x-data="{ appearance: $flux.appearance }" x-model="appearance" heading="Tema">
-                    <flux:menu.radio value="light" icon="sun">Claro</flux:menu.radio>
-                    <flux:menu.radio value="dark" icon="moon">Escuro</flux:menu.radio>
-                    <flux:menu.radio value="system" icon="computer-desktop">Sistema</flux:menu.radio>
-                </flux:menu.radio.group>
-
-                <flux:menu.separator />
-
                 <form method="POST" action="{{ route('painel.logout', ['tenant' => $tenantId]) }}">
                     @csrf
                     <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" variant="danger" class="w-full">
@@ -110,7 +105,7 @@
         </flux:dropdown>
     </flux:sidebar>
 
-    <flux:header sticky class="lg:hidden border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <flux:header sticky class="lg:hidden border-b" style="background-color: color-mix(in srgb, var(--cor-texto) 3%, var(--cor-superficie)); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
         <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
         <flux:spacer />
         <form method="POST" action="{{ route('painel.logout', ['tenant' => $tenantId]) }}">

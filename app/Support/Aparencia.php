@@ -176,6 +176,19 @@ class Aparencia
         return self::luminancia($hex) < 0.179 ? $claro : $escuro;
     }
 
+    /**
+     * A superfície do tenant é escura? Decide o modo `.dark` do Flux no shell
+     * (painel/auth): com superfície escura, ligamos a classe `dark` para que os
+     * componentes Flux (cards, inputs, dropdowns, tabelas) acompanhem a marca em
+     * vez de aparecerem claros sobre fundo escuro. Mesmo limiar do contraste.
+     */
+    public static function superficieEscura(?array $a = null): bool
+    {
+        $a = $a ?? self::doTenant();
+
+        return self::luminancia($a['cor_superficie'] ?? self::PADRAO['cor_superficie']) < 0.179;
+    }
+
     /** Luminância relativa (WCAG) de uma cor hex, no intervalo [0,1]. */
     public static function luminancia(string $hex): float
     {

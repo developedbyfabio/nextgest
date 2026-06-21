@@ -32,6 +32,9 @@ class Dashboard extends Component
 
     public $unidadeId = null;
 
+    /** Falha ao calcular as métricas (mostra estado de erro recuperável). */
+    public bool $erro = false;
+
     /** Métricas calculadas uma vez por requisição. */
     private ?array $cache = null;
 
@@ -85,7 +88,40 @@ class Dashboard extends Component
 
     private function dados(): array
     {
-        return $this->cache ??= $this->calcular();
+        if ($this->cache !== null) {
+            return $this->cache;
+        }
+
+        try {
+            $this->erro = false;
+
+            return $this->cache = $this->calcular();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->erro = true;
+
+            return $this->cache = $this->estruturaVazia();
+        }
+    }
+
+    /** Estrutura segura (zerada) para o estado de erro — a view nunca quebra. */
+    private function estruturaVazia(): array
+    {
+        $vazio = ['labels' => [], 'datasets' => []];
+
+        return [
+            'inicio' => $this->intervalo()[0],
+            'fim' => $this->intervalo()[1],
+            'total' => 0,
+            'delta' => null,
+            'faturamento' => 0.0,
+            'clientesNovos' => 0,
+            'clientesRecorrentes' => 0,
+            'servicos' => collect(),
+            'profissionais' => [],
+            'comparecimento' => ['taxa' => null, 'concluido' => 0, 'nao_compareceu' => 0, 'cancelado' => 0],
+            'graficos' => ['porDia' => $vazio, 'servicos' => $vazio, 'horarios' => $vazio, 'comparecimento' => $vazio],
+        ];
     }
 
     private function calcular(): array
