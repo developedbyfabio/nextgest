@@ -103,6 +103,12 @@ sugere um template de partida).
   **modo** automaticamente. Superfície e texto trocam **juntos** (sem texto invisível).
 - O modo (claro/escuro/sistema) é do **Flux** (`@fluxAppearance` + `.dark`), aplicado
   no cliente. Ver [[Decisões de Arquitetura]] D36.
+- **Seletor de tema** (`x-ng.seletor-tema` no portal; menu de perfil no painel/admin):
+  liga o `x-model` **direto** em `$flux.appearance` (`x-data x-model="$flux.appearance"`).
+  Mutar esse objeto reativo dispara o `Alpine.effect` do Flux que aplica `.dark` e
+  persiste no `localStorage`. **Nunca** usar cópia local (`x-data="{ appearance: … }"`),
+  que torna o seletor inerte — ver
+  [[Bug - Seletor de tema nao alterna (x-model local)]].
 
 > [!info] `cssVars()` (superfícies completas) → só na PRÉVIA do editor
 > `cssVars()` ainda emite fundo/superfície/texto a partir do preset; é usado apenas

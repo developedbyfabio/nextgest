@@ -155,6 +155,14 @@ A tipografia faz parte da marca (D36) e é emitida como `font-family` no `<body>
 dos layouts; o editor carrega **todas** (`linksFontesGoogle()`) para a prévia ao vivo.
 Lista fechada (`Aparencia::FONTES`) → sem injeção; `href` escapada.
 
+## Flux: alternar tema = `x-model="$flux.appearance"` (bind direto, não cópia local)
+O dark-mode do Flux é aplicado por um `Alpine.effect(() => applyAppearance($flux.appearance))`:
+só dispara quando **`$flux.appearance`** (objeto reativo global) muda. Ligar o seletor a uma
+**cópia local** (`x-data="{ appearance: $flux.appearance }" x-model="appearance"`) só lê o
+valor inicial; os rádios escrevem na cópia, o effect nunca roda → **seletor inerte** (tema
+preso). Correção: `x-data x-model="$flux.appearance"` (bind direto no magic). Vale para
+qualquer toggle de tema. Ver [[Bug - Seletor de tema nao alterna (x-model local)]].
+
 ## Dark-mode do sistema sobre superfície clara forçada (texto invisível)
 **Sintoma:** no portal, o nome do serviço/profissional sumia, mas a duração
 (cinza-médio) aparecia.

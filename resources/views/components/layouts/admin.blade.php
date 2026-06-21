@@ -27,7 +27,8 @@
 
                 <flux:menu.separator />
 
-                <flux:menu.radio.group x-data="{ appearance: $flux.appearance }" x-model="appearance" heading="Tema">
+                {{-- x-model DIRETO em $flux.appearance (não uma cópia local, que ficaria inerte). --}}
+                <flux:menu.radio.group x-data x-model="$flux.appearance" heading="Tema">
                     <flux:menu.radio value="light" icon="sun">Claro</flux:menu.radio>
                     <flux:menu.radio value="dark" icon="moon">Escuro</flux:menu.radio>
                     <flux:menu.radio value="system" icon="computer-desktop">Sistema</flux:menu.radio>
