@@ -40,9 +40,20 @@ class AlterarSenha extends Component
 
         $user->update(['password' => $this->password]);
 
-        $this->reset(['atual', 'password', 'password_confirmation']);
+        $this->limparFormulario();
         Flux::modal('alterar-senha')->close();
         Flux::toast('Senha alterada com sucesso.', variant: 'success');
+    }
+
+    /**
+     * Limpa os campos ao fechar/cancelar o modal. É um método PÚBLICO próprio porque
+     * o reset() do Livewire é interno (protected) e NÃO pode ser chamado como ação do
+     * frontend — fazer isso estoura MethodNotFoundException (500). Ver [[Bugs e Correções]].
+     */
+    public function limparFormulario(): void
+    {
+        $this->reset(['atual', 'password', 'password_confirmation']);
+        $this->resetValidation();
     }
 
     public function render(): View

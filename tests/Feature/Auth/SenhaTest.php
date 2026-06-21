@@ -107,6 +107,37 @@ it('self-service: troca a senha com a atual correta — para os 4 papéis', func
     }
 });
 
+it('self-service: fechar/cancelar o modal limpa os campos via método público (sem MethodNotFoundException)', function () {
+    $dono = usuarioComPapel('Dono', ['email' => 'dono8@senha.test', 'password' => 'minha-senha-atual-1']);
+    $this->actingAs($dono, 'web');
+
+    // O @close do modal chama $wire.limparFormulario() — uma ação PÚBLICA própria.
+    // Antes apontava para $wire.reset(), que estourava 500 (reset é interno do Livewire).
+    Livewire::test(AlterarSenha::class)
+        ->set('atual', 'algo')
+        ->set('password', '123') // fraca de propósito, para haver erro de validação pendente
+        ->set('password_confirmation', 'outra')
+        ->call('salvar') // gera erros de validação
+        ->assertHasErrors()
+        ->call('limparFormulario') // simula o fechar/cancelar do modal
+        ->assertHasNoErrors()
+        ->assertSet('atual', '')
+        ->assertSet('password', '')
+        ->assertSet('password_confirmation', '');
+
+    expect(Hash::check('minha-senha-atual-1', $dono->fresh()->password))->toBeTrue(); // inalterada
+});
+
+it('self-service: o fechar do modal NÃO aponta para reset (ação inexistente)', function () {
+    $dono = usuarioComPapel('Dono', ['email' => 'dono9@senha.test', 'password' => 'minha-senha-atual-1']);
+    $this->actingAs($dono, 'web');
+
+    $html = Livewire::test(AlterarSenha::class)->html();
+
+    expect($html)->toContain('limparFormulario')
+        ->and($html)->not->toContain('$wire.reset(');
+});
+
 it('o PORTAL do cliente não é afetado pela flag do painel (guard web)', function () {
     // Um usuário do painel com a flag não interfere no portal (guard cliente).
     usuarioComPapel('Dono', ['email' => 'dono7@senha.test', 'deve_trocar_senha' => true]);

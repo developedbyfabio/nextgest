@@ -220,3 +220,13 @@ viravam escuros (`dark:bg-zinc-900`) e o texto sem cor própria herdava
 do estabelecimento (CSS vars). Sem `.dark`, cards claros e nomes herdam
 `--cor-texto` com contraste correto. Lição: todo texto precisa de cor explícita
 ou herdar de um token controlado — nunca depender do default do tema do browser.
+
+## Livewire: `reset`/`resetValidation`/`mount` NÃO são ações públicas do frontend
+**Sintoma:** clicar Cancelar/fechar um modal estourava 500
+`MethodNotFoundException: Public method [reset] not found`.
+**Causa:** `@close="$wire.reset(...)"` (ou `wire:click="reset"`). Tudo que o frontend
+chama (`wire:click`, `@close`, `$wire.x()`) tem que ser um método **público próprio**;
+`reset()` e amigos são internos (`protected`, herdados de `Livewire\Component`), então o
+Livewire não acha um método público `reset` e estoura. **Correção:** criar um método
+público (`limparFormulario()`) que internamente faça `$this->reset([...])` e apontar o
+gatilho para ele. Ver [[Bug - Alterar senha 500 (reset nao e acao publica do Livewire)]].

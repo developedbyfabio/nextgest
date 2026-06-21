@@ -1,5 +1,5 @@
 <div>
-    <flux:modal name="alterar-senha" class="md:w-96" @close="$wire.reset('atual', 'password', 'password_confirmation')">
+    <flux:modal name="alterar-senha" class="md:w-96" @close="$wire.limparFormulario()">
         <form wire:submit="salvar" class="flex flex-col gap-4">
             <div>
                 <flux:heading size="lg">Alterar senha</flux:heading>
