@@ -12,6 +12,18 @@ tags: [nextgest, modelo-de-dados, produtos, vendas, comissao, estoque]
 > Documento vivo. Continuação de [[Modelo de Dados - Núcleo de Agendamento]].
 > Ver decisões em [[Decisões de Arquitetura]] (D12 a D14).
 
+> [!check] Confirmado no código (Fatia 2A, 2026-06-21)
+> As tabelas **3.1–3.4** (`categorias_produto`, `produtos`, `produto_unidade`,
+> `movimentacoes_estoque`) existem exatamente como abaixo — `categorias_produto`/
+> `produtos`/`produto_unidade` na migration **190003**; `movimentacoes_estoque` na
+> **190004** (com `created_at` via `useCurrent`, sem `updated_at`). Detalhes
+> confirmados: `produto_unidade` tem `unique(produto_id, unidade_id)` e **sem**
+> timestamps; `movimentacoes_estoque.quantidade` é o **delta sinalizado** (+entra/
+> −sai) e `venda_id` já tem FK para `vendas`. Models/UI/serviço implementados — ver
+> [[Produtos e Estoque]].
+> **A confirmar (entra na 2B):** `vendas`, `venda_itens`, `comissoes_profissional`
+> (tabelas já existem no scaffold, mas sem models/UI ainda).
+
 ---
 
 ## 1. Decisões deste bloco
