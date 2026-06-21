@@ -6,10 +6,10 @@ use App\Models\Cliente;
 use App\Support\Aparencia;
 
 /**
- * Etapa 6/B — o tema do estabelecimento (D28) vale em TODAS as superfícies do
- * tenant: portal, telas de auth e o PAINEL (agora com a identidade completa —
- * superfície/fundo/texto, não só o acento). O app central (/admin, landing) segue
- * na marca Nextgest, sem tema de tenant.
+ * Etapa D — a MARCA do tenant entra como ACENTO (+ logo + tipografia) no portal,
+ * nas telas de auth e no painel; as SUPERFÍCIES seguem o modo claro/escuro/sistema
+ * (Flux), não a cor da marca. O app central (/admin, landing) segue na marca
+ * Nextgest, sem tema de tenant.
  */
 beforeEach(function () {
     $this->tenant = criarTenant('lojaum');
@@ -27,7 +27,7 @@ it('telas de auth do tenant refletem o acento da marca', function () {
     }
 });
 
-it('o painel reflete o tema completo do estabelecimento (não só o acento)', function () {
+it('o painel aplica a marca como acento; superfícies pelo modo claro/escuro', function () {
     tenancy()->initialize($this->tenant);
     $dono = usuarioComPapel('Dono');
 
@@ -36,9 +36,9 @@ it('o painel reflete o tema completo do estabelecimento (não só o acento)', fu
     expect($html)->toContain('--color-accent: #123456');
     expect($html)->toContain('--cor-principal: #123456');
     expect($html)->toContain('--cor-sobre-principal');
-    // Etapa B: o painel passa a refletir a identidade completa do estabelecimento.
-    expect($html)->toContain('--cor-fundo');
-    expect($html)->toContain('--cor-superficie');
+    // Etapa D: a marca NÃO pinta o fundo; superfícies vêm dos tokens claro/escuro.
+    expect($html)->not->toContain('--cor-fundo: #');
+    expect($html)->toContain('Flux.applyAppearance'); // respeita o modo
 });
 
 it('o app central (admin) NÃO recebe tema de tenant — segue Nextgest', function () {

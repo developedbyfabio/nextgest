@@ -6,9 +6,10 @@ use App\Livewire\Painel\Dashboard;
 use App\Support\Aparencia;
 
 /**
- * Etapa B — o shell do painel e o dashboard refletem a identidade do
- * estabelecimento (CSS vars), com modo escuro do Flux ligado automaticamente
- * quando a superfície da marca é escura (dark-safe, sem bg-white/zinc fixos).
+ * Etapa D — modelo de tema novo (substitui A/B): a MARCA do tenant é só o ACENTO
+ * (+ logo + tipografia), constante nos dois modos; as SUPERFÍCIES seguem o modo
+ * CLARO / ESCURO / SISTEMA do Flux (@fluxAppearance), não a cor da marca. O painel
+ * não força `.dark` no servidor — o modo é aplicado no cliente.
  */
 beforeEach(function () {
     $this->tenant = criarTenant('lojapainel');
@@ -16,36 +17,33 @@ beforeEach(function () {
     $this->dono = usuarioComPapel('Dono', ['email' => 'dono@p.test']);
 });
 
-it('painel com superfície ESCURA liga o .dark do Flux e emite a superfície da marca', function () {
-    Aparencia::salvar(['cor_superficie' => '#0f172a', 'cor_fundo' => '#020617', 'cor_texto' => '#f8fafc']);
+it('painel emite a marca como ACENTO e não pinta a superfície com a marca', function () {
+    Aparencia::salvar(['cor_principal' => '#123456']);
 
     $html = $this->actingAs($this->dono, 'web')->get('/lojapainel/painel')->assertOk()->content();
 
-    expect($html)->toContain('class="dark"')                 // Flux em modo escuro
-        ->and($html)->toContain('--cor-superficie: #0f172a') // superfície da marca aplicada
-        ->and($html)->toContain('--cor-fundo: #020617');
+    expect($html)->toContain('--color-accent: #123456')        // marca alimenta o Flux
+        ->and($html)->toContain('--cor-principal: #123456')
+        ->and($html)->not->toContain('--cor-fundo: #')         // superfície NÃO é da marca…
+        ->and($html)->not->toContain('--cor-superficie: #');   // …vem dos tokens claro/escuro
 });
 
-it('painel com superfície CLARA não liga o .dark', function () {
-    Aparencia::salvar(['cor_superficie' => '#ffffff', 'cor_fundo' => '#f4f4f5', 'cor_texto' => '#18181b']);
-
+it('painel não força .dark no servidor e ativa o @fluxAppearance', function () {
     $html = $this->actingAs($this->dono, 'web')->get('/lojapainel/painel')->assertOk()->content();
 
-    expect($html)->not->toContain('class="dark"')
-        ->and($html)->toContain('--cor-superficie: #ffffff');
+    expect($html)->toContain('<html lang="pt-BR">')   // sem class="dark" forçada por luminância
+        ->and($html)->toContain('Flux.applyAppearance'); // modo claro/escuro/sistema ativo
 });
 
-it('a tela de login do painel é dark-safe com superfície escura', function () {
-    Aparencia::salvar(['cor_superficie' => '#0f172a', 'cor_texto' => '#f8fafc']);
-    tenancy()->end();
+it('painel tem o seletor Claro/Escuro/Sistema no menu de perfil', function () {
+    $html = $this->actingAs($this->dono, 'web')->get('/lojapainel/painel')->assertOk()->content();
 
-    $html = $this->get('/lojapainel/painel/login')->assertOk()->content();
-
-    expect($html)->toContain('class="dark"')
-        ->and($html)->toContain('--cor-superficie: #0f172a');
+    expect($html)->toContain('Claro')
+        ->and($html)->toContain('Escuro')
+        ->and($html)->toContain('Sistema');
 });
 
-it('dashboard renderiza KPIs e cards na superfície da marca', function () {
+it('dashboard renderiza KPIs e cards na superfície (ng-surface)', function () {
     Aparencia::salvar(['cor_principal' => '#123456']);
 
     Livewire::actingAs($this->dono, 'web');
@@ -55,7 +53,7 @@ it('dashboard renderiza KPIs e cards na superfície da marca', function () {
         ->assertSee('Agendamentos')
         ->assertSee('Faturamento estimado')
         ->assertSee('Comparecimento')
-        ->assertSeeHtml('ng-surface');           // cards usam a superfície temática
+        ->assertSeeHtml('ng-surface');
 });
 
 it('dashboard mostra estado vazio temático quando não há dados', function () {
@@ -63,5 +61,5 @@ it('dashboard mostra estado vazio temático quando não há dados', function () 
 
     Livewire::test(Dashboard::class)
         ->assertSee('Sem agendamentos no período')
-        ->assertSeeHtml('ng-skeleton-portal');   // skeleton de loading presente no markup
+        ->assertSeeHtml('ng-skeleton-portal');
 });

@@ -176,19 +176,6 @@ class Aparencia
         return self::luminancia($hex) < 0.179 ? $claro : $escuro;
     }
 
-    /**
-     * A superfície do tenant é escura? Decide o modo `.dark` do Flux no shell
-     * (painel/auth): com superfície escura, ligamos a classe `dark` para que os
-     * componentes Flux (cards, inputs, dropdowns, tabelas) acompanhem a marca em
-     * vez de aparecerem claros sobre fundo escuro. Mesmo limiar do contraste.
-     */
-    public static function superficieEscura(?array $a = null): bool
-    {
-        $a = $a ?? self::doTenant();
-
-        return self::luminancia($a['cor_superficie'] ?? self::PADRAO['cor_superficie']) < 0.179;
-    }
-
     /** Luminância relativa (WCAG) de uma cor hex, no intervalo [0,1]. */
     public static function luminancia(string $hex): float
     {
@@ -254,20 +241,22 @@ class Aparencia
     }
 
     /**
-     * String de `style` só com o ACENTO da marca (cor principal/secundária +
-     * accent do Flux + cor de frente). Para o PAINEL, que mantém as superfícies
-     * neutras do Flux (claro/escuro) e usa a marca apenas como realce — sem pintar
-     * fundos inteiros com cor custom (legibilidade da ferramenta de gestão).
+     * String de `style` com a MARCA do tenant (Etapa D): acento (cor principal/
+     * secundária + accent do Flux + cor de frente legível) e a TIPOGRAFIA. NÃO
+     * emite superfícies — fundo/superfície/texto vêm dos tokens de claro/escuro
+     * (app.css `:root`/`.dark`, controlados pelo @fluxAppearance). Assim a marca é
+     * constante nos dois modos e as superfícies seguem o modo escolhido.
      */
     public static function cssVarsAcento(?array $a = null): string
     {
         $a = $a ?? self::doTenant();
 
-        $acento = ['--cor-principal', '--cor-secundaria', '--cor-sobre-principal',
-            '--color-accent', '--color-accent-content', '--color-accent-foreground'];
+        $marca = ['--cor-principal', '--cor-secundaria', '--cor-sobre-principal',
+            '--color-accent', '--color-accent-content', '--color-accent-foreground',
+            'font-family', 'font-size'];
 
         return collect(self::mapaVars($a))
-            ->only($acento)
+            ->only($marca)
             ->map(fn ($v, $k) => "{$k}: {$v}")
             ->implode('; ');
     }

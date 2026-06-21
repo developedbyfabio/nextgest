@@ -22,17 +22,41 @@
 }
 
 @layer base {
-    /* Cor da marca (indigo). Troque aqui para rebrandar. */
+    /*
+    | Modelo de tema (Etapa D): a MARCA do tenant é só o ACENTO
+    | (--color-accent / --cor-principal) + logo + tipografia, emitidos inline por
+    | tenant e CONSTANTES nos dois modos. As SUPERFÍCIES (fundo/superfície/texto/
+    | divisores) são tokens de CLARO/ESCURO controlados pelo Flux (@fluxAppearance
+    | + classe .dark). Isto SUBSTITUI o modelo das Etapas A/B (que pintava o fundo
+    | com a cor da marca e forçava .dark pela luminância).
+    */
     :root {
         --color-accent: var(--color-indigo-600);
         --color-accent-content: var(--color-indigo-600);
         --color-accent-foreground: var(--color-white);
+
+        /* Superfícies neutras — MODO CLARO. */
+        --cor-fundo: var(--color-zinc-50);
+        --cor-superficie: var(--color-white);
+        --cor-texto: var(--color-zinc-900);
+        --cor-texto-suave: var(--color-zinc-500);
+
+        /* Defaults de marca p/ contextos sem tenant (sobrescritos inline). */
+        --cor-principal: var(--color-accent);
+        --cor-secundaria: var(--color-accent);
+        --cor-sobre-principal: var(--color-white);
     }
 
     .dark {
         --color-accent: var(--color-indigo-500);
         --color-accent-content: var(--color-indigo-400);
         --color-accent-foreground: var(--color-white);
+
+        /* Superfícies neutras — MODO ESCURO. */
+        --cor-fundo: var(--color-zinc-950);
+        --cor-superficie: var(--color-zinc-900);
+        --cor-texto: var(--color-zinc-100);
+        --cor-texto-suave: var(--color-zinc-400);
     }
 
     /* Rolagem suave e tap highlight discreto no mobile. */

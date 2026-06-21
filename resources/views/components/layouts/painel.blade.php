@@ -1,9 +1,8 @@
 @php($tenantId = tenant('id'))
 @php($aparencia = \App\Support\Aparencia::doTenant())
 @php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
-@php($temaEscuro = \App\Support\Aparencia::superficieEscura($aparencia))
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $temaEscuro])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,14 +11,14 @@
     <title>{{ $title ?? 'Painel' }} · {{ tenant('nome') ?? 'Nextgest' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    {{-- O painel reflete o TEMA do estabelecimento (como o portal): cores e
-         superfície vêm das CSS vars de Aparencia. O modo escuro do Flux é ligado
-         pela classe `dark` no <html> quando a superfície da marca é escura, para
-         os componentes Flux acompanharem. Não seguimos o tema do sistema. --}}
+    {{-- Etapa D: o painel respeita o MODO claro/escuro/sistema (Flux). A marca do
+         estabelecimento entra como ACENTO + logo + tipografia (constante nos dois
+         modos); as superfícies vêm dos tokens de claro/escuro. --}}
+    @fluxAppearance
 </head>
-{{-- Superfície/identidade da marca em todo o shell; o accent já alimenta os
-     componentes Flux (botões/foco/estado ativo). --}}
-<body class="min-h-screen" style="{{ \App\Support\Aparencia::cssVars($aparencia) }}; background-color: var(--cor-fundo); color: var(--cor-texto);">
+{{-- Marca = acento/tipografia (alimenta os componentes Flux: botões/foco/estado
+     ativo); as superfícies seguem o modo via tokens (--cor-fundo/--cor-texto). --}}
+<body class="min-h-screen" style="{{ \App\Support\Aparencia::cssVarsAcento($aparencia) }}; background-color: var(--cor-fundo); color: var(--cor-texto);">
 
     @if (session('suporte_ativo'))
         <div class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
@@ -92,6 +91,14 @@
 
             <flux:menu>
                 <flux:menu.item icon="user">{{ auth('web')->user()?->email }}</flux:menu.item>
+
+                <flux:menu.separator />
+
+                <flux:menu.radio.group x-data="{ appearance: $flux.appearance }" x-model="appearance" heading="Tema">
+                    <flux:menu.radio value="light" icon="sun">Claro</flux:menu.radio>
+                    <flux:menu.radio value="dark" icon="moon">Escuro</flux:menu.radio>
+                    <flux:menu.radio value="system" icon="computer-desktop">Sistema</flux:menu.radio>
+                </flux:menu.radio.group>
 
                 <flux:menu.separator />
 

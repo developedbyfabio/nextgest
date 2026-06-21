@@ -1,8 +1,7 @@
 @php($temTenant = tenancy()->initialized)
 @php($aparencia = $temTenant ? \App\Support\Aparencia::doTenant() : null)
-@php($temaEscuro = $temTenant && \App\Support\Aparencia::superficieEscura($aparencia))
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $temaEscuro])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -12,23 +11,18 @@
     <title>{{ $title ?? 'Acesso' }} · {{ $temTenant ? tenant('nome') : 'Nextgest' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    {{-- No tenant, a identidade do estabelecimento (clara) dirige a tela, como no
-         portal — por isso não usamos @fluxAppearance ali. No central, segue o
-         modo do sistema do super-admin. --}}
-    @unless ($temTenant)
-        @fluxAppearance
-    @endunless
+    {{-- Etapa D: respeita o MODO claro/escuro/sistema (Flux), tenant ou central.
+         No tenant, a marca entra como acento + logo + tipografia; superfícies pelos
+         tokens de claro/escuro. --}}
+    @fluxAppearance
 </head>
 
 @php($logoUrl = $temTenant ? \App\Support\Aparencia::urlArquivo($aparencia['logo']) : null)
 @php($marca = $temTenant ? tenant('nome') : ($brand ?? 'Nextgest'))
 
 <body
-    @class([
-        'min-h-screen antialiased',
-        'bg-white text-zinc-900 dark:bg-zinc-950 dark:text-white' => ! $temTenant,
-    ])
-    @if ($temTenant) style="{{ \App\Support\Aparencia::cssVars($aparencia) }}; background-color: var(--cor-fundo); color: var(--cor-texto);" @endif
+    class="min-h-screen antialiased"
+    style="background-color: var(--cor-fundo); color: var(--cor-texto);@if ($temTenant) {{ \App\Support\Aparencia::cssVarsAcento($aparencia) }}@endif"
 >
     <div class="grid min-h-screen lg:grid-cols-2">
         {{-- Painel de marca (oculto no mobile) --}}

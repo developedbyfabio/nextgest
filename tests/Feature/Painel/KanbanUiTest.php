@@ -74,14 +74,15 @@ it('os dois quadros usam superfícies da marca (.ng-surface)', function () {
         ->assertSeeHtml('ng-surface');                // CRM temático
 });
 
-it('kanban é dark-safe com superfície escura (liga .dark e aplica a superfície)', function () {
-    Aparencia::salvar(['cor_superficie' => '#0f172a', 'cor_fundo' => '#020617', 'cor_texto' => '#f8fafc', 'cor_principal' => '#22d3ee']);
+it('kanban respeita o modo claro/escuro e usa superfícies via tokens (Etapa D)', function () {
+    Aparencia::salvar(['cor_principal' => '#22d3ee']);
 
     $html = $this->actingAs($this->dono, 'web')->get('/lojakbui/painel/kanban')->assertOk()->content();
 
-    expect($html)->toContain('class="dark"')
-        ->and($html)->toContain('--cor-superficie: #0f172a')
-        ->and($html)->toContain('ng-surface');
+    expect($html)->toContain('Flux.applyAppearance')        // modo claro/escuro/sistema
+        ->and($html)->toContain('--color-accent: #22d3ee')  // marca = acento
+        ->and($html)->toContain('ng-surface')               // colunas/cartões via tokens
+        ->and($html)->not->toContain('--cor-superficie: #'); // superfície não é da marca
 });
 
 it('o handle de arraste está presente nos cartões', function () {

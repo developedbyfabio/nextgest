@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-6 p-6 lg:p-8" style="{{ \App\Support\Aparencia::cssVars() }}">
+<div class="flex flex-col gap-6 p-6 lg:p-8" style="{{ \App\Support\Aparencia::cssVarsAcento() }}">
     {{-- Cabeçalho: abas de quadro + ações --}}
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-2">
