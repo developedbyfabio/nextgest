@@ -155,6 +155,15 @@ A tipografia faz parte da marca (D36) e é emitida como `font-family` no `<body>
 dos layouts; o editor carrega **todas** (`linksFontesGoogle()`) para a prévia ao vivo.
 Lista fechada (`Aparencia::FONTES`) → sem injeção; `href` escapada.
 
+## Flux/Blade: prop `value` com `value="{{ ... }}"` = escape DUPLO
+`flux:select.option` (e afins) recebe `value` como **prop** e renderiza `value="{{ $value }}"`
+(escapa). Se a view passa `value="{{ $valor }}"`, o Blade já escapa antes → o `'` vira
+`&#039;`, o Flux escapa de novo o `&` → `&amp;#039;`. O navegador envia o valor **errado**
+(com `&#039;` literal) e um `Rule::in` rejeita a própria opção da tela. Sintoma real: fontes
+com aspas na stack (Open Sans, Poppins…) davam "campo fonte não contém valor válido"; as sem
+aspas funcionavam. Correção: **binding** (`:value="$valor"`, `:style="..."`) → escape único.
+Ver [[Bug - Fonte rejeitada na Aparencia (escape duplo do option)]].
+
 ## Flux: alternar tema = `x-model="$flux.appearance"` (bind direto, não cópia local)
 O dark-mode do Flux é aplicado por um `Alpine.effect(() => applyAppearance($flux.appearance))`:
 só dispara quando **`$flux.appearance`** (objeto reativo global) muda. Ligar o seletor a uma

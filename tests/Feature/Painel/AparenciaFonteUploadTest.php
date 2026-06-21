@@ -32,6 +32,61 @@ it('oferece pelo menos 10 fontes e inclui as do padrão/templates', function () 
     }
 });
 
+it('TODA fonte do catálogo passa na validação, salva e aplica', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    foreach (array_keys(Aparencia::FONTES) as $fonte) {
+        Livewire::test(Editar::class)
+            ->set('fonte', $fonte)
+            ->call('salvar')
+            ->assertHasNoErrors();
+
+        expect(Aparencia::doTenant()['fonte'])->toBe($fonte);
+        expect(Aparencia::cssVarsAcento(Aparencia::doTenant()))->toContain("font-family: {$fonte}");
+    }
+});
+
+it('TODO tamanho base oferecido passa na validação e salva', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    foreach (['14px', '15px', '16px', '17px', '18px'] as $tam) {
+        Livewire::test(Editar::class)
+            ->set('tamanho_base', $tam)
+            ->call('salvar')
+            ->assertHasNoErrors();
+
+        expect(Aparencia::doTenant()['tamanho_base'])->toBe($tam);
+    }
+});
+
+it('cada <option> de fonte oferece um value ACEITO pela validação (sem escape duplo)', function () {
+    // Regressão direta do bug: o value renderizado pelo <option>, depois de
+    // decodificado pelo navegador, tem de ser EXATAMENTE uma chave do catálogo —
+    // senão o Rule::in rejeita o que a própria tela oferece ("teste verde × navegador").
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    $html = Livewire::test(Editar::class)->html();
+
+    // Isola o <select> de fonte (entre o seu wire:model e o do tamanho base).
+    $ini = strpos($html, 'wire:model.live="fonte"');
+    $fim = strpos($html, 'wire:model.live="tamanho_base"');
+    $bloco = substr($html, $ini, $fim - $ini);
+
+    preg_match_all('/value="([^"]*)"/', $bloco, $m);
+    $valores = collect($m[1])
+        ->map(fn ($v) => html_entity_decode($v, ENT_QUOTES))
+        ->unique()->values();
+
+    expect($valores)->not->toBeEmpty();
+    expect($valores->count())->toBe(count(Aparencia::FONTES)); // todas as fontes viram opção
+
+    foreach ($valores as $v) {
+        expect(array_key_exists($v, Aparencia::FONTES))->toBeTrue(
+            "Option de fonte com value fora do catálogo (escape duplo?): {$v}"
+        );
+    }
+});
+
 it('salva a fonte e o tamanho, persiste e aplica no acento (body)', function () {
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 

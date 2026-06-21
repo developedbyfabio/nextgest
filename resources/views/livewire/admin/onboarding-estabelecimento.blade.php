@@ -138,8 +138,10 @@
                 {{-- Tipografia --}}
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <flux:select wire:model.live="fonte" label="Fonte">
+                        {{-- :value/:style (bound) p/ o Flux escapar uma vez (evita escape
+                             duplo do value, que fazia o Rule::in rejeitar a fonte). --}}
                         @foreach ($fontes as $valor => $meta)
-                            <flux:select.option value="{{ $valor }}" style="font-family: {{ $valor }};">{{ $meta['label'] }}</flux:select.option>
+                            <flux:select.option :value="$valor" :style="'font-family: ' . $valor">{{ $meta['label'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="tamanho_base" label="Tamanho base">

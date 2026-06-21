@@ -53,8 +53,12 @@
                 <flux:heading size="sm">Tipografia</flux:heading>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <flux:select wire:model.live="fonte" label="Fonte">
+                        {{-- :value/:style (bound) para o Flux escapar UMA vez. Passar via
+                             value="..." faz o Blade pré-escapar e o Flux escapar de novo
+                             (escape duplo) → a opção enviava um valor que o Rule::in
+                             rejeitava. Ver a nota "Bug - Fonte rejeitada na Aparencia". --}}
                         @foreach ($fontes as $valor => $meta)
-                            <flux:select.option value="{{ $valor }}" style="font-family: {{ $valor }};">{{ $meta['label'] }}</flux:select.option>
+                            <flux:select.option :value="$valor" :style="'font-family: ' . $valor">{{ $meta['label'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="tamanho_base" label="Tamanho base">
