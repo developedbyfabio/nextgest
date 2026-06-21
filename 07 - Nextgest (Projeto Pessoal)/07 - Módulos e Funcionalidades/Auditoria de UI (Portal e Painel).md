@@ -46,15 +46,20 @@ tags: [nextgest, ui, auditoria, portal, painel]
 - ✅ **(elevado na Etapa B) Dashboard** — KPIs/gráficos em `.ng-surface` (dark-safe),
   Chart.js nas cores da marca, estados loading/vazio/erro, filtros polidos,
   responsivo. Faturamento ESTIMADO. Ver [[Dashboard do Dono]].
-- ✅ **Kanban** — renderiza quadros/colunas; DnD via SortableJS. Herda o shell
-  temático; polimento fino fica para a **Etapa C** (não tocado aqui).
+- ✅ **(elevado na Etapa C) Kanban** — colunas/cartões na superfície da marca
+  (dark-safe), DnD com handle/placeholder/elevação e **revert em falha**,
+  confirmações por `flux:modal` (sem `confirm` nativo), "excluir" = arquivar (soft
+  delete), estados (skeleton/vazio/erro) e responsivo com snap. Ver
+  [[Kanban (Atendimento e CRM)]].
 - ✅ **Cadastros** (unidades/serviços/equipe/horários/papéis/bloqueios) e **Agenda**
   — cobertos por testes (1B/1D); herdam o `.dark` correto; polimento temático fino
   pendente (rodadas futuras).
 - ✅ **Aparência/Tema** e **Onboarding** (`/admin/...`) — existem (editor + prévia;
   wizard de 5 etapas).
-- 🎨 **Pendente:** polimento temático fino das telas internas (agenda/cadastros) e do
-  kanban; possível override de claro/escuro por usuário da equipe.
+- 🎨 **Pendente:** polimento temático fino das **telas internas** (agenda/cadastros —
+  hoje herdam o `.dark` correto, mas sem acabamento de marca como portal/dashboard/
+  kanban); possível override de claro/escuro por usuário da equipe. Próxima frente
+  grande: **Fatia 2** (produtos/vendas).
 
 ## Lição (anti-divergência teste×navegador)
 `Livewire::test()` verde **não** garante boa aparência: ele não exercita tema/CSS

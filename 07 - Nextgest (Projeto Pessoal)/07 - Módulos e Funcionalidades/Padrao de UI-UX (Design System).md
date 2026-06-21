@@ -99,3 +99,11 @@ superfície da marca usam `.ng-surface` (+ `.ng-surface-muted`, `.ng-divider`,
 Chart.js nas cores da marca (eixos/tooltip lidos das CSS vars em runtime) e estados
 de loading/vazio/erro. Regra de ouro mantida: **dark-safe** — nada de `bg-white`/
 `zinc` fixo onde deveria ser `--cor-superficie`. Ver [[Dashboard do Dono]].
+
+## Kanban temático + DnD elevado (Etapa C, 2026-06-21)
+Colunas (`.ng-surface-muted`) e cartões (`.ng-surface`) seguem a marca; dark-safe.
+DnD (SortableJS) com **handle**, placeholder (`.ng-kanban-ghost`) e elevação
+(`.ng-kanban-drag`); update otimista com **revert + toast** em falha (board↔banco
+consistentes). Confirmações em `flux:modal` (sem `confirm` nativo); "excluir" cartão =
+**arquivar** (soft delete). Estados de skeleton/vazio/erro e responsivo com snap entre
+colunas no celular. Ver [[Kanban (Atendimento e CRM)]].

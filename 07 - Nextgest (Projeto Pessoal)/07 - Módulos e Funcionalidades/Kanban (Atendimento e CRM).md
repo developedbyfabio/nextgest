@@ -29,21 +29,41 @@ e suas colunas são **semeados no tenant** pelo `TenantDatabaseSeeder` (idempote
 - Cartões: quem acessa o quadro gere seus cartões.
 
 ## Interação
-- **Drag-and-drop** via **SortableJS** (persiste coluna + ordem).
-- Menu **"Mover para"** acessível (alternativa ao arraste; o destino atual fica
-  desabilitado via `:disabled`).
-- Modais para criar/editar coluna e cartão.
+- **Drag-and-drop** via **SortableJS**, arrastado pelo **handle** (`[data-kanban-handle]`):
+  placeholder no destino (`.ng-kanban-ghost`), elevação do cartão arrastado
+  (`.ng-kanban-drag`), animação suave.
+- **Persistência robusta:** `moverCartao(id, coluna, ordem)` persiste coluna+ordem
+  (`reindexar`). Update **otimista** no cliente; se o servidor recusar, o JS
+  **reverte** o cartão à posição de origem e mostra toast — board e banco nunca
+  divergem. Alternativa acessível: menu **"Mover para"**.
+- Menu **"Mover para"** acessível (o destino atual fica desabilitado via `:disabled`).
+- **Modais** (`flux:modal`) para criar/editar coluna e cartão e para **confirmar**
+  arquivar/remover — **sem `confirm` nativo**.
 
 > [!note] Gotcha de UI
 > Nos botões/itens Flux deste módulo, condicionais usam `:disabled="cond"` — a
 > diretiva `@disabled` quebra a compilação em componente Flux. Ver
 > [[Bug - Flux disabled quebra Blade]].
 
+## Elevação visual (Etapa C, 2026-06-21)
+- **Tema da marca** nos dois quadros: colunas em `.ng-surface-muted`, cartões em
+  `.ng-surface`, cabeçalho de coluna com **acento** + **contador** temático.
+  **Dark-safe** (verificado em superfície custom escura: 0 `bg-white`/`zinc` fixos no
+  markup do módulo; o resto é Flux, que acompanha via `.dark` do shell — Etapa B).
+- **Estados:** skeleton de colunas ao trocar de quadro / "gerar do dia"; coluna vazia
+  com orientação ("arraste cartões para cá"); erro recuperável no arraste (revert).
+- **Responsivo:** rolagem horizontal com **snap** entre colunas no celular.
+- **"Excluir" = arquivar:** `removerCartao` faz **soft delete** (`SoftDeletes` em
+  `KanbanCartao`, coluna `deleted_at`). O cartão sai do board mas é preservado.
+  Remover **coluna** segue estrutural (hard delete, com modal de confirmação).
+- Ver [[Padrao de UI-UX (Design System)]], [[Identidade Visual do Estabelecimento (Tema)]]
+  e [[Auditoria de UI (Portal e Painel)]].
+
 ## Modelo
 - `kanban_quadros` (tipo: `atendimento` | `crm`), `kanban_colunas` (ordem),
   `kanban_cartoes` (titulo, ordem, `cliente_id`, `responsavel_user_id`,
-  `agendamento_id`, `valor_estimado`, descrição).
-- Models: `KanbanQuadro`, `KanbanColuna`, `KanbanCartao`.
+  `agendamento_id`, `valor_estimado`, descrição, **`deleted_at`** — soft delete).
+- Models: `KanbanQuadro`, `KanbanColuna`, `KanbanCartao` (usa `SoftDeletes`).
 
 ## Relacionado
 - [[Decisões de Arquitetura]] (D22)

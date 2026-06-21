@@ -10,9 +10,11 @@ tags: [nextgest, saas, agendamento]
 # Nextgest — Visão Geral
 
 > [!note] Estado atual (21/06/2026)
-> - **Suíte verde: 151 testes** (Pest) + testes de fumaça HTTP.
-> - **Portal do cliente elevado** (Etapa A) e **painel + auth tematizados + dashboard
->   elevado** (Etapa B), tudo dark-safe — ver [[Auditoria de UI (Portal e Painel)]].
+> - **Suíte verde: 157 testes** (Pest) + testes de fumaça HTTP.
+> - Evolução visual concluída (A/B/C): **portal** (A), **painel + auth + dashboard**
+>   (B) e **kanban** (C), tudo dark-safe e na identidade do tenant — ver
+>   [[Auditoria de UI (Portal e Painel)]].
+> - **Próxima frente:** Fatia 2 (produtos/vendas).
 > - **Migrou de servidor:** saiu da VM VirtualBox (`192.168.3.100`, Ubuntu 24.04,
 >   PHP 8.4) para o **servidor de dev compartilhado `192.168.11.210`** (Ubuntu 22.04,
 >   PHP 8.5.7), com repositório no **GitHub**.
@@ -135,8 +137,11 @@ funciona, testes de fumaça HTTP adicionados. **91 testes.** Sistema navegável.
     identidade completa do tenant (dark-safe via `.dark` automático por luminância da
     superfície) e **dashboard** elevado (KPIs/gráficos em superfície da marca,
     Chart.js nas cores da marca, estados loading/vazio/erro).
-  - **Etapa C** (pendente): kanban.
-  - Pendente também: polimento temático fino das telas internas (agenda/cadastros).
+  - **Etapa C** (✅ 2026-06-21): kanban (Atendimento e CRM) — superfícies da marca,
+    DnD com handle/placeholder/elevação e **revert em falha**, modais (sem confirm
+    nativo), "excluir" = arquivar (soft delete), estados e responsivo com snap. Ver
+    [[Kanban (Atendimento e CRM)]].
+  - Pendente: polimento temático fino das telas internas (agenda/cadastros).
   Ver [[Auditoria de UI (Portal e Painel)]].
 
 **Migração de servidor (junho/2026):** clone novo em `192.168.11.210` exigiu ajustes
