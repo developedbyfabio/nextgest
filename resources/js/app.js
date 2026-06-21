@@ -12,11 +12,13 @@ import Sortable from 'sortablejs';
 */
 document.addEventListener('alpine:init', () => {
     /*
-    | Kanban (Etapa 5): arrastar-e-soltar entre colunas e reordenar.
-    | Cada lista de cartões de uma coluna é um Sortable do grupo 'kanban'. No
-    | drop, chama Livewire `moverCartao(id, colunaDestino, novaOrdem)` —
-    | atualização otimista (o DOM já moveu; o servidor persiste; última escrita
-    | vence). A alternativa por teclado é o menu "Mover para" em cada cartão.
+    | Kanban (Etapa 5/C): arrastar-e-soltar entre colunas e reordenar.
+    | Cada lista de cartões de uma coluna é um Sortable do grupo 'kanban', arrastado
+    | pelo HANDLE ([data-kanban-handle]). No drop, chama Livewire
+    | `moverCartao(id, colunaDestino, novaOrdem)` — atualização OTIMISTA (o DOM já
+    | moveu; o servidor persiste coluna+ordem). Se o servidor RECUSAR (ex.: 403),
+    | revertemos o cartão para a posição original e avisamos (toast), para o board e o
+    | banco nunca divergirem. Alternativa acessível: menu "Mover para" em cada cartão.
     */
     window.Alpine.data('kanbanColuna', () => ({
         init() {
@@ -24,11 +26,26 @@ document.addEventListener('alpine:init', () => {
                 group: 'kanban',
                 animation: 150,
                 draggable: '[data-cartao-id]',
-                ghostClass: 'opacity-40',
+                handle: '[data-kanban-handle]',
+                ghostClass: 'ng-kanban-ghost',
+                chosenClass: 'ng-kanban-chosen',
+                dragClass: 'ng-kanban-drag',
+                forceFallback: true, // estilo de arraste consistente entre navegadores
+                fallbackOnBody: true,
                 onEnd: (evt) => {
-                    const cartaoId = evt.item.dataset.cartaoId;
+                    const item = evt.item;
+                    const cartaoId = item.dataset.cartaoId;
                     const colunaDestino = evt.to.dataset.colunaId;
-                    this.$wire.moverCartao(cartaoId, colunaDestino, evt.newIndex);
+
+                    const resultado = this.$wire.moverCartao(cartaoId, colunaDestino, evt.newIndex);
+
+                    // Revert em falha: devolve o cartão à coluna/posição de origem.
+                    Promise.resolve(resultado).catch(() => {
+                        const origem = evt.from;
+                        const ref = origem.children[evt.oldIndex] || null;
+                        origem.insertBefore(item, ref);
+                        window.Flux?.toast?.({ text: 'Não foi possível mover o cartão. Tente novamente.', variant: 'danger' });
+                    });
                 },
             });
         },

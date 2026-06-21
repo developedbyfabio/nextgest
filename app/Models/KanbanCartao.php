@@ -6,14 +6,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Cartão de um quadro Kanban (banco do TENANT). Vínculos OPCIONAIS a um cliente
  * e/ou agendamento, e a um responsável da equipe. Ordenado por `ordem` dentro
  * da coluna.
+ *
+ * Soft delete: "remover" um cartão é ARQUIVAR (inativar), não apagar.
  */
 class KanbanCartao extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'kanban_cartoes';
 
     protected $fillable = [

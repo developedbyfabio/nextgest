@@ -57,6 +57,11 @@ class Index extends Component
 
     public string $nomeColuna = '';
 
+    // Confirmações (modais bonitos, sem confirm nativo).
+    public ?int $confirmarCartao = null;
+
+    public ?int $confirmarColuna = null;
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()->can('ver_kanban_atendimento'), 403);
@@ -140,10 +145,20 @@ class Index extends Component
         Flux::toast('Coluna salva.', variant: 'success');
     }
 
+    /** Abre o modal de confirmação de remoção de coluna (sem confirm nativo). */
+    public function pedirRemoverColuna(int $id): void
+    {
+        abort_unless($this->podeGerir(), 403);
+        $this->confirmarColuna = $id;
+        Flux::modal('remover-coluna')->show();
+    }
+
     public function removerColuna(int $id): void
     {
         abort_unless($this->podeGerir(), 403);
         KanbanColuna::where('quadro_id', $this->quadro()->id)->findOrFail($id)->delete();
+        $this->confirmarColuna = null;
+        Flux::modal('remover-coluna')->close();
         Flux::toast('Coluna removida.');
     }
 
@@ -225,11 +240,22 @@ class Index extends Component
         Flux::toast('Cartão salvo.', variant: 'success');
     }
 
+    /** Abre o modal de confirmação de arquivamento do cartão (sem confirm nativo). */
+    public function pedirArquivarCartao(int $id): void
+    {
+        $this->autorizarQuadro($this->tipo);
+        $this->confirmarCartao = $id;
+        Flux::modal('arquivar-cartao')->show();
+    }
+
+    /** "Remover" = ARQUIVAR (soft delete). Não apaga o histórico do cartão. */
     public function removerCartao(int $id): void
     {
         $this->autorizarQuadro($this->tipo);
-        $this->cartaoDoQuadro($id)->delete();
-        Flux::toast('Cartão removido.');
+        $this->cartaoDoQuadro($id)->delete(); // soft delete (SoftDeletes)
+        $this->confirmarCartao = null;
+        Flux::modal('arquivar-cartao')->close();
+        Flux::toast('Cartão arquivado.', variant: 'success');
     }
 
     /** Arrastar-e-soltar: persiste coluna + posição (última escrita vence). */

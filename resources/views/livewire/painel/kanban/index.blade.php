@@ -20,39 +20,59 @@
         </div>
     </div>
 
-    {{-- Quadro: colunas com rolagem horizontal --}}
-    <div class="flex gap-4 overflow-x-auto pb-4">
+    {{-- Loading: skeleton de colunas ao trocar de quadro / gerar do dia --}}
+    <div wire:loading.flex.delay wire:target="trocarQuadro, gerarCartoesDoDia" class="gap-4 overflow-x-auto pb-4">
+        @for ($i = 0; $i < 3; $i++)
+            <div class="ng-surface-muted flex w-80 shrink-0 flex-col gap-2 rounded-xl p-3">
+                <div class="ng-skeleton-portal h-5 w-32"></div>
+                @for ($j = 0; $j < 3; $j++)
+                    <div class="ng-skeleton-portal h-20 w-full"></div>
+                @endfor
+            </div>
+        @endfor
+    </div>
+
+    {{-- Quadro: colunas com rolagem horizontal + snap (responsivo no celular) --}}
+    <div wire:loading.remove.delay wire:target="trocarQuadro, gerarCartoesDoDia"
+        class="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4">
         @forelse ($quadro->colunas as $coluna)
-            <div wire:key="coluna-{{ $coluna->id }}" class="flex w-72 shrink-0 flex-col rounded-xl bg-zinc-50 dark:bg-zinc-900/60">
-                {{-- Cabeçalho da coluna --}}
-                <div class="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-700"
-                    style="border-top: 3px solid var(--cor-principal); border-radius: 0.75rem 0.75rem 0 0;">
+            <div wire:key="coluna-{{ $coluna->id }}"
+                class="ng-surface-muted flex w-[85vw] max-w-xs shrink-0 snap-start flex-col rounded-xl sm:w-80">
+                {{-- Cabeçalho da coluna: acento da marca + contador --}}
+                <div class="flex items-center justify-between border-b px-3 py-2"
+                    style="border-top: 3px solid var(--cor-principal); border-radius: 0.85rem 0.85rem 0 0; border-bottom-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold">{{ $coluna->nome }}</span>
-                        <flux:badge size="sm" color="zinc">{{ $coluna->cartoes->count() }}</flux:badge>
+                        <span class="text-sm font-semibold" style="color: var(--cor-texto);">{{ $coluna->nome }}</span>
+                        <span class="inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold"
+                            style="background-color: color-mix(in srgb, var(--cor-principal) 15%, transparent); color: var(--cor-principal);">{{ $coluna->cartoes->count() }}</span>
                     </div>
                     @if ($podeGerir)
                         <flux:dropdown position="bottom" align="end">
                             <flux:button variant="ghost" size="xs" icon="ellipsis-horizontal" inset />
                             <flux:menu>
                                 <flux:menu.item icon="pencil-square" wire:click="editarColuna({{ $coluna->id }})">Renomear</flux:menu.item>
-                                <flux:menu.item icon="trash" variant="danger"
-                                    wire:click="removerColuna({{ $coluna->id }})"
-                                    wire:confirm="Remover a coluna e seus cartões?">Remover coluna</flux:menu.item>
+                                <flux:menu.item icon="trash" variant="danger" wire:click="pedirRemoverColuna({{ $coluna->id }})">Remover coluna</flux:menu.item>
                             </flux:menu>
                         </flux:dropdown>
                     @endif
                 </div>
 
-                {{-- Lista de cartões (Sortable) --}}
-                <div class="flex min-h-16 flex-col gap-2 p-2"
+                {{-- Lista de cartões (Sortable; arraste pelo handle) --}}
+                <div class="flex min-h-20 flex-1 flex-col gap-2 p-2"
                     x-data="kanbanColuna" data-coluna-id="{{ $coluna->id }}" wire:key="lista-{{ $coluna->id }}">
                     @forelse ($coluna->cartoes as $c)
                         <div wire:key="cartao-{{ $c->id }}" data-cartao-id="{{ $c->id }}"
-                            class="group cursor-grab rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow dark:border-zinc-700 dark:bg-zinc-800"
+                            class="ng-surface group p-3 shadow-sm transition hover:shadow"
                             style="border-left: 3px solid var(--cor-principal);">
-                            <div class="flex items-start justify-between gap-2">
-                                <span class="text-sm font-medium">{{ $c->titulo }}</span>
+                            <div class="flex items-start gap-2">
+                                <button type="button" data-kanban-handle aria-label="Arrastar"
+                                    class="ng-kanban-handle -ms-1 mt-0.5 shrink-0 rounded p-0.5"
+                                    style="color: var(--cor-texto-suave);">
+                                    <flux:icon name="bars-2" class="size-4" />
+                                </button>
+
+                                <span class="min-w-0 flex-1 text-sm font-medium" style="color: var(--cor-texto);">{{ $c->titulo }}</span>
+
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button variant="ghost" size="xs" icon="ellipsis-vertical" inset />
                                     <flux:menu>
@@ -64,17 +84,16 @@
                                             @endforeach
                                         </flux:menu.submenu>
                                         <flux:menu.separator />
-                                        <flux:menu.item icon="trash" variant="danger"
-                                            wire:click="removerCartao({{ $c->id }})" wire:confirm="Remover este cartão?">Remover</flux:menu.item>
+                                        <flux:menu.item icon="archive-box" variant="danger" wire:click="pedirArquivarCartao({{ $c->id }})">Arquivar</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </div>
 
                             @if ($c->descricao)
-                                <p class="mt-1 line-clamp-2 text-xs text-zinc-500">{{ $c->descricao }}</p>
+                                <p class="mt-1 line-clamp-2 ps-6 text-xs" style="color: var(--cor-texto-suave);">{{ $c->descricao }}</p>
                             @endif
 
-                            <div class="mt-2 flex flex-wrap items-center gap-1">
+                            <div class="mt-2 flex flex-wrap items-center gap-1 ps-6">
                                 @if ($c->cliente)
                                     <flux:badge size="sm" color="blue" icon="user">{{ $c->cliente->nome }}</flux:badge>
                                 @endif
@@ -93,21 +112,29 @@
                             </div>
                         </div>
                     @empty
-                        <div class="rounded-lg border border-dashed border-zinc-200 py-6 text-center text-xs text-zinc-400 dark:border-zinc-700">
-                            Sem cartões
+                        {{-- Coluna vazia: orientação (e alvo de drop) --}}
+                        <div class="flex flex-col items-center gap-1 rounded-lg border border-dashed py-6 text-center"
+                            style="border-color: color-mix(in srgb, var(--cor-texto) 15%, transparent); color: var(--cor-texto-suave);">
+                            <flux:icon name="inbox" class="size-5" />
+                            <span class="text-xs">Arraste cartões para cá</span>
                         </div>
                     @endforelse
                 </div>
 
                 <button type="button" wire:click="novoCartao({{ $coluna->id }})"
-                    class="m-2 flex items-center justify-center gap-1 rounded-lg border border-dashed border-zinc-300 py-2 text-sm text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-700 dark:border-zinc-600 dark:hover:text-zinc-300">
+                    class="m-2 flex items-center justify-center gap-1 rounded-lg border border-dashed py-2 text-sm transition hover:opacity-80"
+                    style="border-color: color-mix(in srgb, var(--cor-texto) 20%, transparent); color: var(--cor-texto-suave);">
                     <flux:icon name="plus" class="size-4" /> Adicionar cartão
                 </button>
             </div>
         @empty
             <div class="w-full">
-                <x-ng.empty icon="view-columns" title="Quadro sem colunas"
-                    text="{{ $podeGerir ? 'Crie a primeira coluna para começar.' : 'Peça a um gestor para configurar as colunas.' }}" />
+                <x-ng.empty themed icon="view-columns" title="Quadro sem colunas"
+                    text="{{ $podeGerir ? 'Crie a primeira coluna para começar.' : 'Peça a um gestor para configurar as colunas.' }}">
+                    @if ($podeGerir)
+                        <flux:button wire:click="novaColuna" variant="primary" size="sm" icon="plus" class="mt-2">Nova coluna</flux:button>
+                    @endif
+                </x-ng.empty>
             </div>
         @endforelse
     </div>
@@ -169,5 +196,51 @@
                 <flux:button type="submit" variant="primary">Salvar</flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    {{-- Modal: confirmar arquivamento de cartão (sem confirm nativo) --}}
+    <flux:modal name="arquivar-cartao" class="max-w-sm">
+        <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+                <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15">
+                    <flux:icon name="archive-box" class="size-6" />
+                </span>
+                <div>
+                    <flux:heading size="lg">Arquivar cartão?</flux:heading>
+                    <flux:text class="mt-1">Ele sai do quadro, mas não é apagado (pode ser restaurado por um gestor).</flux:text>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Voltar</flux:button>
+                </flux:modal.close>
+                @if ($confirmarCartao)
+                    <flux:button wire:click="removerCartao({{ $confirmarCartao }})" variant="primary" icon="archive-box">Arquivar</flux:button>
+                @endif
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Modal: confirmar remoção de coluna (sem confirm nativo) --}}
+    <flux:modal name="remover-coluna" class="max-w-sm">
+        <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+                <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/15">
+                    <flux:icon name="exclamation-triangle" class="size-6" />
+                </span>
+                <div>
+                    <flux:heading size="lg">Remover coluna?</flux:heading>
+                    <flux:text class="mt-1">A coluna e os cartões dela serão removidos. Esta ação não pode ser desfeita.</flux:text>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Voltar</flux:button>
+                </flux:modal.close>
+                @if ($confirmarColuna)
+                    <flux:button wire:click="removerColuna({{ $confirmarColuna }})" variant="danger" icon="trash">Remover</flux:button>
+                @endif
+            </div>
+        </div>
     </flux:modal>
 </div>
