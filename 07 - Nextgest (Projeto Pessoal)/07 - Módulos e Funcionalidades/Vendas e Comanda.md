@@ -52,8 +52,9 @@ A comanda/venda: produtos + serviços, **avulsa** (balcão) **ou** a partir de u
   concluído, **"Gerar comanda"** → `Comanda::apartirDeAgendamento` copia os serviços do
   `agendamento_servico` (snapshot), profissional = quem atendeu; **idempotente** (não
   duplica). Leva ao detalhe para adicionar produtos.
-- **Fechar/pagar:** status → `paga` (sem forma de pagamento ainda — bloco
-  **Pagamentos** depois); dispara baixa de estoque + comissão.
+- **Fechar/pagar:** registra **pagamento(s) presencial(is)** (forma + valor; aceita
+  dividido); quando a soma cobre o `valor_total`, a venda vira `paga` e dispara baixa
+  de estoque + comissão. Ver [[Pagamentos (Presencial)]].
 
 ## UI (painel, claro/escuro, responsivo)
 - **Lista:** filtros por status/período/unidade, busca por cliente; estados loading

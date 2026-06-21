@@ -10,20 +10,21 @@ tags: [nextgest, saas, agendamento]
 # Nextgest — Visão Geral
 
 > [!note] Estado atual (22/06/2026)
-> - **Suíte verde: 195 testes** (Pest) + testes de fumaça HTTP.
-> - **Fatia 2 (produtos→financeiro) quase completa:** 2A produtos/estoque
->   (`painel.produtos`), 2B venda/comanda (`painel.vendas`), 2C **comissões**
->   (override + % de serviço + relatório `painel.comissoes`) e 2D **dashboard com
->   faturamento REAL** (vendas pagas). Ver [[Produtos e Estoque]], [[Vendas e Comanda]],
->   [[Comissões]] e [[Dashboard do Dono]].
+> - **Suíte verde: 203 testes** (Pest) + testes de fumaça HTTP.
+> - **Fatia 2 completa:** 2A produtos/estoque, 2B venda/comanda, 2C comissões, 2D
+>   dashboard com faturamento REAL. **Pagamentos etapa 1 (presencial)** entregue:
+>   fechar comanda registra pagamento(s) (dinheiro/cartão/pix/maquininha, dividido),
+>   estorno ao cancelar. Ver [[Produtos e Estoque]], [[Vendas e Comanda]],
+>   [[Comissões]], [[Dashboard do Dono]] e [[Pagamentos (Presencial)]].
 > - Evolução visual A/B/C (portal, painel+dashboard, kanban) + **Etapa D: modo
 >   claro/escuro/sistema** (Flux) no painel e no portal.
 > - **Modelo de tema (D36, substitui parte de A/B):** marca do tenant = **acento +
 >   logo + tipografia** (constante nos dois modos); **superfícies = tokens de
 >   claro/escuro**. Ver [[Decisões de Arquitetura]] D36 e
 >   [[Identidade Visual do Estabelecimento (Tema)]].
-> - **Próxima frente:** bloco **Pagamentos** (forma de pagamento/gateway; "pagar" da
->   comanda hoje só muda status) e **desconto por item**. Depois: Clube de assinatura.
+> - **Próxima frente:** **Pagamentos etapa 2** (gateway Mercado Pago: online Pix/cartão,
+>   webhook, credenciais criptografadas — exige direção do Fabio). Depois: Clube de
+>   assinatura. Pendente menor: desconto por item.
 > - **Migrou de servidor:** saiu da VM VirtualBox (`192.168.3.100`, Ubuntu 24.04,
 >   PHP 8.4) para o **servidor de dev compartilhado `192.168.11.210`** (Ubuntu 22.04,
 >   PHP 8.5.7), com repositório no **GitHub**.

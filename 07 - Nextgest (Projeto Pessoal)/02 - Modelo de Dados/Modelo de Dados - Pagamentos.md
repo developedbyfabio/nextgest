@@ -15,6 +15,16 @@ tags: [nextgest, modelo-de-dados, pagamentos, gateway, seguranca]
 
 ---
 
+> [!check] Confirmado — etapa 1 PRESENCIAL (2026-06-22)
+> **§4.2 `pagamentos`** confirmada (migration 190004, bate com a tabela acima) —
+> model `Pagamento` + integração no fechamento da comanda. **§7 presencial**
+> implementado: `gateway_id` nulo, `status = aprovado` na hora, `pago_em` e
+> `criado_por_user_id` preenchidos; **pagamento dividido** (N por venda) e **estorno**
+> ao cancelar. Os campos de gateway existem mas ficam **sem uso**. Ver
+> [[Pagamentos (Presencial)]].
+> **Etapa 2 (a confirmar/dirigir):** gateway Mercado Pago (online), `gateways_pagamento`,
+> `cartoes_tokenizados`, `webhooks_pagamento`, recorrência do clube — §2, §7, §8.
+
 ## 1. Princípios de segurança (leia antes de tudo)
 
 - **Nunca** armazenar número de cartão, CVV ou validade em texto. O cartão é
