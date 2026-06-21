@@ -60,9 +60,9 @@
             </div>
         @endunless
 
-        {{-- Indicadores (KPIs) — skeleton enquanto recalcula --}}
-        <div wire:loading.delay wire:target="{{ $alvosFiltro }}" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            @for ($i = 0; $i < 5; $i++)
+        {{-- Skeleton dos KPIs enquanto recalcula --}}
+        <div wire:loading.delay wire:target="{{ $alvosFiltro }}" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            @for ($i = 0; $i < 4; $i++)
                 <div class="ng-surface flex flex-col gap-3 p-5">
                     <div class="ng-skeleton-portal h-4 w-20"></div>
                     <div class="ng-skeleton-portal h-8 w-24"></div>
@@ -71,31 +71,55 @@
             @endfor
         </div>
 
-        <div wire:loading.remove.delay wire:target="{{ $alvosFiltro }}" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <x-ng.indicador titulo="Agendamentos" :valor="$d['total']" icone="calendar-days"
-                :tendencia="$d['delta']" sub="vs. período anterior" />
-            <x-ng.indicador titulo="Faturamento estimado" :valor="'R$ '.number_format($d['faturamento'], 2, ',', '.')"
-                icone="banknotes" sub="serviços concluídos" />
-            <x-ng.indicador titulo="Clientes novos" :valor="$d['clientesNovos']" icone="user-plus" sub="cadastrados no período" />
-            <x-ng.indicador titulo="Clientes recorrentes" :valor="$d['clientesRecorrentes']" icone="users" sub="2+ agendamentos" />
-            <x-ng.indicador titulo="Comparecimento"
-                :valor="is_null($d['comparecimento']['taxa']) ? '—' : number_format($d['comparecimento']['taxa'], 0).'%'"
-                icone="check-circle" sub="concluídos / resolvidos" />
+        <div wire:loading.remove.delay wire:target="{{ $alvosFiltro }}" class="flex flex-col gap-6">
+            {{-- KPIs financeiros (fonte: vendas pagas) --}}
+            <div class="flex flex-col gap-3">
+                <flux:heading size="sm" style="color: var(--cor-texto-suave);">Financeiro</flux:heading>
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <x-ng.indicador titulo="Faturamento" :valor="'R$ '.number_format($d['faturamento'], 2, ',', '.')"
+                        icone="banknotes" :tendencia="$d['deltaFaturamento']" sub="vendas pagas" />
+                    <x-ng.indicador titulo="Vendas pagas" :valor="$d['vendasPagas']" icone="shopping-cart" sub="no período" />
+                    <x-ng.indicador titulo="Ticket médio" :valor="'R$ '.number_format($d['ticketMedio'], 2, ',', '.')"
+                        icone="receipt-percent" sub="por venda paga" />
+                    <x-ng.indicador titulo="Comissão a pagar" :valor="'R$ '.number_format($d['comissaoAPagar'], 2, ',', '.')"
+                        icone="wallet" sub="itens das vendas pagas" />
+                </div>
+            </div>
+
+            {{-- KPIs operacionais (fonte: agendamentos) --}}
+            <div class="flex flex-col gap-3">
+                <flux:heading size="sm" style="color: var(--cor-texto-suave);">Operação</flux:heading>
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <x-ng.indicador titulo="Agendamentos" :valor="$d['total']" icone="calendar-days"
+                        :tendencia="$d['delta']" sub="vs. período anterior" />
+                    <x-ng.indicador titulo="Comparecimento"
+                        :valor="is_null($d['comparecimento']['taxa']) ? '—' : number_format($d['comparecimento']['taxa'], 0).'%'"
+                        icone="check-circle" sub="concluídos / resolvidos" />
+                    <x-ng.indicador titulo="Clientes novos" :valor="$d['clientesNovos']" icone="user-plus" sub="cadastrados no período" />
+                    <x-ng.indicador titulo="Clientes recorrentes" :valor="$d['clientesRecorrentes']" icone="users" sub="2+ agendamentos" />
+                </div>
+            </div>
         </div>
 
         {{-- Gráficos (escurecem levemente durante o recálculo) --}}
         <div wire:loading.class.delay="opacity-60" wire:target="{{ $alvosFiltro }}" class="grid gap-4 transition-opacity lg:grid-cols-2">
+            <x-ng.grafico chave="faturamento" titulo="Faturamento por dia" tipo="line"
+                :dados="$d['graficos']['faturamento']" :vazio="! $temVendas" />
+
+            <x-ng.grafico chave="maisVendidos" titulo="Mais vendidos (R$)" tipo="bar"
+                :dados="$d['graficos']['maisVendidos']" :vazio="$d['maisVendidos']->isEmpty()" />
+
             <x-ng.grafico chave="porDia" titulo="Agendamentos por dia" tipo="line"
                 :dados="$d['graficos']['porDia']" :vazio="! $temDados" />
 
-            <x-ng.grafico chave="horarios" titulo="Horários mais movimentados" tipo="bar"
-                :dados="$d['graficos']['horarios']" :vazio="! $temDados" />
+            <x-ng.grafico chave="comparecimento" titulo="Taxa de comparecimento" tipo="doughnut"
+                :dados="$d['graficos']['comparecimento']" :legenda="true" :vazio="! $temDados" />
 
             <x-ng.grafico chave="servicos" titulo="Serviços mais agendados" tipo="bar"
                 :dados="$d['graficos']['servicos']" :vazio="$d['servicos']->isEmpty()" />
 
-            <x-ng.grafico chave="comparecimento" titulo="Taxa de comparecimento" tipo="doughnut"
-                :dados="$d['graficos']['comparecimento']" :legenda="true" :vazio="! $temDados" />
+            <x-ng.grafico chave="horarios" titulo="Horários mais movimentados" tipo="bar"
+                :dados="$d['graficos']['horarios']" :vazio="! $temDados" />
         </div>
 
         {{-- Profissionais + atalhos --}}
@@ -110,7 +134,7 @@
                         </span>
                         <div class="text-right">
                             <div class="text-sm font-semibold tabular-nums" style="color: var(--cor-texto);">{{ $p['total'] }} concluídos</div>
-                            <flux:text class="text-xs" style="color: var(--cor-texto-suave);">R$ {{ number_format($p['valor'], 2, ',', '.') }} estimado</flux:text>
+                            <flux:text class="text-xs" style="color: var(--cor-texto-suave);">R$ {{ number_format($p['valor'], 2, ',', '.') }} em serviços</flux:text>
                         </div>
                     </div>
                 @empty
@@ -141,7 +165,7 @@
         </div>
 
         <flux:text class="text-xs" style="color: var(--cor-texto-suave);">
-            Faturamento <strong>estimado</strong> a partir dos serviços concluídos no período (snapshots de preço). Vendas e clube entram em fatias futuras.
+            Faturamento <strong>real</strong> = soma das comandas pagas no período (só conta o que foi efetivamente cobrado; atendimento sem comanda não vira faturamento).
         </flux:text>
     @endif
 </div>

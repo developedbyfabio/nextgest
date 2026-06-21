@@ -74,6 +74,7 @@ class SemearDemo extends Command
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
             $this->comandas($unidade, $servicos, $profissionais, $clientes);
+            $this->historicoVendas($unidade, $profissionais);
             $this->kanban($clientes, $profissionais);
         });
 
@@ -192,6 +193,60 @@ class SemearDemo extends Command
             $v3 = $comanda->apartirDeAgendamento($ag, $jorge?->id);
             $comanda->pagar($v3, $jorge?->id);
         }
+    }
+
+    /**
+     * Faturamento REAL ao longo do histórico (Fatia 2D): ~70% dos atendimentos
+     * concluídos passados viram comanda paga (serviços), parte com um produto de
+     * balcão (se houver estoque). A `data` da venda é retroagida para a data do
+     * atendimento, dando forma aos gráficos. Coerente (usa Comanda/MovimentadorEstoque:
+     * baixa de estoque e comissão batem). Idempotente: só gera se ainda não há vendas
+     * com data passada.
+     *
+     * @param  array<int, User>  $profissionais
+     */
+    private function historicoVendas(Unidade $unidade, array $profissionais): void
+    {
+        if (Venda::where('data', '<', Carbon::today()->subDay())->exists()) {
+            return;
+        }
+
+        $comanda = app(Comanda::class);
+        $estoque = app(MovimentadorEstoque::class);
+        $userId = $profissionais[0]->id ?? null;
+        $produtosBalcao = Produto::where('controla_estoque', true)->where('ativo', true)->get();
+
+        mt_srand(20260621); // reproduzível
+
+        $concluidos = Agendamento::where('status', 'concluido')
+            ->where('data_hora_inicio', '<', Carbon::today())
+            ->whereHas('itens')
+            ->orderBy('data_hora_inicio')
+            ->get();
+
+        foreach ($concluidos as $ag) {
+            // ~30% dos atendimentos não geram comanda (não foi cobrado pelo sistema).
+            if (mt_rand(1, 100) > 70 || Venda::where('agendamento_id', $ag->id)->exists()) {
+                continue;
+            }
+
+            $venda = $comanda->apartirDeAgendamento($ag, $userId);
+
+            // ~35% também levam um produto de balcão, se houver estoque na unidade.
+            if (mt_rand(1, 100) <= 35 && $produtosBalcao->isNotEmpty()) {
+                $p = $produtosBalcao[mt_rand(0, $produtosBalcao->count() - 1)];
+                if ($estoque->disponivel($p->id, $ag->unidade_id) >= 1) {
+                    $comanda->adicionarProduto($venda, $p, 1, $ag->profissional_id);
+                }
+            }
+
+            $comanda->pagar($venda, $userId);
+
+            // Retroage a data da venda para a data do atendimento (forma do gráfico).
+            $venda->forceFill(['data' => $ag->data_hora_inicio])->save();
+        }
+
+        mt_srand();
     }
 
     /** @return array<string, Servico> */

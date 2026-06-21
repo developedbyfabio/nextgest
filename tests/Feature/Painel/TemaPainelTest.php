@@ -51,7 +51,7 @@ it('dashboard renderiza KPIs e cards na superfície (ng-surface)', function () {
     Livewire::test(Dashboard::class)
         ->assertSet('erro', false)
         ->assertSee('Agendamentos')
-        ->assertSee('Faturamento estimado')
+        ->assertSee('Faturamento')
         ->assertSee('Comparecimento')
         ->assertSeeHtml('ng-surface');
 });

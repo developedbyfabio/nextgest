@@ -115,12 +115,20 @@ class Dashboard extends Component
             'total' => 0,
             'delta' => null,
             'faturamento' => 0.0,
+            'vendasPagas' => 0,
+            'ticketMedio' => 0.0,
+            'comissaoAPagar' => 0.0,
+            'deltaFaturamento' => null,
             'clientesNovos' => 0,
             'clientesRecorrentes' => 0,
             'servicos' => collect(),
+            'maisVendidos' => collect(),
             'profissionais' => [],
             'comparecimento' => ['taxa' => null, 'concluido' => 0, 'nao_compareceu' => 0, 'cancelado' => 0],
-            'graficos' => ['porDia' => $vazio, 'servicos' => $vazio, 'horarios' => $vazio, 'comparecimento' => $vazio],
+            'graficos' => [
+                'faturamento' => $vazio, 'maisVendidos' => $vazio,
+                'porDia' => $vazio, 'servicos' => $vazio, 'horarios' => $vazio, 'comparecimento' => $vazio,
+            ],
         ];
     }
 
@@ -141,7 +149,34 @@ class Dashboard extends Component
         $porHora = $m->horariosPorHora();
         $comparecimento = $m->comparecimento();
 
+        // Faturamento REAL (vendas pagas) — Fatia 2D.
+        $faturamento = $m->faturamento();
+        $vendasPagas = $m->vendasPagas();
+        $fatPorDia = $m->faturamentoPorDia();
+        $maisVendidos = $m->maisVendidos();
+
         $graficos = [
+            'faturamento' => [
+                'labels' => $fatPorDia['labels'],
+                'datasets' => [[
+                    'label' => 'Faturamento (R$)',
+                    'data' => $fatPorDia['valores'],
+                    'borderColor' => $cor,
+                    'backgroundColor' => $this->rgba($cor, 0.15),
+                    'fill' => true,
+                    'tension' => 0.3,
+                    'pointRadius' => 2,
+                ]],
+            ],
+            'maisVendidos' => [
+                'labels' => $maisVendidos->pluck('nome')->all(),
+                'datasets' => [[
+                    'label' => 'Faturamento (R$)',
+                    'data' => $maisVendidos->pluck('total')->all(),
+                    'backgroundColor' => $cor2,
+                    'borderRadius' => 6,
+                ]],
+            ],
             'porDia' => [
                 'labels' => $porDia['labels'],
                 'datasets' => [[
@@ -187,10 +222,15 @@ class Dashboard extends Component
             'fim' => $fim,
             'total' => $comp['atual'],
             'delta' => $comp['delta'],
-            'faturamento' => $m->faturamentoEstimado(),
+            'faturamento' => $faturamento,
+            'vendasPagas' => $vendasPagas,
+            'ticketMedio' => $m->ticketMedio(),
+            'comissaoAPagar' => $m->comissaoAPagar(),
+            'deltaFaturamento' => $m->comparativoFaturamento(),
             'clientesNovos' => $m->clientesNovos(),
             'clientesRecorrentes' => $m->clientesRecorrentes(),
             'servicos' => $servicos,
+            'maisVendidos' => $maisVendidos,
             'profissionais' => $m->profissionaisDesempenho(),
             'comparecimento' => $comparecimento,
             'graficos' => $graficos,
@@ -219,6 +259,7 @@ class Dashboard extends Component
             'unidades' => $unidades,
             'multiUnidade' => $unidades->count() >= 2,
             'temDados' => $dados['total'] > 0,
+            'temVendas' => $dados['vendasPagas'] > 0,
         ]);
     }
 }

@@ -8,18 +8,21 @@ use App\Models\Agendamento;
 use App\Models\AgendamentoServico;
 use App\Models\Cliente;
 use App\Models\User;
+use App\Models\Venda;
+use App\Models\VendaItem;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Agregações do dashboard do dono/gerente (Etapa 4), no contexto do TENANT.
+ * Agregações do dashboard do dono/gerente, no contexto do TENANT.
  *
- * Honestidade da fonte: NÃO há módulo de Vendas/Clube ainda. O faturamento é
- * ESTIMADO a partir dos snapshots de preço em `agendamento_servico` dos
- * agendamentos com status `concluido` no período. Os demais indicadores vêm de
- * `agendamentos`, `agendamento_servico`, `clientes` e `users`.
+ * Fonte do FATURAMENTO (Fatia 2D): vendas/comandas REAIS — soma de
+ * `vendas.valor_total` das vendas `paga` no período/unidade. Atendimento sem
+ * comanda NÃO vira faturamento (só conta o que foi efetivamente cobrado). Os
+ * indicadores operacionais (agendamentos, comparecimento, clientes, horários,
+ * serviços agendados) seguem vindo de `agendamentos`/`agendamento_servico`.
  *
  * Portabilidade: as agregações usam apenas count/sum/groupBy por coluna
  * (idênticos em SQLite de teste e MySQL de produção). Extrações de data/hora
@@ -68,16 +71,98 @@ class Metricas
         return ['atual' => $atual, 'anterior' => $anterior, 'delta' => $delta];
     }
 
-    /** Faturamento ESTIMADO: soma dos preços (snapshot) de serviços concluídos. */
-    public function faturamentoEstimado(): float
+    // ----- Faturamento REAL (vendas pagas) — Fatia 2D -----
+
+    /** Base: vendas PAGAS cuja data cai no período (e na unidade, se filtrada). */
+    private function baseVendas()
     {
-        return (float) AgendamentoServico::query()
-            ->whereHas('agendamento', function ($q) {
-                $q->where('status', 'concluido')
-                    ->whereBetween('data_hora_inicio', [$this->inicio, $this->fim])
+        return Venda::query()
+            ->where('status', 'paga')
+            ->whereBetween('data', [$this->inicio, $this->fim])
+            ->when($this->unidadeId, fn ($q) => $q->where('unidade_id', $this->unidadeId));
+    }
+
+    /** Faturamento REAL: soma de `valor_total` das vendas pagas no período. */
+    public function faturamento(): float
+    {
+        return (float) $this->baseVendas()->sum('valor_total');
+    }
+
+    /** Número de vendas pagas no período. */
+    public function vendasPagas(): int
+    {
+        return $this->baseVendas()->count();
+    }
+
+    /** Ticket médio = faturamento ÷ nº de vendas pagas (0 sem vendas). */
+    public function ticketMedio(): float
+    {
+        $n = $this->vendasPagas();
+
+        return $n > 0 ? $this->faturamento() / $n : 0.0;
+    }
+
+    /** Comissão a pagar: soma de `valor_comissao` dos itens das vendas pagas. */
+    public function comissaoAPagar(): float
+    {
+        return (float) VendaItem::query()
+            ->whereHas('venda', function ($q) {
+                $q->where('status', 'paga')
+                    ->whereBetween('data', [$this->inicio, $this->fim])
                     ->when($this->unidadeId, fn ($q) => $q->where('unidade_id', $this->unidadeId));
             })
-            ->sum('preco');
+            ->sum('valor_comissao');
+    }
+
+    /** Variação % do faturamento vs. período anterior de mesma duração (null se 0). */
+    public function comparativoFaturamento(): ?float
+    {
+        $dias = $this->inicio->diffInDays($this->fim) + 1;
+        $fimAnterior = $this->inicio->copy()->subDay()->endOfDay();
+        $inicioAnterior = $fimAnterior->copy()->subDays($dias - 1)->startOfDay();
+
+        $anterior = (float) Venda::query()
+            ->where('status', 'paga')
+            ->whereBetween('data', [$inicioAnterior, $fimAnterior])
+            ->when($this->unidadeId, fn ($q) => $q->where('unidade_id', $this->unidadeId))
+            ->sum('valor_total');
+
+        return $anterior > 0 ? (($this->faturamento() - $anterior) / $anterior) * 100 : null;
+    }
+
+    /** Faturamento por dia (vendas pagas) no período, com dias zerados. */
+    public function faturamentoPorDia(): array
+    {
+        $soma = $this->baseVendas()->get(['data', 'valor_total'])
+            ->groupBy(fn ($v) => $v->data->format('Y-m-d'))
+            ->map(fn ($g) => (float) $g->sum('valor_total'));
+
+        $labels = [];
+        $valores = [];
+
+        foreach (CarbonPeriod::create($this->inicio->copy()->startOfDay(), $this->fim->copy()->startOfDay()) as $dia) {
+            $labels[] = $dia->format('d/m');
+            $valores[] = round((float) ($soma[$dia->format('Y-m-d')] ?? 0), 2);
+        }
+
+        return ['labels' => $labels, 'valores' => $valores];
+    }
+
+    /** Itens mais vendidos por faturamento (R$) nas vendas pagas. Top N. */
+    public function maisVendidos(int $n = 6): Collection
+    {
+        return VendaItem::query()
+            ->select('descricao', DB::raw('SUM(subtotal) as total'))
+            ->whereHas('venda', function ($q) {
+                $q->where('status', 'paga')
+                    ->whereBetween('data', [$this->inicio, $this->fim])
+                    ->when($this->unidadeId, fn ($q) => $q->where('unidade_id', $this->unidadeId));
+            })
+            ->groupBy('descricao')
+            ->orderByDesc('total')
+            ->limit($n)
+            ->get()
+            ->map(fn ($r) => ['nome' => $r->descricao, 'total' => (float) $r->total]);
     }
 
     /** Clientes cadastrados no período (clientes não têm unidade). */

@@ -77,10 +77,12 @@ it('conta total de agendamentos no período e compara com o anterior', function 
         ->and($comp['delta'])->toBe(400.0);
 });
 
-it('estima o faturamento pelos serviços concluídos (snapshots)', function () {
-    semearCenario();
-    // 50 (corte) + 80 (corte+barba) = 130; o concluído de 40 dias fica fora.
-    expect(metricas30d()->faturamentoEstimado())->toBe(130.0);
+it('faturamento NÃO vem de agendamentos — só de vendas pagas (Fatia 2D)', function () {
+    semearCenario(); // só agendamentos concluídos, nenhuma comanda/venda
+    // Atendimento sem comanda não vira faturamento.
+    expect(metricas30d()->faturamento())->toBe(0.0)
+        ->and(metricas30d()->vendasPagas())->toBe(0)
+        ->and(metricas30d()->ticketMedio())->toBe(0.0);
 });
 
 it('conta clientes novos e recorrentes', function () {
@@ -155,7 +157,10 @@ it('renderiza o dashboard para o Dono com os indicadores', function () {
     $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@dash.test']), 'web');
 
     Livewire::test(Dashboard::class)
-        ->assertSee('Faturamento estimado')
+        ->assertSee('Faturamento')
+        ->assertDontSee('Faturamento estimado') // agora é faturamento REAL (2D)
+        ->assertSee('Ticket médio')
+        ->assertSee('Comissão a pagar')
         ->assertSee('Agendamentos')
         ->assertSet('periodo', '30d');
 });
