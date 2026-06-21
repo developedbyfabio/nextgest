@@ -29,6 +29,12 @@ tags: [nextgest, saas, agendamento]
 >   login** (flag `deve_trocar_senha` + middleware `ForcarTrocaSenha`, só painel); e
 >   **"Alterar senha"** self-service no menu de perfil (todos os papéis, exige a senha
 >   atual). Ver [[Senhas (1o login e self-service)]].
+> - **Funcionamento** (✅ 2026-06-22): horário semanal **editável no painel** (`painel.
+>   funcionamento`, reusa o editor do onboarding) + **calendário de exceções** (feriados/
+>   fechamentos/horário especial). Integrado ao `MotorDisponibilidade` como camada
+>   (`Funcionamento::doDia`): dia fechado = 0 slots no portal; especial = só na faixa;
+>   sem config = permissivo. **Onboarding** ganhou **imagem de cabeçalho + fundo** (além do
+>   logo). Ver [[Funcionamento e Excecoes (horario)]].
 > - Evolução visual A/B/C (portal, painel+dashboard, kanban) + **Etapa D: modo
 >   claro/escuro/sistema** (Flux) no painel e no portal.
 > - **Modelo de tema (D36, substitui parte de A/B):** marca do tenant = **acento +

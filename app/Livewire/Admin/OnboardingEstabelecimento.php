@@ -95,6 +95,10 @@ class OnboardingEstabelecimento extends Component
 
     public $logoUpload = null;
 
+    public $headerUpload = null;
+
+    public $fundoUpload = null;
+
     public function mount(): void
     {
         abort_unless(auth('admin')->check(), 403);
@@ -221,6 +225,8 @@ class OnboardingEstabelecimento extends Component
                 'fonte' => ['required', 'string', Rule::in(array_keys(Aparencia::FONTES))],
                 'tamanho_base' => ['required', 'string', 'regex:/^\d{2}px$/'],
                 'logoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+                'headerUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+                'fundoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             ],
             default => [],
         };
@@ -284,16 +290,22 @@ class OnboardingEstabelecimento extends Component
         ];
     }
 
-    /** Aparência para a prévia ao vivo (com a logo temporária, se houver). */
+    /** Aparência para a prévia ao vivo (com as imagens temporárias, se houver). */
     public function aparenciaParaPrevia(): array
     {
-        $logoPreviewavel = $this->logoUpload
-            && method_exists($this->logoUpload, 'isPreviewable')
-            && $this->logoUpload->isPreviewable();
-
         return array_merge(Aparencia::PADRAO, $this->aparenciaForm(), [
-            'logo_url' => $logoPreviewavel ? $this->logoUpload->temporaryUrl() : null,
+            'logo_url' => $this->urlPrevia($this->logoUpload),
+            'header_url' => $this->urlPrevia($this->headerUpload),
+            'fundo_url' => $this->urlPrevia($this->fundoUpload),
         ]);
+    }
+
+    /** URL temporária de um upload, só se for imagem previewável (senão null). */
+    private function urlPrevia($upload): ?string
+    {
+        return $upload && method_exists($upload, 'isPreviewable') && $upload->isPreviewable()
+            ? $upload->temporaryUrl()
+            : null;
     }
 
     /** Horário pronto para persistir (sem o rótulo). */
@@ -350,8 +362,14 @@ class OnboardingEstabelecimento extends Component
             }
 
             $logo = $this->logoUpload ? $this->logoUpload->store('aparencia', 'public') : null;
+            $header = $this->headerUpload ? $this->headerUpload->store('aparencia', 'public') : null;
+            $fundo = $this->fundoUpload ? $this->fundoUpload->store('aparencia', 'public') : null;
 
-            Aparencia::salvar(array_merge($this->aparenciaForm(), ['logo' => $logo]));
+            Aparencia::salvar(array_merge($this->aparenciaForm(), [
+                'logo' => $logo,
+                'header_imagem' => $header,
+                'fundo_imagem' => $fundo,
+            ]));
 
             Configuracao::updateOrCreate(['chave' => 'descricao'], ['valor' => $this->descricao]);
             Configuracao::updateOrCreate(

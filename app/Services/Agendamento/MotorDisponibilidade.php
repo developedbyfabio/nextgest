@@ -29,6 +29,12 @@ use Illuminate\Support\Collection;
 class MotorDisponibilidade
 {
     /**
+     * `Funcionamento` é a CAMADA de horário do estabelecimento (semanal + exceções)
+     * aplicada por cima das janelas dos profissionais. Resolvida pelo container.
+     */
+    public function __construct(private readonly Funcionamento $funcionamento) {}
+
+    /**
      * Lista de slots livres. Cada item: ['hora' => 'HH:MM', 'profissional_id' => int,
      * 'inicio' => Carbon]. Para "sem preferência", cada hora traz o primeiro
      * profissional disponível.
@@ -46,6 +52,15 @@ class MotorDisponibilidade
         if ($data->copy()->endOfDay()->isPast()) {
             return collect();
         }
+
+        // CAMADA de funcionamento: dia fechado (semanal/exceção) → nada; aberto →
+        // restringe à faixa; sem_config → permissivo (comportamento anterior).
+        $func = $this->funcionamento->doDia($data);
+        if ($func['estado'] === Funcionamento::FECHADO) {
+            return collect();
+        }
+        $gateIni = isset($func['inicio']) ? $data->copy()->setTimeFromTimeString($func['inicio']) : null;
+        $gateFim = isset($func['fim']) ? $data->copy()->setTimeFromTimeString($func['fim']) : null;
 
         $profissionais = $profissionalId
             ? $this->filtrarProfissional($profissionalId, $unidadeId, $servicoIds)
@@ -77,6 +92,14 @@ class MotorDisponibilidade
             foreach ($janelas as $janela) {
                 $faixaFim = $data->copy()->setTimeFromTimeString($janela->hora_fim);
                 $cursor = $data->copy()->setTimeFromTimeString($janela->hora_inicio);
+
+                // Recorta a janela do profissional à faixa de funcionamento do dia.
+                if ($gateIni && $cursor->lt($gateIni)) {
+                    $cursor = $gateIni->copy();
+                }
+                if ($gateFim && $faixaFim->gt($gateFim)) {
+                    $faixaFim = $gateFim->copy();
+                }
 
                 while ($cursor->copy()->addMinutes($duracao)->lte($faixaFim)) {
                     $inicio = $cursor->copy();
@@ -142,6 +165,19 @@ class MotorDisponibilidade
     {
         if ($inicio->lte(Carbon::now())) {
             return false;
+        }
+
+        // CAMADA de funcionamento: respeita dia fechado / faixa especial do dia.
+        $func = $this->funcionamento->doDia($inicio);
+        if ($func['estado'] === Funcionamento::FECHADO) {
+            return false;
+        }
+        if ($func['estado'] === Funcionamento::ABERTO) {
+            $gi = $inicio->copy()->setTimeFromTimeString($func['inicio']);
+            $gf = $inicio->copy()->setTimeFromTimeString($func['fim']);
+            if ($inicio->lt($gi) || $fim->gt($gf)) {
+                return false;
+            }
         }
 
         $cabe = HorarioTrabalho::where('user_id', $profissionalId)

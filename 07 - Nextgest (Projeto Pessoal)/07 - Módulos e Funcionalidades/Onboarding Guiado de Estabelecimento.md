@@ -22,8 +22,12 @@ no super-admin, com **prévia ao vivo** do portal do cliente ao lado.
 ## Etapas do wizard (5)
 1. **Identidade do negócio** — nome, descrição, **segmento** e slug.
 2. **Responsável (Dono)** — nome, e-mail, senha (mín. 8).
-3. **Horário de funcionamento** — por dia da semana (aberto/fechado, início/fim).
-4. **Aparência** — template sugerido pelo segmento + ajuste de cores, com prévia.
+3. **Horário de funcionamento** — por dia da semana (aberto/fechado, início/fim). Usa o
+   **mesmo** editor da tela do painel ([[Funcionamento e Excecoes (horario)]]).
+4. **Aparência** — template + ajuste de cores/tipografia + **logo, imagem de cabeçalho e
+   imagem de fundo** (PNG/JPG/WebP, até 5 MB), com prévia. As 3 imagens seguem o mesmo
+   tratamento da aba de Aparência (store no disco do tenant, `urlArquivo`) e aparecem no
+   portal (capa no hero, fundo no `<body>`). Ver [[Identidade Visual do Estabelecimento (Tema)]].
 5. **Revisão** — confirma e provisiona.
 
 ## Segmentos e sugestão de template

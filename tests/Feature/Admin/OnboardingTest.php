@@ -134,7 +134,7 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
     expect(collect($horario)->firstWhere('dia', 0)['aberto'])->toBeFalse(); // domingo fechado
 });
 
-it('faz upload da logo no disco do tenant ao confirmar', function () {
+it('faz upload de logo, cabeçalho e fundo no disco do tenant ao confirmar', function () {
     Storage::fake('public');
     $this->actingAs(admin(), 'admin');
 
@@ -146,9 +146,18 @@ it('faz upload da logo no disco do tenant ao confirmar', function () {
         ->set('donoEmail', 'dono@barbeariax.com')
         ->set('donoSenha', 'senha-inicial-123')
         ->set('logoUpload', UploadedFile::fake()->image('logo.png', 64, 64))
+        ->set('headerUpload', UploadedFile::fake()->image('capa.jpg', 800, 300))
+        ->set('fundoUpload', UploadedFile::fake()->image('fundo.webp', 1200, 800))
         ->call('confirmar')
         ->assertHasNoErrors();
 
-    $logo = Tenant::find('barbeariax')->run(fn () => Aparencia::doTenant()['logo']);
-    expect($logo)->toStartWith('aparencia/');
+    $ap = Tenant::find('barbeariax')->run(fn () => Aparencia::doTenant());
+    expect($ap['logo'])->toStartWith('aparencia/')
+        ->and($ap['header_imagem'])->toStartWith('aparencia/')
+        ->and($ap['fundo_imagem'])->toStartWith('aparencia/');
+
+    // As 3 imagens aparecem no portal do estabelecimento criado.
+    $html = $this->get('/barbeariax')->assertOk()->content();
+    expect($html)->toContain('/barbeariax/arquivo/'.$ap['header_imagem'])  // capa no hero
+        ->toContain('/barbeariax/arquivo/'.$ap['fundo_imagem']);           // fundo no <body>
 });

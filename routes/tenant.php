@@ -16,6 +16,7 @@ use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
+use App\Livewire\Painel\Funcionamento\Index as FuncionamentoIndex;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
 use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
@@ -136,6 +137,11 @@ Route::middleware(['tenant'])
                 Route::get('bloqueios', BloqueiosIndex::class)
                     ->middleware('can:gerir_agenda')
                     ->name('bloqueios');
+
+                // Horário de funcionamento (semanal) + exceções (feriados/fechamentos).
+                Route::get('funcionamento', FuncionamentoIndex::class)
+                    ->middleware('can:gerir_agenda')
+                    ->name('funcionamento');
 
                 Route::get('kanban', KanbanIndex::class)
                     ->middleware('can:ver_kanban_atendimento')

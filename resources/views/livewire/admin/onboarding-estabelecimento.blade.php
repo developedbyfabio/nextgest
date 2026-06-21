@@ -71,27 +71,8 @@
                 <flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>
             @enderror
 
-            <div class="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-700">
-                @foreach ($funcionamento as $i => $f)
-                    <div class="flex flex-wrap items-center gap-4 py-3">
-                        <div class="w-28">
-                            <flux:switch wire:model.live="funcionamento.{{ $i }}.aberto" label="{{ $f['rotulo'] }}" />
-                        </div>
-                        @if ($f['aberto'])
-                            <div class="flex items-center gap-2">
-                                <flux:input type="time" wire:model="funcionamento.{{ $i }}.inicio" class="w-32" />
-                                <span class="text-zinc-400">até</span>
-                                <flux:input type="time" wire:model="funcionamento.{{ $i }}.fim" class="w-32" />
-                            </div>
-                        @else
-                            <flux:text class="text-sm text-zinc-400">Fechado</flux:text>
-                        @endif
-                        @error("funcionamento.$i.fim")
-                            <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
-                        @enderror
-                    </div>
-                @endforeach
-            </div>
+            {{-- Editor compartilhado (mesmo da tela de Funcionamento no painel). --}}
+            <x-funcionamento-editor :funcionamento="$funcionamento" />
         </div>
     @endif
 
@@ -151,23 +132,30 @@
                     </flux:select>
                 </div>
 
-                {{-- Logo --}}
-                <div class="flex items-center gap-4">
-                    <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
-                        @if ($logoUpload)
-                            <img src="{{ $logoUpload->temporaryUrl() }}" alt="Logo" class="size-full object-contain" />
-                        @else
-                            <flux:icon name="photo" class="size-6 text-zinc-400" />
-                        @endif
+                {{-- Imagens (logo + cabeçalho + fundo) — mesmo tratamento da aba de Aparência. --}}
+                <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP, até 5 MB cada (opcionais).</flux:text>
+                @foreach ([
+                    ['upload' => 'logoUpload', 'preview' => $logoUpload, 'rotulo' => 'Logo'],
+                    ['upload' => 'headerUpload', 'preview' => $headerUpload, 'rotulo' => 'Imagem de cabeçalho'],
+                    ['upload' => 'fundoUpload', 'preview' => $fundoUpload, 'rotulo' => 'Imagem de fundo'],
+                ] as $img)
+                    <div class="flex items-center gap-4">
+                        <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                            @if ($img['preview'] && method_exists($img['preview'], 'isPreviewable') && $img['preview']->isPreviewable())
+                                <img src="{{ $img['preview']->temporaryUrl() }}" alt="{{ $img['rotulo'] }}" class="size-full object-contain" />
+                            @else
+                                <flux:icon name="photo" class="size-6 text-zinc-400" />
+                            @endif
+                        </div>
+                        <div class="flex flex-1 flex-col gap-1">
+                            <flux:label>{{ $img['rotulo'] }} (opcional)</flux:label>
+                            <input type="file" wire:model="{{ $img['upload'] }}" accept="image/png,image/jpeg,image/webp"
+                                class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
+                            <div wire:loading wire:target="{{ $img['upload'] }}" class="text-xs text-zinc-500">Enviando…</div>
+                            <flux:error name="{{ $img['upload'] }}" />
+                        </div>
                     </div>
-                    <div class="flex flex-1 flex-col gap-1">
-                        <flux:label>Logo (opcional) — PNG, JPG ou WebP, até 5 MB</flux:label>
-                        <input type="file" wire:model="logoUpload" accept="image/png,image/jpeg,image/webp"
-                            class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
-                        <div wire:loading wire:target="logoUpload" class="text-xs text-zinc-500">Enviando…</div>
-                        <flux:error name="logoUpload" />
-                    </div>
-                </div>
+                @endforeach
             </div>
 
             {{-- Prévia ao vivo (reuso da Etapa 2) --}}

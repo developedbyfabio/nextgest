@@ -304,3 +304,12 @@ Nenhum pendente no núcleo de agendamento. Resolvidos:
 > whatsapp (`190003`–`190005`), mesmo sem toda a UI. O modelo detalhado desses blocos
 > vive nas notas próprias de [[02 - Modelo de Dados]] (Produtos e Vendas, Clube,
 > Pagamentos).
+
+## Funcionamento e exceções (2026-06-22)
+- **Horário semanal** do estabelecimento: `configuracoes.horario_funcionamento` (JSON
+  `[{dia, aberto, inicio, fim}]`).
+- **`excecoes_funcionamento`** (migração aditiva): `data` (única), `tipo`
+  (`fechado`|`horario_especial`), `hora_inicio`/`hora_fim`, `descricao`.
+- Ambos são **camada** sobre as `horarios_trabalho` no `MotorDisponibilidade` (via
+  `App\Services\Agendamento\Funcionamento`) — dia fechado/horário especial afetam os slots
+  do portal. Ver [[Funcionamento e Excecoes (horario)]].
