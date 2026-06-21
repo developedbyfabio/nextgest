@@ -77,6 +77,7 @@ class SemearDemo extends Command
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
             $this->comandas($unidade, $servicos, $profissionais, $clientes);
             $this->historicoVendas($unidade, $profissionais);
+            $this->backfillPagamentos($profissionais);
             $this->kanban($clientes, $profissionais);
         });
 
@@ -181,7 +182,12 @@ class SemearDemo extends Command
             $comanda->adicionarServico($v1, $corte, $jorge?->id);
         }
         $comanda->definirDesconto($v1, 5);
-        $comanda->pagar($v1, $jorge?->id);
+        // Pagamento DIVIDIDO (metade dinheiro, metade pix) — demonstra o split.
+        $metade = round((float) $v1->valor_total / 2, 2);
+        $comanda->pagarPresencial($v1, [
+            ['metodo' => 'dinheiro', 'valor' => $metade],
+            ['metodo' => 'pix', 'valor' => round((float) $v1->valor_total - $metade, 2)],
+        ], $jorge?->id);
 
         // 2) ABERTA (em montagem no balcão).
         $v2 = $comanda->abrir($unidade->id, null, $jorge?->id);
@@ -242,13 +248,40 @@ class SemearDemo extends Command
                 }
             }
 
-            $comanda->pagar($venda, $userId);
+            // Pagamento presencial com forma variada (dinheiro/pix/cartões/maquininha).
+            $metodo = ['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'maquininha'][mt_rand(0, 4)];
+            $comanda->pagarPresencial($venda, [['metodo' => $metodo, 'valor' => (float) $venda->valor_total]], $userId);
 
-            // Retroage a data da venda para a data do atendimento (forma do gráfico).
+            // Retroage a data da venda E dos pagamentos para a data do atendimento.
             $venda->forceFill(['data' => $ag->data_hora_inicio])->save();
+            $venda->pagamentos()->update(['pago_em' => $ag->data_hora_inicio, 'created_at' => $ag->data_hora_inicio]);
         }
 
         mt_srand();
+    }
+
+    /**
+     * Backfill de pagamentos para vendas pagas ANTES de existir o registro de
+     * pagamento (tenants de demo antigos): cria um pagamento presencial coerente
+     * (valor = total, aprovado, na data da venda). Idempotente: só onde falta.
+     *
+     * @param  array<int, User>  $profissionais
+     */
+    private function backfillPagamentos(array $profissionais): void
+    {
+        $userId = $profissionais[0]->id ?? null;
+        $metodos = ['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'maquininha'];
+
+        Venda::where('status', 'paga')->whereDoesntHave('pagamentos')->each(function (Venda $venda) use ($userId, $metodos) {
+            $venda->pagamentos()->create([
+                'metodo' => $metodos[$venda->id % count($metodos)],
+                'valor' => $venda->valor_total,
+                'status' => 'aprovado',
+                'pago_em' => $venda->data,
+                'created_at' => $venda->data,
+                'criado_por_user_id' => $userId,
+            ]);
+        });
     }
 
     /**

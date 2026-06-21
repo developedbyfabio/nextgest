@@ -11,6 +11,7 @@ use App\Models\Venda;
 use App\Models\VendaItem;
 use App\Services\Venda\Comanda;
 use App\Services\Venda\EstoqueInsuficienteException;
+use App\Services\Venda\PagamentoInvalidoException;
 use App\Services\Venda\VendaNaoEditavelException;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
@@ -43,6 +44,12 @@ class Detalhe extends Component
     public int $itemQtd = 1;
 
     public ?string $itemProfissionalId = null;
+
+    // Pagamento presencial (etapa 1): N formas somando o total.
+    /** @var array<int, array{metodo: string, valor: string}> */
+    public array $pagamentos = [];
+
+    public ?string $valorRecebido = null; // dinheiro: só calcula troco na UI
 
     public function mount(int $venda): void
     {
@@ -129,17 +136,41 @@ class Detalhe extends Component
 
     public function pedirPagar(): void
     {
+        // Pré-preenche uma forma (dinheiro) com o total da comanda.
+        $this->pagamentos = [['metodo' => 'dinheiro', 'valor' => number_format((float) $this->venda()->valor_total, 2, '.', '')]];
+        $this->valorRecebido = null;
+        $this->resetValidation();
         Flux::modal('pagar-comanda')->show();
+    }
+
+    public function adicionarFormaPagamento(): void
+    {
+        $restante = max(0, round((float) $this->venda()->valor_total - $this->somaPagamentos(), 2));
+        $this->pagamentos[] = ['metodo' => 'pix', 'valor' => number_format($restante, 2, '.', '')];
+    }
+
+    public function removerFormaPagamento(int $indice): void
+    {
+        unset($this->pagamentos[$indice]);
+        $this->pagamentos = array_values($this->pagamentos);
+    }
+
+    private function somaPagamentos(): float
+    {
+        return round(collect($this->pagamentos)->sum(fn ($p) => (float) str_replace(',', '.', (string) ($p['valor'] ?? 0))), 2);
     }
 
     public function pagar(Comanda $comanda): void
     {
         $this->authorize('criar_venda');
 
+        $linhas = collect($this->pagamentos)
+            ->map(fn ($p) => ['metodo' => $p['metodo'] ?? '', 'valor' => (float) str_replace(',', '.', (string) ($p['valor'] ?? 0))])
+            ->all();
+
         try {
-            $comanda->pagar($this->venda(), auth('web')->id());
-        } catch (EstoqueInsuficienteException|VendaNaoEditavelException $e) {
-            Flux::modal('pagar-comanda')->close();
+            $comanda->pagarPresencial($this->venda(), $linhas, auth('web')->id());
+        } catch (EstoqueInsuficienteException|VendaNaoEditavelException|PagamentoInvalidoException $e) {
             Flux::toast($e->getMessage(), variant: 'danger');
 
             return;
@@ -174,9 +205,14 @@ class Detalhe extends Component
             'itens.produto:id,nome',
             'itens.servico:id,nome',
             'itens.profissional:id,name',
+            'pagamentos:id,venda_id,metodo,valor,status,pago_em',
             'cliente:id,nome,telefone',
             'unidade:id,nome',
         ])->findOrFail($this->vendaId);
+
+        $soma = $this->somaPagamentos();
+        $total = round((float) $venda->valor_total, 2);
+        $recebido = (float) str_replace(',', '.', (string) $this->valorRecebido);
 
         return view('livewire.painel.vendas.detalhe', [
             'venda' => $venda,
@@ -185,6 +221,12 @@ class Detalhe extends Component
             'servicos' => Servico::where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'preco']),
             'profissionais' => User::where('e_profissional', true)->where('ativo', true)->orderBy('name')->get(['id', 'name']),
             'comissaoTotal' => (float) $venda->itens->sum('valor_comissao'),
+            'metodos' => \App\Models\Pagamento::METODO_LABEL,
+            'somaPagamentos' => $soma,
+            'totalVenda' => $total,
+            'faltaPagamento' => round($total - $soma, 2),
+            'temDinheiro' => collect($this->pagamentos)->contains(fn ($p) => ($p['metodo'] ?? '') === 'dinheiro'),
+            'troco' => $recebido > $total ? round($recebido - $total, 2) : 0.0,
         ]);
     }
 }

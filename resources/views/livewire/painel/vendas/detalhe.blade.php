@@ -90,6 +90,24 @@
                     <span>R$ {{ number_format($comissaoTotal, 2, ',', '.') }}</span>
                 </div>
             @endif
+
+            {{-- Pagamentos registrados --}}
+            @if ($venda->pagamentos->isNotEmpty())
+                <div class="mt-1 flex flex-col gap-1 border-t pt-3" style="border-color: color-mix(in srgb, var(--cor-texto) 12%, transparent);">
+                    <flux:text class="text-xs font-medium" style="color: var(--cor-texto-suave);">Pagamentos</flux:text>
+                    @foreach ($venda->pagamentos as $pg)
+                        <div class="flex items-center justify-between text-sm" wire:key="pg-{{ $pg->id }}">
+                            <span class="flex items-center gap-2" style="color: var(--cor-texto);">
+                                {{ $metodos[$pg->metodo] ?? $pg->metodo }}
+                                @if ($pg->status !== 'aprovado')
+                                    <flux:badge size="sm" color="zinc">{{ $pg->status }}</flux:badge>
+                                @endif
+                            </span>
+                            <span style="color: var(--cor-texto);">R$ {{ number_format((float) $pg->valor, 2, ',', '.') }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
 
@@ -132,21 +150,65 @@
         </form>
     </flux:modal>
 
-    {{-- Modal: confirmar pagamento --}}
-    <flux:modal name="pagar-comanda" class="max-w-sm">
+    {{-- Modal: fechar e pagar (presencial) --}}
+    <flux:modal name="pagar-comanda" class="md:w-[30rem]">
         <div class="flex flex-col gap-4">
-            <div class="flex items-center gap-3">
-                <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-500/15">
-                    <flux:icon name="banknotes" class="size-6" />
-                </span>
-                <div>
-                    <flux:heading size="lg">Fechar e pagar?</flux:heading>
-                    <flux:text class="mt-1">Dá baixa no estoque dos produtos e registra a comissão. (Forma de pagamento entra numa fatia futura.)</flux:text>
-                </div>
+            <flux:heading size="lg">Fechar e pagar</flux:heading>
+
+            <div class="ng-surface flex items-center justify-between p-3">
+                <flux:text style="color: var(--cor-texto-suave);">Total da comanda</flux:text>
+                <span class="text-lg font-bold" style="color: var(--cor-principal);">R$ {{ number_format($totalVenda, 2, ',', '.') }}</span>
             </div>
+
+            {{-- Formas de pagamento (1+; soma deve = total) --}}
+            <div class="flex flex-col gap-2">
+                @foreach ($pagamentos as $i => $pg)
+                    <div class="flex items-end gap-2" wire:key="pgline-{{ $i }}">
+                        <flux:select wire:model.live="pagamentos.{{ $i }}.metodo" label="{{ $i === 0 ? 'Forma' : '' }}" class="flex-1">
+                            @foreach ($metodos as $valor => $rotulo)
+                                <flux:select.option value="{{ $valor }}">{{ $rotulo }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:input wire:model.live.debounce.400ms="pagamentos.{{ $i }}.valor" type="number" step="0.01" min="0" label="{{ $i === 0 ? 'Valor (R$)' : '' }}" class="w-32" />
+                        @if (count($pagamentos) > 1)
+                            <flux:button wire:click="removerFormaPagamento({{ $i }})" variant="subtle" size="sm" icon="x-mark" aria-label="Remover forma" />
+                        @endif
+                    </div>
+                @endforeach
+
+                <flux:button wire:click="adicionarFormaPagamento" variant="ghost" size="sm" icon="plus" class="self-start">Dividir pagamento</flux:button>
+            </div>
+
+            {{-- Somatório / validação ao vivo --}}
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 text-sm ng-surface-muted">
+                <span style="color: var(--cor-texto-suave);">Somado</span>
+                <span class="font-semibold" style="color: var(--cor-texto);">R$ {{ number_format($somaPagamentos, 2, ',', '.') }}</span>
+            </div>
+            @if (abs($faltaPagamento) >= 0.01)
+                <flux:callout :variant="$faltaPagamento > 0 ? 'warning' : 'danger'" :icon="$faltaPagamento > 0 ? 'exclamation-triangle' : 'x-circle'">
+                    <flux:callout.text>
+                        @if ($faltaPagamento > 0)
+                            Falta R$ {{ number_format($faltaPagamento, 2, ',', '.') }} para fechar o total.
+                        @else
+                            Excede R$ {{ number_format(abs($faltaPagamento), 2, ',', '.') }} — ajuste para igualar o total.
+                        @endif
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
+            {{-- Troco (opcional, só para dinheiro; não grava pagamento acima do total) --}}
+            @if ($temDinheiro)
+                <div class="flex items-end gap-3">
+                    <flux:input wire:model.live.debounce.400ms="valorRecebido" type="number" step="0.01" min="0" label="Valor recebido (dinheiro)" placeholder="Opcional" class="flex-1" />
+                    <div class="pb-2 text-sm whitespace-nowrap" style="color: var(--cor-texto-suave);">
+                        Troco: <span class="font-semibold" style="color: var(--cor-texto);">R$ {{ number_format($troco, 2, ',', '.') }}</span>
+                    </div>
+                </div>
+            @endif
+
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="ghost">Voltar</flux:button></flux:modal.close>
-                <flux:button wire:click="pagar" variant="primary" icon="check">Confirmar pagamento</flux:button>
+                <flux:button wire:click="pagar" variant="primary" icon="check" :disabled="abs($faltaPagamento) >= 0.01">Confirmar pagamento</flux:button>
             </div>
         </div>
     </flux:modal>

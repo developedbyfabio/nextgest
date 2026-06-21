@@ -6,6 +6,7 @@ namespace App\Services\Venda;
 
 use App\Models\Agendamento;
 use App\Models\ComissaoProfissional;
+use App\Models\Pagamento;
 use App\Models\Produto;
 use App\Models\Servico;
 use App\Models\Venda;
@@ -174,13 +175,79 @@ class Comanda
     }
 
     /**
-     * Fecha/paga a comanda: dá baixa no estoque dos produtos (com `venda_id`) e grava
-     * a comissão básica (snapshot) por item. Bloqueia se faltar estoque.
+     * Atalho: paga a comanda inteira em UM pagamento de dinheiro (uso em
+     * testes/seed e fluxos simples). Para formas variadas/divididas use
+     * `pagarPresencial()`.
      */
     public function pagar(Venda $venda, ?int $userId = null): void
     {
+        $this->pagarPresencial($venda, [['metodo' => 'dinheiro', 'valor' => (float) $venda->valor_total]], $userId);
+    }
+
+    /**
+     * Fecha a comanda com pagamento(s) PRESENCIAL(is) (etapa 1, sem gateway). Aceita
+     * pagamento dividido (N formas somando o total). Cada pagamento é gravado
+     * `aprovado` na hora (gateway nulo, `pago_em` agora, `criado_por_user_id`). A
+     * soma precisa ser igual ao `valor_total` (não grava acima do devido). Cobrindo o
+     * total, dispara a finalização (baixa de estoque + comissão).
+     *
+     * @param  array<int, array{metodo: string, valor: float|string, observacao?: ?string}>  $pagamentos
+     */
+    public function pagarPresencial(Venda $venda, array $pagamentos, ?int $userId = null): void
+    {
         $this->garantirAberta($venda);
 
+        // Normaliza e valida os pagamentos informados.
+        $linhas = [];
+        $soma = 0.0;
+
+        foreach ($pagamentos as $p) {
+            $metodo = $p['metodo'] ?? null;
+            $valor = round((float) ($p['valor'] ?? 0), 2);
+
+            if (! in_array($metodo, Pagamento::METODOS, true)) {
+                throw new PagamentoInvalidoException('Forma de pagamento inválida.');
+            }
+            if ($valor <= 0) {
+                throw new PagamentoInvalidoException('Cada pagamento precisa ter valor positivo.');
+            }
+
+            $soma = round($soma + $valor, 2);
+            $linhas[] = ['metodo' => $metodo, 'valor' => $valor, 'observacao' => $p['observacao'] ?? null];
+        }
+
+        $total = round((float) $venda->valor_total, 2);
+
+        if (empty($linhas) || abs($soma - $total) > 0.001) {
+            throw new PagamentoInvalidoException(
+                "A soma dos pagamentos (R$ {$soma}) precisa ser igual ao total da comanda (R$ {$total})."
+            );
+        }
+
+        DB::transaction(function () use ($venda, $linhas, $userId) {
+            foreach ($linhas as $linha) {
+                $venda->pagamentos()->create([
+                    'gateway_id' => null,           // presencial — sem gateway
+                    'metodo' => $linha['metodo'],
+                    'valor' => $linha['valor'],
+                    'status' => 'aprovado',         // presencial aprova na hora
+                    'pago_em' => Carbon::now(),
+                    'criado_por_user_id' => $userId,
+                    'observacao' => $linha['observacao'],
+                ]);
+            }
+
+            $this->finalizar($venda, $userId);
+        });
+    }
+
+    /**
+     * Finaliza a comanda (após cobertura do total): baixa o estoque dos produtos
+     * (com `venda_id`), grava a comissão (snapshot) por item e marca `paga`.
+     * Bloqueia se faltar estoque.
+     */
+    private function finalizar(Venda $venda, ?int $userId = null): void
+    {
         DB::transaction(function () use ($venda, $userId) {
             $venda->load('itens.produto', 'itens.servico');
 
@@ -245,6 +312,9 @@ class Comanda
                         );
                     }
                 }
+
+                // Estorna os pagamentos aprovados da venda.
+                $venda->pagamentos()->where('status', 'aprovado')->update(['status' => 'estornado']);
             }
 
             $venda->update(['status' => 'cancelada']);

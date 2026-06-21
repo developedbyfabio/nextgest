@@ -50,6 +50,11 @@ class Venda extends Model
         return $this->hasMany(VendaItem::class);
     }
 
+    public function pagamentos(): HasMany
+    {
+        return $this->hasMany(Pagamento::class);
+    }
+
     public function unidade(): BelongsTo
     {
         return $this->belongsTo(Unidade::class);
