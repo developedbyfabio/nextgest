@@ -21,6 +21,7 @@ class Servico extends Model
         'descricao',
         'duracao_minutos',
         'preco',
+        'percentual_comissao',
         'ativo',
     ];
 
@@ -29,6 +30,7 @@ class Servico extends Model
         return [
             'duracao_minutos' => 'integer',
             'preco' => 'decimal:2',
+            'percentual_comissao' => 'decimal:2',
             'ativo' => 'boolean',
         ];
     }

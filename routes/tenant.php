@@ -15,6 +15,7 @@ use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
+use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
 use App\Livewire\Painel\Servicos\Index as ServicosIndex;
@@ -116,6 +117,11 @@ Route::middleware(['tenant'])
                 Route::get('vendas/{venda}', VendasDetalhe::class)
                     ->middleware('can:criar_venda')
                     ->name('vendas.detalhe');
+
+                // Relatório de comissões + overrides (financeiro: Dono).
+                Route::get('comissoes', ComissoesIndex::class)
+                    ->middleware('can:ver_financeiro')
+                    ->name('comissoes');
 
                 Route::get('bloqueios', BloqueiosIndex::class)
                     ->middleware('can:gerir_agenda')

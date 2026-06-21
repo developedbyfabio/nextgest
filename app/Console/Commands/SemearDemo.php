@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\Agendamento;
 use App\Models\CategoriaProduto;
 use App\Models\Cliente;
+use App\Models\ComissaoProfissional;
 use App\Models\KanbanCartao;
 use App\Models\KanbanQuadro;
 use App\Models\Produto;
@@ -71,6 +72,7 @@ class SemearDemo extends Command
             $this->dono($senha);
             Aparencia::salvar([]); // grava o tema padrão (base editável)
             $this->catalogoProdutos($unidade);
+            $this->comissoesPersonalizadas($servicos, $profissionais);
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
             $this->comandas($unidade, $servicos, $profissionais, $clientes);
@@ -249,22 +251,43 @@ class SemearDemo extends Command
         mt_srand();
     }
 
+    /**
+     * Override de comissão de demonstração (Fatia 2C): o Jorge ganha 50% no
+     * "Corte masculino" (acima dos 40% padrão do serviço). Idempotente.
+     *
+     * @param  array<string, Servico>  $servicos
+     * @param  array<int, User>  $profissionais
+     */
+    private function comissoesPersonalizadas(array $servicos, array $profissionais): void
+    {
+        $jorge = $profissionais[0] ?? null;
+        $corte = $servicos['Corte masculino'] ?? null;
+
+        if ($jorge && $corte) {
+            ComissaoProfissional::firstOrCreate(
+                ['user_id' => $jorge->id, 'servico_id' => $corte->id, 'produto_id' => null],
+                ['percentual' => 50],
+            );
+        }
+    }
+
     /** @return array<string, Servico> */
     private function servicos(Unidade $unidade): array
     {
+        // [duração (min), preço, % comissão padrão (2C)]
         $catalogo = [
-            'Corte masculino' => [30, 45.00],
-            'Barba' => [20, 30.00],
-            'Corte + Barba' => [50, 70.00],
-            'Sobrancelha' => [15, 20.00],
-            'Coloração' => [60, 90.00],
+            'Corte masculino' => [30, 45.00, 40],
+            'Barba' => [20, 30.00, 40],
+            'Corte + Barba' => [50, 70.00, 40],
+            'Sobrancelha' => [15, 20.00, 30],
+            'Coloração' => [60, 90.00, 50],
         ];
 
         $servicos = [];
-        foreach ($catalogo as $nome => [$duracao, $preco]) {
+        foreach ($catalogo as $nome => [$duracao, $preco, $comissao]) {
             $servico = Servico::firstOrCreate(
                 ['nome' => $nome],
-                ['duracao_minutos' => $duracao, 'preco' => $preco, 'ativo' => true],
+                ['duracao_minutos' => $duracao, 'preco' => $preco, 'percentual_comissao' => $comissao, 'ativo' => true],
             );
             $servico->unidades()->syncWithoutDetaching([$unidade->id]);
             $servicos[$nome] = $servico;

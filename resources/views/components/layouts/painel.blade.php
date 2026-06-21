@@ -81,6 +81,9 @@
                 @can('editar_usuario')
                     <flux:navlist.item icon="identification" :href="route('painel.equipe', ['tenant' => $tenantId])" :current="request()->routeIs('painel.equipe') || request()->routeIs('painel.equipe.horarios')" wire:navigate>Equipe</flux:navlist.item>
                 @endcan
+                @can('ver_financeiro')
+                    <flux:navlist.item icon="wallet" :href="route('painel.comissoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.comissoes')" wire:navigate>Comissões</flux:navlist.item>
+                @endcan
                 @can('editar_permissoes')
                     <flux:navlist.item icon="shield-check" :href="route('painel.papeis', ['tenant' => $tenantId])" :current="request()->routeIs('painel.papeis')" wire:navigate>Papéis e permissões</flux:navlist.item>
                 @endcan

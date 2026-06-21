@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Venda;
 
 use App\Models\Agendamento;
+use App\Models\ComissaoProfissional;
 use App\Models\Produto;
 use App\Models\Servico;
 use App\Models\Venda;
@@ -181,7 +182,7 @@ class Comanda
         $this->garantirAberta($venda);
 
         DB::transaction(function () use ($venda, $userId) {
-            $venda->load('itens.produto');
+            $venda->load('itens.produto', 'itens.servico');
 
             // 1) Confere estoque agregado por produto (controla_estoque) antes de baixar.
             $necessario = $venda->itens
@@ -251,21 +252,48 @@ class Comanda
     }
 
     /**
-     * Comissão BÁSICA (2B): produto usa `percentual_comissao` do cadastro; serviço
-     * fica sem comissão (a % padrão de serviço e o override por profissional vêm na 2C).
+     * Comissão (2C): grava o snapshot (% e valor) resolvendo a precedência
+     * override-do-profissional → % padrão do cadastro → nenhuma.
      */
     private function gravarComissao(VendaItem $item): void
     {
-        $percentual = null;
-
-        if ($item->tipo === 'produto' && $item->produto && $item->produto->percentual_comissao !== null) {
-            $percentual = (float) $item->produto->percentual_comissao;
-        }
+        $percentual = $this->resolverPercentualComissao($item);
 
         $item->update([
             'percentual_comissao' => $percentual,
             'valor_comissao' => $percentual !== null ? round((float) $item->subtotal * $percentual / 100, 2) : null,
         ]);
+    }
+
+    /**
+     * Precedência da % de comissão de um item:
+     * 1) override do profissional para aquele serviço/produto (`comissoes_profissional`);
+     * 2) % padrão do cadastro (`produtos.percentual_comissao` / `servicos.percentual_comissao`);
+     * 3) nenhuma (null).
+     */
+    private function resolverPercentualComissao(VendaItem $item): ?float
+    {
+        if ($item->profissional_id) {
+            $override = ComissaoProfissional::query()
+                ->where('user_id', $item->profissional_id)
+                ->when($item->tipo === 'produto', fn ($q) => $q->where('produto_id', $item->produto_id)->whereNull('servico_id'))
+                ->when($item->tipo === 'servico', fn ($q) => $q->where('servico_id', $item->servico_id)->whereNull('produto_id'))
+                ->value('percentual');
+
+            if ($override !== null) {
+                return (float) $override;
+            }
+        }
+
+        if ($item->tipo === 'produto' && $item->produto && $item->produto->percentual_comissao !== null) {
+            return (float) $item->produto->percentual_comissao;
+        }
+
+        if ($item->tipo === 'servico' && $item->servico && $item->servico->percentual_comissao !== null) {
+            return (float) $item->servico->percentual_comissao;
+        }
+
+        return null;
     }
 
     private function garantirAberta(Venda $venda): void

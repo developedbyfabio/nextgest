@@ -148,6 +148,35 @@ class Metricas
         return ['labels' => $labels, 'valores' => $valores];
     }
 
+    /** Comissão por profissional (vendas pagas no período/unidade). Para o relatório 2C. */
+    public function comissoesPorProfissional(): Collection
+    {
+        $linhas = DB::table('venda_itens')
+            ->join('vendas', 'vendas.id', '=', 'venda_itens.venda_id')
+            ->where('vendas.status', 'paga')
+            ->whereBetween('vendas.data', [$this->inicio, $this->fim])
+            ->when($this->unidadeId, fn ($q) => $q->where('vendas.unidade_id', $this->unidadeId))
+            ->whereNotNull('venda_itens.profissional_id')
+            ->whereNotNull('venda_itens.valor_comissao')
+            ->groupBy('venda_itens.profissional_id')
+            ->select(
+                'venda_itens.profissional_id',
+                DB::raw('SUM(venda_itens.valor_comissao) as total'),
+                DB::raw('COUNT(*) as itens'),
+            )
+            ->orderByDesc('total')
+            ->get();
+
+        $nomes = User::whereIn('id', $linhas->pluck('profissional_id'))->pluck('name', 'id');
+
+        return $linhas->map(fn ($r) => [
+            'profissional_id' => (int) $r->profissional_id,
+            'nome' => $nomes[$r->profissional_id] ?? '—',
+            'total' => (float) $r->total,
+            'itens' => (int) $r->itens,
+        ]);
+    }
+
     /** Itens mais vendidos por faturamento (R$) nas vendas pagas. Top N. */
     public function maisVendidos(int $n = 6): Collection
     {

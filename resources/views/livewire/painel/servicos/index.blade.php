@@ -59,6 +59,8 @@
                 <flux:input wire:model="preco" type="number" step="0.01" min="0" label="Preço (R$)" class="flex-1" required />
             </div>
 
+            <flux:input wire:model="percentual_comissao" type="number" step="0.01" min="0" max="100" label="Comissão padrão (%)" placeholder="Opcional — comissão do profissional ao vender este serviço" />
+
             @if ($todasUnidades->count() > 1)
                 <flux:checkbox.group wire:model="unidades" label="Oferecido nas unidades">
                     @foreach ($todasUnidades as $unidade)

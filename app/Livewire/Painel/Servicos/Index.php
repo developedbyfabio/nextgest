@@ -35,6 +35,8 @@ class Index extends Component
 
     public ?string $preco = null;
 
+    public ?string $percentual_comissao = null;
+
     public bool $ativo = true;
 
     /** @var array<int> ids de unidades onde o serviço é oferecido */
@@ -52,6 +54,7 @@ class Index extends Component
             'descricao' => ['nullable', 'string'],
             'duracao_minutos' => ['required', 'integer', 'min:1'],
             'preco' => ['required', 'numeric', 'min:0'],
+            'percentual_comissao' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'ativo' => ['boolean'],
             'unidades' => ['array'],
             'unidades.*' => ['integer', 'exists:unidades,id'],
@@ -83,6 +86,7 @@ class Index extends Component
         $this->descricao = $servico->descricao ?? '';
         $this->duracao_minutos = $servico->duracao_minutos;
         $this->preco = (string) $servico->preco;
+        $this->percentual_comissao = $servico->percentual_comissao !== null ? (string) $servico->percentual_comissao : null;
         $this->ativo = $servico->ativo;
         $this->unidades = $servico->unidades->pluck('id')->all();
         $this->resetValidation();
@@ -96,6 +100,9 @@ class Index extends Component
         $dados = $this->validate();
         $unidades = $dados['unidades'] ?? [];
         unset($dados['unidades']);
+
+        // % de comissão vazia → null (sem comissão padrão para o serviço).
+        $dados['percentual_comissao'] = ($dados['percentual_comissao'] ?? '') === '' ? null : $dados['percentual_comissao'];
 
         $servico = Servico::updateOrCreate(['id' => $this->editandoId], $dados);
         $servico->unidades()->sync($unidades);
@@ -122,7 +129,7 @@ class Index extends Component
 
     protected function resetForm(): void
     {
-        $this->reset(['editandoId', 'nome', 'descricao', 'duracao_minutos', 'preco', 'unidades']);
+        $this->reset(['editandoId', 'nome', 'descricao', 'duracao_minutos', 'preco', 'percentual_comissao', 'unidades']);
         $this->ativo = true;
         $this->resetValidation();
     }
