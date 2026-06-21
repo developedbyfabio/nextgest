@@ -49,6 +49,10 @@ class Index extends Component
     /** @var array<int> */
     public array $servicos = [];
 
+    public ?int $confirmarId = null;
+
+    public string $busca = '';
+
     public function mount(): void
     {
         $this->authorize('editar_usuario');
@@ -129,9 +133,18 @@ class Index extends Component
         Flux::toast('Membro salvo.', variant: 'success');
     }
 
+    public function pedirInativar(int $id): void
+    {
+        $this->authorize('editar_usuario');
+        $this->confirmarId = $id;
+        Flux::modal('inativar-membro')->show();
+    }
+
     public function inativar(int $id): void
     {
         $this->authorize('editar_usuario');
+        $this->confirmarId = null;
+        Flux::modal('inativar-membro')->close();
 
         if ($id === auth('web')->id()) {
             Flux::toast('Você não pode inativar a própria conta.', variant: 'danger');
@@ -160,7 +173,9 @@ class Index extends Component
     public function render(): View
     {
         return view('livewire.painel.equipe.index', [
-            'membros' => User::with('roles')->orderBy('name')->get(),
+            'membros' => User::with('roles')
+                ->when($this->busca !== '', fn ($q) => $q->where(fn ($s) => $s->where('name', 'like', '%'.$this->busca.'%')->orWhere('email', 'like', '%'.$this->busca.'%')))
+                ->orderBy('name')->get(),
             'papeis' => Role::orderBy('name')->pluck('name'),
             'todasUnidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
             'todosServicos' => Servico::where('ativo', true)->orderBy('nome')->get(),

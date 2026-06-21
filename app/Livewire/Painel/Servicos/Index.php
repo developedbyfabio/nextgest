@@ -42,6 +42,10 @@ class Index extends Component
     /** @var array<int> ids de unidades onde o serviço é oferecido */
     public array $unidades = [];
 
+    public ?int $confirmarId = null;
+
+    public string $busca = '';
+
     public function mount(): void
     {
         $this->authorize('editar_servico');
@@ -113,10 +117,19 @@ class Index extends Component
         Flux::toast('Serviço salvo.', variant: 'success');
     }
 
+    public function pedirInativar(int $id): void
+    {
+        $this->authorize('editar_servico');
+        $this->confirmarId = $id;
+        Flux::modal('inativar-servico')->show();
+    }
+
     public function inativar(int $id): void
     {
         $this->authorize('editar_servico');
         Servico::whereKey($id)->update(['ativo' => false]);
+        $this->confirmarId = null;
+        Flux::modal('inativar-servico')->close();
         Flux::toast('Serviço inativado.');
     }
 
@@ -137,7 +150,9 @@ class Index extends Component
     public function render(): View
     {
         return view('livewire.painel.servicos.index', [
-            'servicos' => Servico::with('unidades')->orderBy('nome')->get(),
+            'servicos' => Servico::with('unidades')
+                ->when($this->busca !== '', fn ($q) => $q->where('nome', 'like', '%'.$this->busca.'%'))
+                ->orderBy('nome')->get(),
             'todasUnidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
         ]);
     }

@@ -34,6 +34,8 @@ class Index extends Component
 
     public bool $ativo = true;
 
+    public ?int $confirmarId = null;
+
     public function mount(): void
     {
         $this->authorize('gerir_unidades');
@@ -85,10 +87,19 @@ class Index extends Component
         Flux::toast('Unidade salva.', variant: 'success');
     }
 
+    public function pedirInativar(int $id): void
+    {
+        $this->authorize('gerir_unidades');
+        $this->confirmarId = $id;
+        Flux::modal('inativar-unidade')->show();
+    }
+
     public function inativar(int $id): void
     {
         $this->authorize('gerir_unidades');
         Unidade::whereKey($id)->update(['ativo' => false]);
+        $this->confirmarId = null;
+        Flux::modal('inativar-unidade')->close();
         Flux::toast('Unidade inativada.');
     }
 

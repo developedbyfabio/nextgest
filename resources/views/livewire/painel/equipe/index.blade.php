@@ -7,48 +7,66 @@
         </x-slot:actions>
     </x-ng.page-header>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Nome</flux:table.column>
-            <flux:table.column>E-mail</flux:table.column>
-            <flux:table.column>Papel</flux:table.column>
-            <flux:table.column>Profissional</flux:table.column>
-            <flux:table.column>Status</flux:table.column>
-            <flux:table.column />
-        </flux:table.columns>
-        <flux:table.rows>
-            @forelse ($membros as $membro)
-                <flux:table.row :key="$membro->id">
-                    <flux:table.cell variant="strong">{{ $membro->name }}</flux:table.cell>
-                    <flux:table.cell>{{ $membro->email }}</flux:table.cell>
-                    <flux:table.cell>{{ $membro->roles->pluck('name')->join(', ') ?: '—' }}</flux:table.cell>
-                    <flux:table.cell>{{ $membro->e_profissional ? 'Sim' : 'Não' }}</flux:table.cell>
-                    <flux:table.cell>
-                        @if ($membro->ativo)
-                            <flux:badge color="green" size="sm">Ativo</flux:badge>
-                        @else
-                            <flux:badge color="zinc" size="sm">Inativo</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell class="text-right">
-                        @if ($membro->e_profissional)
-                            <flux:button :href="route('painel.equipe.horarios', ['tenant' => tenant('id'), 'user' => $membro->id])" size="sm" variant="ghost" icon="clock" wire:navigate>Horários</flux:button>
-                        @endif
-                        <flux:button wire:click="editar({{ $membro->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
-                        @if ($membro->ativo)
-                            <flux:button wire:click="inativar({{ $membro->id }})" wire:confirm="Inativar este membro?" size="sm" variant="subtle" icon="eye-slash">Inativar</flux:button>
-                        @else
-                            <flux:button wire:click="reativar({{ $membro->id }})" size="sm" variant="subtle" icon="eye">Reativar</flux:button>
-                        @endif
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-zinc-500">Nenhum membro cadastrado.</flux:table.cell>
-                </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+    <flux:input wire:model.live.debounce.300ms="busca" icon="magnifying-glass" placeholder="Buscar por nome ou e-mail" class="max-w-xs" />
+
+    <div wire:loading.delay.flex wire:target="busca" class="flex-col gap-2">
+        @for ($i = 0; $i < 4; $i++)<div class="ng-skeleton-portal h-12 w-full"></div>@endfor
+    </div>
+
+    <div wire:loading.remove.delay wire:target="busca">
+        @if ($membros->isEmpty())
+            <x-ng.empty themed icon="identification" title="Nenhum membro encontrado"
+                text="{{ $busca ? 'Ajuste a busca.' : 'Cadastre o primeiro membro da equipe.' }}">
+                @if (! $busca)
+                    @can('criar_usuario')<flux:button wire:click="novo" variant="primary" size="sm" icon="plus" class="mt-2">Novo membro</flux:button>@endcan
+                @endif
+            </x-ng.empty>
+        @else
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column>Nome</flux:table.column>
+                    <flux:table.column>E-mail</flux:table.column>
+                    <flux:table.column>Papel</flux:table.column>
+                    <flux:table.column>Profissional</flux:table.column>
+                    <flux:table.column>Status</flux:table.column>
+                    <flux:table.column />
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($membros as $membro)
+                        <flux:table.row :key="$membro->id">
+                            <flux:table.cell variant="strong">{{ $membro->name }}</flux:table.cell>
+                            <flux:table.cell>{{ $membro->email }}</flux:table.cell>
+                            <flux:table.cell>{{ $membro->roles->pluck('name')->join(', ') ?: '—' }}</flux:table.cell>
+                            <flux:table.cell>
+                                @if ($membro->e_profissional)<flux:badge color="blue" size="sm" icon="scissors">Profissional</flux:badge>@else <span style="color: var(--cor-texto-suave);">—</span>@endif
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge :color="$membro->ativo ? 'green' : 'zinc'" size="sm">{{ $membro->ativo ? 'Ativo' : 'Inativo' }}</flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell class="text-right whitespace-nowrap">
+                                @if ($membro->e_profissional)
+                                    <flux:button :href="route('painel.equipe.horarios', ['tenant' => tenant('id'), 'user' => $membro->id])" size="sm" variant="ghost" icon="clock" wire:navigate>Horários</flux:button>
+                                @endif
+                                <flux:button wire:click="editar({{ $membro->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
+                                @if ($membro->ativo)
+                                    <flux:button wire:click="pedirInativar({{ $membro->id }})" size="sm" variant="subtle" icon="eye-slash">Inativar</flux:button>
+                                @else
+                                    <flux:button wire:click="reativar({{ $membro->id }})" size="sm" variant="subtle" icon="eye">Reativar</flux:button>
+                                @endif
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        @endif
+    </div>
+
+    <x-ng.confirmar name="inativar-membro" tom="amber" icone="eye-slash" titulo="Inativar membro?"
+        texto="Ele perde o acesso, mas não é apagado (pode reativar depois).">
+        @if ($confirmarId)
+            <flux:button wire:click="inativar({{ $confirmarId }})" variant="primary" icon="eye-slash">Inativar</flux:button>
+        @endif
+    </x-ng.confirmar>
 
     <flux:modal wire:model.self="mostrarFormulario" class="md:w-[34rem]">
         <form wire:submit="salvar" class="flex flex-col gap-4">
@@ -81,7 +99,7 @@
                     @forelse ($todosServicos as $servico)
                         <flux:checkbox value="{{ $servico->id }}" label="{{ $servico->nome }}" />
                     @empty
-                        <flux:text class="text-sm text-zinc-500">Cadastre serviços primeiro.</flux:text>
+                        <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Cadastre serviços primeiro.</flux:text>
                     @endforelse
                 </flux:checkbox.group>
             @endif

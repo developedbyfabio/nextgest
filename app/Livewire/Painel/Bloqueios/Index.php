@@ -40,6 +40,8 @@ class Index extends Component
 
     public string $motivo = '';
 
+    public ?int $confirmarId = null;
+
     public function mount(): void
     {
         $this->authorize('gerir_agenda');
@@ -97,10 +99,19 @@ class Index extends Component
         Flux::toast('Bloqueio salvo.', variant: 'success');
     }
 
+    public function pedirExcluir(int $id): void
+    {
+        $this->authorize('gerir_agenda');
+        $this->confirmarId = $id;
+        Flux::modal('remover-bloqueio')->show();
+    }
+
     public function excluir(int $id): void
     {
         $this->authorize('gerir_agenda');
         Bloqueio::whereKey($id)->delete();
+        $this->confirmarId = null;
+        Flux::modal('remover-bloqueio')->close();
         Flux::toast('Bloqueio removido.');
     }
 

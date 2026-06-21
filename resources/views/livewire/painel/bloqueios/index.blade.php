@@ -5,33 +5,43 @@
         </x-slot:actions>
     </x-ng.page-header>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Profissional</flux:table.column>
-            <flux:table.column>Início</flux:table.column>
-            <flux:table.column>Fim</flux:table.column>
-            <flux:table.column>Motivo</flux:table.column>
-            <flux:table.column />
-        </flux:table.columns>
-        <flux:table.rows>
-            @forelse ($bloqueios as $bloqueio)
-                <flux:table.row :key="$bloqueio->id">
-                    <flux:table.cell variant="strong">{{ $bloqueio->user?->name ?? '—' }}</flux:table.cell>
-                    <flux:table.cell>{{ $bloqueio->inicio->format('d/m/Y H:i') }}</flux:table.cell>
-                    <flux:table.cell>{{ $bloqueio->fim->format('d/m/Y H:i') }}</flux:table.cell>
-                    <flux:table.cell>{{ $bloqueio->motivo ?: '—' }}</flux:table.cell>
-                    <flux:table.cell class="text-right">
-                        <flux:button wire:click="editar({{ $bloqueio->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
-                        <flux:button wire:click="excluir({{ $bloqueio->id }})" wire:confirm="Remover este bloqueio?" size="sm" variant="subtle" icon="trash">Remover</flux:button>
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center text-zinc-500">Nenhum bloqueio cadastrado.</flux:table.cell>
-                </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+    @if ($bloqueios->isEmpty())
+        <x-ng.empty themed icon="no-symbol" title="Nenhum bloqueio"
+            text="Cadastre folgas, feriados ou imprevistos para reservar a agenda.">
+            <flux:button wire:click="novo" variant="primary" size="sm" icon="plus" class="mt-2">Novo bloqueio</flux:button>
+        </x-ng.empty>
+    @else
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Profissional</flux:table.column>
+                <flux:table.column>Início</flux:table.column>
+                <flux:table.column>Fim</flux:table.column>
+                <flux:table.column>Motivo</flux:table.column>
+                <flux:table.column />
+            </flux:table.columns>
+            <flux:table.rows>
+                @foreach ($bloqueios as $bloqueio)
+                    <flux:table.row :key="$bloqueio->id">
+                        <flux:table.cell variant="strong">{{ $bloqueio->user?->name ?? '—' }}</flux:table.cell>
+                        <flux:table.cell>{{ $bloqueio->inicio->format('d/m/Y H:i') }}</flux:table.cell>
+                        <flux:table.cell>{{ $bloqueio->fim->format('d/m/Y H:i') }}</flux:table.cell>
+                        <flux:table.cell>{{ $bloqueio->motivo ?: '—' }}</flux:table.cell>
+                        <flux:table.cell class="text-right">
+                            <flux:button wire:click="editar({{ $bloqueio->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
+                            <flux:button wire:click="pedirExcluir({{ $bloqueio->id }})" size="sm" variant="subtle" icon="trash">Remover</flux:button>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
+    @endif
+
+    <x-ng.confirmar name="remover-bloqueio" tom="red" icone="trash" titulo="Remover bloqueio?"
+        texto="O horário volta a ficar disponível na agenda.">
+        @if ($confirmarId)
+            <flux:button wire:click="excluir({{ $confirmarId }})" variant="danger" icon="trash">Remover</flux:button>
+        @endif
+    </x-ng.confirmar>
 
     <flux:modal wire:model.self="mostrarFormulario" class="md:w-[30rem]">
         <form wire:submit="salvar" class="flex flex-col gap-4">

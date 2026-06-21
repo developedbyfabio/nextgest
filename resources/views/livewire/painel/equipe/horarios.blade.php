@@ -41,7 +41,7 @@
                 @endforeach
 
                 @unless ($temFaixa)
-                    <flux:text class="text-sm text-zinc-500">Folga (sem faixas).</flux:text>
+                    <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Folga (sem faixas).</flux:text>
                 @endunless
             </flux:card>
         @endforeach

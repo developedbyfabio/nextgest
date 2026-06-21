@@ -7,45 +7,63 @@
         </x-slot:actions>
     </x-ng.page-header>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Nome</flux:table.column>
-            <flux:table.column>Duração</flux:table.column>
-            <flux:table.column>Preço</flux:table.column>
-            <flux:table.column>Unidades</flux:table.column>
-            <flux:table.column>Status</flux:table.column>
-            <flux:table.column />
-        </flux:table.columns>
-        <flux:table.rows>
-            @forelse ($servicos as $servico)
-                <flux:table.row :key="$servico->id">
-                    <flux:table.cell variant="strong">{{ $servico->nome }}</flux:table.cell>
-                    <flux:table.cell>{{ $servico->duracao_minutos }} min</flux:table.cell>
-                    <flux:table.cell>R$ {{ number_format((float) $servico->preco, 2, ',', '.') }}</flux:table.cell>
-                    <flux:table.cell>{{ $servico->unidades->count() }}</flux:table.cell>
-                    <flux:table.cell>
-                        @if ($servico->ativo)
-                            <flux:badge color="green" size="sm">Ativo</flux:badge>
-                        @else
-                            <flux:badge color="zinc" size="sm">Inativo</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell class="text-right">
-                        <flux:button wire:click="editar({{ $servico->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
-                        @if ($servico->ativo)
-                            <flux:button wire:click="inativar({{ $servico->id }})" wire:confirm="Inativar este serviço?" size="sm" variant="subtle" icon="eye-slash">Inativar</flux:button>
-                        @else
-                            <flux:button wire:click="reativar({{ $servico->id }})" size="sm" variant="subtle" icon="eye">Reativar</flux:button>
-                        @endif
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-zinc-500">Nenhum serviço cadastrado.</flux:table.cell>
-                </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+    <flux:input wire:model.live.debounce.300ms="busca" icon="magnifying-glass" placeholder="Buscar serviço" class="max-w-xs" />
+
+    <div wire:loading.delay.flex wire:target="busca" class="flex-col gap-2">
+        @for ($i = 0; $i < 4; $i++)<div class="ng-skeleton-portal h-12 w-full"></div>@endfor
+    </div>
+
+    <div wire:loading.remove.delay wire:target="busca">
+        @if ($servicos->isEmpty())
+            <x-ng.empty themed icon="scissors" title="Nenhum serviço encontrado"
+                text="{{ $busca ? 'Ajuste a busca.' : 'Cadastre o primeiro serviço.' }}">
+                @if (! $busca)
+                    <flux:button wire:click="novo" variant="primary" size="sm" icon="plus" class="mt-2">Novo serviço</flux:button>
+                @endif
+            </x-ng.empty>
+        @else
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column>Nome</flux:table.column>
+                    <flux:table.column>Duração</flux:table.column>
+                    <flux:table.column>Preço</flux:table.column>
+                    <flux:table.column>Comissão</flux:table.column>
+                    <flux:table.column>Unidades</flux:table.column>
+                    <flux:table.column>Status</flux:table.column>
+                    <flux:table.column />
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($servicos as $servico)
+                        <flux:table.row :key="$servico->id">
+                            <flux:table.cell variant="strong">{{ $servico->nome }}</flux:table.cell>
+                            <flux:table.cell>{{ $servico->duracao_minutos }} min</flux:table.cell>
+                            <flux:table.cell>R$ {{ number_format((float) $servico->preco, 2, ',', '.') }}</flux:table.cell>
+                            <flux:table.cell>{{ $servico->percentual_comissao !== null ? rtrim(rtrim(number_format((float) $servico->percentual_comissao, 2, ',', '.'), '0'), ',').'%' : '—' }}</flux:table.cell>
+                            <flux:table.cell>{{ $servico->unidades->count() }}</flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge :color="$servico->ativo ? 'green' : 'zinc'" size="sm">{{ $servico->ativo ? 'Ativo' : 'Inativo' }}</flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell class="text-right">
+                                <flux:button wire:click="editar({{ $servico->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
+                                @if ($servico->ativo)
+                                    <flux:button wire:click="pedirInativar({{ $servico->id }})" size="sm" variant="subtle" icon="eye-slash">Inativar</flux:button>
+                                @else
+                                    <flux:button wire:click="reativar({{ $servico->id }})" size="sm" variant="subtle" icon="eye">Reativar</flux:button>
+                                @endif
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        @endif
+    </div>
+
+    <x-ng.confirmar name="inativar-servico" tom="amber" icone="eye-slash" titulo="Inativar serviço?"
+        texto="Ele sai das listas ativas, mas não é apagado (pode reativar depois).">
+        @if ($confirmarId)
+            <flux:button wire:click="inativar({{ $confirmarId }})" variant="primary" icon="eye-slash">Inativar</flux:button>
+        @endif
+    </x-ng.confirmar>
 
     <flux:modal wire:model.self="mostrarFormulario" class="md:w-[32rem]">
         <form wire:submit="salvar" class="flex flex-col gap-4">
