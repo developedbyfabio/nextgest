@@ -6,6 +6,7 @@ namespace App\Livewire\Painel\Vendas;
 
 use App\Models\Cliente;
 use App\Models\Unidade;
+use App\Models\User;
 use App\Models\Venda;
 use App\Services\Venda\Comanda;
 use Carbon\Carbon;
@@ -43,6 +44,8 @@ class Index extends Component
 
     public ?string $novaClienteId = null;
 
+    public ?string $novaProfissionalId = null; // "quem vendeu" — pré-preenche os itens
+
     public function mount(): void
     {
         $this->authorize('criar_venda');
@@ -73,7 +76,7 @@ class Index extends Component
     public function novaComanda(): void
     {
         $this->authorize('criar_venda');
-        $this->reset(['novaClienteId']);
+        $this->reset(['novaClienteId', 'novaProfissionalId']);
         $this->resetValidation();
         $this->mostrarNova = true;
     }
@@ -85,12 +88,14 @@ class Index extends Component
         $dados = $this->validate([
             'novaUnidadeId' => ['required', 'integer', 'exists:unidades,id'],
             'novaClienteId' => ['nullable', 'integer', 'exists:clientes,id'],
-        ], attributes: ['novaUnidadeId' => 'unidade', 'novaClienteId' => 'cliente']);
+            'novaProfissionalId' => ['nullable', 'integer', 'exists:users,id'],
+        ], attributes: ['novaUnidadeId' => 'unidade', 'novaClienteId' => 'cliente', 'novaProfissionalId' => 'profissional']);
 
         $venda = $comanda->abrir(
             (int) $dados['novaUnidadeId'],
             $dados['novaClienteId'] ? (int) $dados['novaClienteId'] : null,
             auth('web')->id(),
+            $dados['novaProfissionalId'] ? (int) $dados['novaProfissionalId'] : null,
         );
 
         return $this->redirectRoute('painel.vendas.detalhe', ['tenant' => tenant('id'), 'venda' => $venda->id], navigate: true);
@@ -125,6 +130,7 @@ class Index extends Component
             'vendas' => $vendas,
             'unidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
             'clientes' => Cliente::orderBy('nome')->get(['id', 'nome']),
+            'profissionais' => User::where('e_profissional', true)->where('ativo', true)->orderBy('name')->get(['id', 'name']),
             'multiUnidade' => Unidade::where('ativo', true)->count() >= 2,
         ]);
     }

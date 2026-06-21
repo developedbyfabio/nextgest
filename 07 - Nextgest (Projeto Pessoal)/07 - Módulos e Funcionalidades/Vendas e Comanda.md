@@ -68,7 +68,38 @@ A comanda/venda: produtos + serviços, **avulsa** (balcão) **ou** a partir de u
 serviço, com desconto → baixa estoque + comissão), uma **aberta**, e uma a partir de um
 **atendimento concluído**.
 
+## Finalizar atendimento → comanda (a partir da agenda do profissional) — 2026-06-22
+Quando o profissional termina de atender, ele — **na própria agenda** — abre o detalhe do
+agendamento e clica em **"Finalizar atendimento"** (`Agenda\Index::finalizarAtendimento`):
+1. **conclui** o atendimento (se ainda não estiver) respeitando as transições;
+2. **gera/abre** a comanda via `Comanda::apartirDeAgendamento` (reuso, **idempotente** — se
+   já existe, abre a existente) e leva ao detalhe.
+
+A comanda nasce **travada**: **cliente** = o do agendamento e **profissional/vendedor** =
+quem atendeu; os **itens de serviço** já vêm com esse profissional (snapshot). No detalhe,
+cliente e "quem vendeu" aparecem com cadeado (não editáveis). O profissional escolhe a
+**forma de pagamento** e, se houver, **adiciona produtos** (o profissional do item já vem
+pré-preenchido com quem atendeu) — a comissão é por item.
+
+**"Quem vendeu/atendeu" (`vendas.profissional_id`)** — responsável/vendedor da comanda
+(migração aditiva). Em **avulsas** (balcão) é um campo selecionável na "Nova comanda" e no
+detalhe, e **pré-preenche** o profissional dos itens novos (ajustável por item). A comissão
+continua **por item** (`venda_itens.profissional_id`); esta coluna é só o padrão da venda.
+
+**Permissão** (`finalizar_atendimento_proprio`, novo): o **Profissional** finaliza só os
+**próprios** atendimentos e gere a comanda **daquele atendimento** — sem acesso a comandas
+avulsas nem às de outros. Decidido por `App\Policies\VendaPolicy::gerir` (criar_venda **ou**
+profissional do próprio atendimento). A rota `vendas/{venda}` deixou de usar
+`can:criar_venda` (a policy decide por comanda); o **índice** de comandas segue exigindo
+`criar_venda` (Dono/Gerente/Recepção). Reaproveita `apartirDeAgendamento`, a comissão
+(2A/2C) e o pagamento presencial — nada reescrito.
+
 ## Testes
+`tests/Feature/Painel/FinalizarAtendimentoTest.php` (7): finalizar gera comanda travada
+(cliente + profissional) e itens de serviço; **idempotente**; profissional **não** finaliza
+de outro; acessa a comanda do **próprio** atendimento mas **não** avulsas; vendedor/cliente
+travados na finalização; "quem vendeu" **pré-preenche** o item e a comissão grava por item.
+
 `tests/Feature/Painel/VendasTest.php` (10): abrir, snapshot do item,
 `total = bruto − desconto`, **pagar baixa estoque** (com `venda_id`) + **comissão
 snapshot**, **bloqueio acima do estoque**, **cancelar paga estorna**, cancelar aberta

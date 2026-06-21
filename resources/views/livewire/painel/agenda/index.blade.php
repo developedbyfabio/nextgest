@@ -170,6 +170,23 @@
                     </ul>
                 </div>
 
+                {{-- Finalizar atendimento → comanda (visível também ao Profissional do
+                     próprio atendimento, que não tem gerir_agenda). Idempotente:
+                     se a comanda já existe, abre a existente. --}}
+                @if ($podeFinalizar && ! $modoRemarcar)
+                    <flux:separator />
+                    <div class="flex flex-col gap-2">
+                        @if ($comandaDoDetalhe)
+                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="shopping-cart">Abrir comanda</flux:button>
+                        @elseif ($detalhe->status === 'concluido')
+                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="shopping-cart">Gerar comanda</flux:button>
+                        @else
+                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="check-circle">Finalizar atendimento</flux:button>
+                            <flux:text class="text-xs" style="color: var(--cor-texto-suave);">Conclui o atendimento e abre a comanda (cliente e profissional travados).</flux:text>
+                        @endif
+                    </div>
+                @endif
+
                 @if ($podeGerir)
                     <flux:separator />
 
@@ -187,13 +204,6 @@
 
                         @if (! in_array($detalhe->status, \App\Models\Agendamento::STATUS_LIVRES, true) && $detalhe->status !== 'concluido')
                             <flux:button wire:click="iniciarRemarcacao" size="sm" variant="subtle" icon="arrow-path">Remarcar</flux:button>
-                        @endif
-
-                        {{-- Gerar comanda do atendimento concluído (financeiro, Fatia 2B) --}}
-                        @if ($detalhe->status === 'concluido')
-                            @can('criar_venda')
-                                <flux:button wire:click="gerarComanda" size="sm" variant="primary" icon="shopping-cart">Gerar comanda</flux:button>
-                            @endcan
                         @endif
                     @else
                         {{-- Modo remarcar --}}

@@ -26,6 +26,48 @@
         </div>
     </div>
 
+    {{-- Cliente (travado na finalização) + quem vendeu/atendeu --}}
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div class="ng-surface flex items-start gap-3 p-4">
+            <flux:icon name="user" class="mt-0.5 size-5 shrink-0" style="color: var(--cor-principal);" />
+            <div class="min-w-0">
+                <div class="text-xs" style="color: var(--cor-texto-suave);">Cliente</div>
+                <div class="flex items-center gap-1.5 font-medium" style="color: var(--cor-texto);">
+                    <span class="truncate">{{ $venda->cliente?->nome ?? 'Balcão (anônimo)' }}</span>
+                    @if ($venda->agendamento_id)
+                        <flux:icon name="lock-closed" class="size-3.5 shrink-0" style="color: var(--cor-texto-suave);" />
+                    @endif
+                </div>
+                @if ($venda->agendamento_id)
+                    <div class="text-xs" style="color: var(--cor-texto-suave);">Do atendimento — não editável.</div>
+                @endif
+            </div>
+        </div>
+
+        <div class="ng-surface flex flex-col gap-1 p-4">
+            <div class="text-xs" style="color: var(--cor-texto-suave);">Quem vendeu/atendeu</div>
+            @if ($editavel && ! $venda->agendamento_id)
+                <flux:select wire:model.live="vendedorId" placeholder="— não definido —">
+                    <flux:select.option value="">— não definido —</flux:select.option>
+                    @foreach ($profissionais as $p)
+                        <flux:select.option value="{{ $p->id }}">{{ $p->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <div class="text-xs" style="color: var(--cor-texto-suave);">Pré-preenche o profissional dos itens novos (comissão por item).</div>
+            @else
+                <div class="flex items-center gap-1.5 font-medium" style="color: var(--cor-texto);">
+                    <span class="truncate">{{ $venda->profissional?->name ?? '— não definido —' }}</span>
+                    @if ($venda->agendamento_id)
+                        <flux:icon name="lock-closed" class="size-3.5 shrink-0" style="color: var(--cor-texto-suave);" />
+                    @endif
+                </div>
+                @if ($venda->agendamento_id)
+                    <div class="text-xs" style="color: var(--cor-texto-suave);">Quem atendeu — não editável.</div>
+                @endif
+            @endif
+        </div>
+    </div>
+
     <div class="grid gap-6 lg:grid-cols-3">
         {{-- Itens --}}
         <div class="flex flex-col gap-3 lg:col-span-2">

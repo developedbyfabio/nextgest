@@ -110,12 +110,15 @@ Route::middleware(['tenant'])
                     ->name('produtos');
 
                 // Vendas / comandas (2B). Balcão e a partir de agendamento.
+                // O ÍNDICE (lista/abrir avulsa) exige criar_venda. O DETALHE NÃO usa
+                // middleware de rota: a autorização é por comanda (VendaPolicy::gerir)
+                // — assim o Profissional acessa a comanda do PRÓPRIO atendimento sem
+                // ter criar_venda. (Avulsas e de outros são negadas pela policy.)
                 Route::get('vendas', VendasIndex::class)
                     ->middleware('can:criar_venda')
                     ->name('vendas');
 
                 Route::get('vendas/{venda}', VendasDetalhe::class)
-                    ->middleware('can:criar_venda')
                     ->name('vendas.detalhe');
 
                 // Relatório de comissões + overrides (financeiro: Dono).

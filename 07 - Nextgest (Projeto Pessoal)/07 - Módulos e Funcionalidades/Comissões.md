@@ -31,6 +31,14 @@ Comissão do profissional por item de venda, com **% padrão** por serviço/prod
 O override é por `(user_id, servico_id)` **ou** `(user_id, produto_id)` e não vaza
 para outro profissional.
 
+> [!info] Vínculo no fluxo "Finalizar atendimento" (2026-06-22)
+> A comissão é sempre por **item** (`venda_itens.profissional_id`). No fluxo de
+> finalização (agenda do profissional), os itens de **serviço** já saem com o
+> profissional que atendeu (vindo do agendamento); produtos adicionados na comanda
+> herdam o **vendedor** da venda (`vendas.profissional_id`), ajustável por item. A
+> lógica de cálculo (precedência acima, snapshot ao pagar) é a mesma — nada
+> duplicado. Ver [[Vendas e Comanda]] (Finalizar atendimento).
+
 ## UI (painel)
 - **Relatório** (`painel.comissoes`, permissão **`ver_financeiro`** — Dono): total
   geral + comissão por profissional, com filtros de período/unidade (reusa o padrão do

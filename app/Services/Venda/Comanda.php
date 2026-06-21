@@ -30,12 +30,17 @@ class Comanda
 {
     public function __construct(private readonly MovimentadorEstoque $estoque) {}
 
-    /** Abre uma comanda avulsa (balcão). Cliente é opcional (venda anônima). */
-    public function abrir(int $unidadeId, ?int $clienteId = null, ?int $criadoPorUserId = null): Venda
+    /**
+     * Abre uma comanda avulsa (balcão). Cliente é opcional (venda anônima).
+     * `profissionalId` = "quem vendeu/atendeu" (responsável), que pré-preenche o
+     * profissional dos itens novos (a comissão é por item).
+     */
+    public function abrir(int $unidadeId, ?int $clienteId = null, ?int $criadoPorUserId = null, ?int $profissionalId = null): Venda
     {
         return Venda::create([
             'unidade_id' => $unidadeId,
             'cliente_id' => $clienteId,
+            'profissional_id' => $profissionalId,
             'status' => 'aberta',
             'valor_bruto' => 0,
             'desconto' => 0,
@@ -63,6 +68,7 @@ class Comanda
             $venda = Venda::create([
                 'unidade_id' => $agendamento->unidade_id,
                 'cliente_id' => $agendamento->cliente_id,
+                'profissional_id' => $agendamento->profissional_id, // quem atendeu = vendedor
                 'agendamento_id' => $agendamento->id,
                 'status' => 'aberta',
                 'valor_bruto' => 0,

@@ -103,6 +103,17 @@ class Index extends Component
         return auth('web')->user()->can('gerir_agenda');
     }
 
+    /** Pode finalizar/gerar a comanda deste atendimento (escopo de permissão). */
+    protected function podeFinalizar(Agendamento $agendamento): bool
+    {
+        $user = auth('web')->user();
+        $proprio = (int) $agendamento->profissional_id === (int) $user->id;
+
+        return $user->can('criar_venda')
+            || $user->can('gerir_agenda')
+            || ($proprio && $user->can('finalizar_atendimento_proprio'));
+    }
+
     public function irHoje(): void
     {
         $this->data = Carbon::now()->format('Y-m-d');
@@ -183,21 +194,47 @@ class Index extends Component
     }
 
     /**
-     * Gera (ou reabre) a comanda do atendimento concluído e leva ao detalhe. A
-     * agenda guarda o atendimento; a venda guarda o financeiro (doc seção 6).
+     * "Finalizar atendimento": conclui o atendimento (se ainda não estiver) e
+     * gera/abre a comanda dele (idempotente — reusa Comanda::apartirDeAgendamento),
+     * levando ao detalhe. Cliente e profissional vêm travados do agendamento.
+     *
+     * Permissão: quem tem `criar_venda`/`gerir_agenda` (Dono/Gerente/Recepção)
+     * finaliza qualquer um; o Profissional finaliza só os PRÓPRIOS atendimentos
+     * (`finalizar_atendimento_proprio` + ser o profissional do agendamento). O
+     * `escopo()` já restringe um Profissional aos próprios — a checagem abaixo é a
+     * trava explícita.
      */
-    public function gerarComanda(Comanda $comanda)
+    public function finalizarAtendimento(Comanda $comanda, Agendador $agendador)
     {
-        $this->authorize('criar_venda');
         $agendamento = $this->escopo()->whereKey($this->detalheId)->firstOrFail();
+        $user = auth('web')->user();
+        $proprio = (int) $agendamento->profissional_id === (int) $user->id;
 
-        if ($agendamento->status !== 'concluido') {
-            Flux::toast('Conclua o atendimento antes de gerar a comanda.', variant: 'warning');
+        abort_unless(
+            $user->can('criar_venda')
+                || $user->can('gerir_agenda')
+                || ($proprio && $user->can('finalizar_atendimento_proprio')),
+            403,
+        );
+
+        if (in_array($agendamento->status, ['cancelado', 'nao_compareceu'], true)) {
+            Flux::toast('Não dá para finalizar um atendimento cancelado ou faltante.', variant: 'danger');
 
             return;
         }
 
-        $venda = $comanda->apartirDeAgendamento($agendamento, auth('web')->id());
+        // Conclui (respeitando as transições) se ainda não estiver concluído.
+        if ($agendamento->status !== 'concluido') {
+            try {
+                $agendador->mudarStatus($agendamento, 'concluido');
+            } catch (TransicaoInvalidaException $e) {
+                Flux::toast('Não foi possível concluir o atendimento.', variant: 'danger');
+
+                return;
+            }
+        }
+
+        $venda = $comanda->apartirDeAgendamento($agendamento, $user->id);
 
         return $this->redirectRoute('painel.vendas.detalhe', ['tenant' => tenant('id'), 'venda' => $venda->id], navigate: true);
     }
@@ -250,6 +287,14 @@ class Index extends Component
             ? $this->escopo()->with(['cliente', 'profissional', 'unidade', 'itens.servico'])->find($this->detalheId)
             : null;
 
+        // Comanda já existente do atendimento + se o usuário pode finalizar/gerar.
+        $comandaDoDetalhe = $detalhe
+            ? \App\Models\Venda::where('agendamento_id', $detalhe->id)->where('status', '!=', 'cancelada')->value('id')
+            : null;
+        $podeFinalizar = $detalhe
+            && $this->podeFinalizar($detalhe)
+            && ! in_array($detalhe->status, ['cancelado', 'nao_compareceu'], true);
+
         // Slots para remarcação (mesmo profissional e serviços, ignorando o próprio).
         $horariosRemarcar = ($detalhe && $this->modoRemarcar && $this->remarcarData)
             ? $motor->slots(
@@ -264,6 +309,8 @@ class Index extends Component
         return view('livewire.painel.agenda.index', [
             'agendamentos' => $agendamentos,
             'detalhe' => $detalhe,
+            'comandaDoDetalhe' => $comandaDoDetalhe,
+            'podeFinalizar' => $podeFinalizar,
             'horariosRemarcar' => $horariosRemarcar,
             'diasSemana' => $this->visao === 'semana' ? $this->montarSemana($de) : [],
             'podeVerTodas' => $this->podeVerTodas(),

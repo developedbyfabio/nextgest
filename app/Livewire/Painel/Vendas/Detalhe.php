@@ -34,6 +34,8 @@ class Detalhe extends Component
 
     public ?string $desconto = null;
 
+    public ?string $vendedorId = null; // "quem vendeu/atendeu" (responsável da comanda)
+
     // Modal de item.
     public bool $mostrarItem = false;
 
@@ -53,9 +55,17 @@ class Detalhe extends Component
 
     public function mount(int $venda): void
     {
-        $this->authorize('criar_venda');
-        $this->vendaId = Venda::findOrFail($venda)->id;
-        $this->desconto = (string) $this->venda()->desconto;
+        $v = Venda::findOrFail($venda);
+        $this->authorize('gerir', $v); // criar_venda OU profissional do próprio atendimento
+        $this->vendaId = $v->id;
+        $this->desconto = (string) $v->desconto;
+        $this->vendedorId = $v->profissional_id ? (string) $v->profissional_id : '';
+    }
+
+    /** Comanda de finalização (vinda de agendamento): cliente e vendedor TRAVADOS. */
+    private function travado(): bool
+    {
+        return $this->venda()->agendamento_id !== null;
     }
 
     private function venda(): Venda
@@ -68,13 +78,30 @@ class Detalhe extends Component
         $this->reset(['itemRefId', 'itemQtd', 'itemProfissionalId']);
         $this->itemQtd = 1;
         $this->tipoItem = 'produto';
+        // Pré-preenche o profissional do item com o vendedor/responsável da comanda.
+        $this->itemProfissionalId = $this->venda()->profissional_id ? (string) $this->venda()->profissional_id : null;
         $this->resetValidation();
         $this->mostrarItem = true;
     }
 
+    /** Define o "quem vendeu/atendeu" da comanda (avulsa). Travado se for finalização. */
+    public function updatedVendedorId(): void
+    {
+        $venda = $this->venda();
+        $this->authorize('gerir', $venda);
+
+        if ($this->travado() || $venda->status !== 'aberta') {
+            $this->vendedorId = $venda->profissional_id ? (string) $venda->profissional_id : '';
+
+            return;
+        }
+
+        $venda->update(['profissional_id' => $this->vendedorId !== '' ? (int) $this->vendedorId : null]);
+    }
+
     public function adicionarItem(Comanda $comanda): void
     {
-        $this->authorize('criar_venda');
+        $this->authorize('gerir', $this->venda());
 
         $dados = $this->validate([
             'tipoItem' => ['required', 'in:produto,servico'],
@@ -107,7 +134,7 @@ class Detalhe extends Component
 
     public function removerItem(int $itemId, Comanda $comanda): void
     {
-        $this->authorize('criar_venda');
+        $this->authorize('gerir', $this->venda());
         $item = VendaItem::where('venda_id', $this->vendaId)->findOrFail($itemId);
 
         try {
@@ -162,7 +189,7 @@ class Detalhe extends Component
 
     public function pagar(Comanda $comanda): void
     {
-        $this->authorize('criar_venda');
+        $this->authorize('gerir', $this->venda());
 
         $linhas = collect($this->pagamentos)
             ->map(fn ($p) => ['metodo' => $p['metodo'] ?? '', 'valor' => (float) str_replace(',', '.', (string) ($p['valor'] ?? 0))])
@@ -187,7 +214,7 @@ class Detalhe extends Component
 
     public function cancelar(Comanda $comanda): void
     {
-        $this->authorize('criar_venda');
+        $this->authorize('gerir', $this->venda());
         $comanda->cancelar($this->venda(), auth('web')->id());
         Flux::modal('cancelar-comanda')->close();
         Flux::toast('Comanda cancelada.');
@@ -207,6 +234,7 @@ class Detalhe extends Component
             'itens.profissional:id,name',
             'pagamentos:id,venda_id,metodo,valor,status,pago_em',
             'cliente:id,nome,telefone',
+            'profissional:id,name',
             'unidade:id,nome',
         ])->findOrFail($this->vendaId);
 

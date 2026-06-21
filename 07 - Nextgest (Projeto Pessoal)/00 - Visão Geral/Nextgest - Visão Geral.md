@@ -20,6 +20,11 @@ tags: [nextgest, saas, agendamento]
 >   fechar comanda registra pagamento(s) (dinheiro/cartão/pix/maquininha, dividido),
 >   estorno ao cancelar. Ver [[Produtos e Estoque]], [[Vendas e Comanda]],
 >   [[Comissões]], [[Dashboard do Dono]] e [[Pagamentos (Presencial)]].
+> - **Finalizar atendimento → comanda** (✅ 2026-06-22): o profissional, na própria
+>   agenda, finaliza o atendimento (1 clique: conclui + gera a comanda, idempotente) com
+>   **cliente e profissional travados**; nas avulsas há campo **"quem vendeu"** que
+>   pré-preenche os itens. Permissão `finalizar_atendimento_proprio` + `VendaPolicy`
+>   (profissional só os próprios). Ver [[Vendas e Comanda]].
 > - Evolução visual A/B/C (portal, painel+dashboard, kanban) + **Etapa D: modo
 >   claro/escuro/sistema** (Flux) no painel e no portal.
 > - **Modelo de tema (D36, substitui parte de A/B):** marca do tenant = **acento +

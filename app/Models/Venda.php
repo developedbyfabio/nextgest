@@ -26,6 +26,7 @@ class Venda extends Model
     protected $fillable = [
         'unidade_id',
         'cliente_id',
+        'profissional_id',
         'agendamento_id',
         'status',
         'valor_bruto',
@@ -63,6 +64,12 @@ class Venda extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
+    }
+
+    /** "Quem vendeu/atendeu" — profissional responsável/vendedor da comanda. */
+    public function profissional(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'profissional_id');
     }
 
     public function agendamento(): BelongsTo

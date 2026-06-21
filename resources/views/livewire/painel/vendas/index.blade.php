@@ -95,6 +95,14 @@
                 @endforeach
             </flux:select>
 
+            <flux:select wire:model="novaProfissionalId" label="Quem vendeu/atendeu (opcional)" placeholder="Selecionar profissional">
+                <flux:select.option value="">— não definido —</flux:select.option>
+                @foreach ($profissionais as $p)
+                    <flux:select.option value="{{ $p->id }}">{{ $p->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:text class="-mt-2 text-xs text-zinc-500">Pré-preenche o profissional dos itens (a comissão é por item, ajustável).</flux:text>
+
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="ghost">Cancelar</flux:button></flux:modal.close>
                 <flux:button type="submit" variant="primary" icon="plus">Abrir comanda</flux:button>

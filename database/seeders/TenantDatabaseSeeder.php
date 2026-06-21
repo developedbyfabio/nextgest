@@ -43,6 +43,7 @@ class TenantDatabaseSeeder extends Seeder
         'editar_permissoes',
         'ver_financeiro',
         'criar_venda',
+        'finalizar_atendimento_proprio', // Profissional: finalizar o PRÓPRIO atendimento e gerir a comanda dele
         'gerenciar_clube',
         'gerenciar_pagamentos',
         'gerenciar_whatsapp',
@@ -86,10 +87,12 @@ class TenantDatabaseSeeder extends Seeder
             'ver_kanban_atendimento',
         ]);
 
-        // Profissional: vê apenas a própria agenda.
+        // Profissional: vê a própria agenda e finaliza os próprios atendimentos
+        // (gera/gere a comanda daquele atendimento — cliente e profissional travados).
         $profissional = Role::findOrCreate('Profissional', 'web');
         $profissional->syncPermissions([
             'ver_agenda_propria',
+            'finalizar_atendimento_proprio',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
