@@ -158,6 +158,32 @@
         --cor-texto-suave: #a1a1aa;
     }
 
+    /*
+    | Camada de LEITURA sobre imagem de fundo (portal real e prévia — mesmos
+    | componentes). Quando o portal/prévia tem imagem de fundo, marcamos o
+    | container com `.ng-com-fundo`; aí os blocos com `.ng-leitura` ganham uma
+    | superfície semiopaca (com blur) para o texto ficar legível sobre a foto.
+    | SEM fundo, `.ng-leitura` é transparente — o visual limpo de sempre.
+    | Vale nos dois modos (a superfície vem de --cor-superficie, que é token
+    | de claro/escuro). Cards que já têm `--cor-superficie` sólido seguem legíveis.
+    */
+    .ng-com-fundo {
+        /* Scrim fosco: a foto aparece atrás (~18%), mas o conteúdo fica legível.
+           A cor vem de --cor-superficie (token de claro/escuro) → contraste nos
+           dois modos. O background-image (a foto) é inline no elemento. */
+        background-color: color-mix(in srgb, var(--cor-superficie) 82%, transparent);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        --ng-leitura: color-mix(in srgb, var(--cor-superficie) 92%, transparent);
+    }
+
+    /* Bloco que precisa de superfície de leitura própria sobre a foto (passos,
+       botão fantasma…). SEM fundo é transparente (visual limpo); COM fundo ganha
+       a superfície (--ng-leitura definido por .ng-com-fundo). */
+    .ng-leitura {
+        background-color: var(--ng-leitura, transparent);
+    }
+
     /* Skeleton temático (segue o texto da marca, não o zinc fixo). */
     .ng-skeleton-portal {
         @apply animate-pulse rounded-md;

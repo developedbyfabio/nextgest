@@ -26,8 +26,12 @@
 >
     @php($tenantId = tenant('id'))
 
-    {{-- Portal do cliente: mobile-first. Coluna estreita centralizada. --}}
-    <div class="mx-auto flex min-h-screen w-full max-w-md flex-col shadow-sm" style="background-color: var(--cor-superficie);">
+    {{-- Portal do cliente: mobile-first. Coluna estreita centralizada.
+         Com imagem de fundo, a coluna fica TRANSLÚCIDA (a foto aparece atrás de
+         tudo, como na prévia) e os blocos com .ng-leitura ganham superfície de
+         leitura (ng-com-fundo). Sem fundo, a coluna é a superfície sólida. --}}
+    <div @class(['mx-auto flex min-h-screen w-full max-w-md flex-col shadow-sm', 'ng-com-fundo' => $fundoUrl])
+        @style(['background-color: var(--cor-superficie)' => ! $fundoUrl])>
         <x-portal.cabecalho :nome="tenant('nome')" :logoUrl="$logoUrl" :href="route('tenant.home', ['tenant' => $tenantId])">
             <x-ng.seletor-tema />
 

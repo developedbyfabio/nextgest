@@ -152,21 +152,16 @@
             </div>
         </flux:modal>
     @else
-        {{-- Visitante: identidade do estabelecimento + chamada para agendar.
-             Usa os MESMOS componentes da prévia (capa com imagem de cabeçalho,
-             passos). O fundo entra pelo layout do portal. --}}
+        {{-- Visitante: usa o MESMO componente da prévia (tela 1 do carrossel):
+             capa com imagem de cabeçalho + passos + chamadas. O fundo entra pelo
+             layout do portal; a legibilidade sobre o fundo vem do .ng-leitura. --}}
         @php($headerUrl = \App\Support\Aparencia::urlArquivo(\App\Support\Aparencia::doTenant()['header_imagem']))
-        <x-portal.capa :nome="tenant('nome')" :descricao="$descricao" :header-url="$headerUrl" />
-
-        <x-portal.como-funciona />
-
-        <div class="flex flex-col gap-2">
-            <flux:button :href="route('cliente.registrar', ['tenant' => tenant('id')])" variant="primary" icon="calendar-days" class="w-full" wire:navigate>
-                Criar conta e agendar
-            </flux:button>
-            <flux:button :href="route('cliente.login', ['tenant' => tenant('id')])" variant="ghost" class="w-full" wire:navigate>
-                Já tenho conta
-            </flux:button>
-        </div>
+        <x-portal.tela-inicio
+            :nome="tenant('nome')"
+            :descricao="$descricao"
+            :header-url="$headerUrl"
+            :registrar-href="route('cliente.registrar', ['tenant' => tenant('id')])"
+            :login-href="route('cliente.login', ['tenant' => tenant('id')])"
+        />
     @endauth
 </div>

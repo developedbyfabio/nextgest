@@ -38,26 +38,24 @@
             :class="{ 'is-dark': dark }"
             style="height: 40rem; {{ \App\Support\Aparencia::cssVarsAcento($a) }}; background-color: var(--cor-fundo); color: var(--cor-texto);@if ($fundoUrl) background-image: url('{{ $fundoUrl }}'); background-size: cover; background-position: center;@endif"
         >
-            {{-- Trilho do carrossel: cada tela ocupa a largura da moldura. --}}
-            <div class="flex h-full transition-transform duration-300 ease-out" :style="`transform: translateX(-${tela * (100 / total)}%)`">
+            {{-- Trilho do carrossel: cada tela ocupa 100% da largura da moldura;
+                 desloca 100% por tela (cada slide é w-full shrink-0). O scrim de
+                 leitura (.ng-com-fundo) vai em CADA tela (sobre a foto da moldura),
+                 para o texto ficar legível (a foto da marca aparece ~18% atrás). --}}
+            <div class="flex h-full transition-transform duration-300 ease-out" :style="`transform: translateX(-${tela * 100}%)`">
 
-                {{-- TELA 0 — Portal deslogado (home/capa) --}}
-                <div class="flex h-full w-full shrink-0 flex-col overflow-y-auto" style="background-color: color-mix(in srgb, var(--cor-superficie) 0%, transparent);">
+                {{-- TELA 0 — Portal deslogado (MESMO componente da home real) --}}
+                <div @class(['flex h-full w-full shrink-0 flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
                     <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
                         <span class="rounded-md px-2.5 py-1 text-xs font-medium" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">Entrar</span>
                     </x-portal.cabecalho>
-                    <div class="flex flex-1 flex-col gap-4 p-4">
-                        <x-portal.capa :nome="$nome" :headerUrl="$headerUrl" />
-                        <x-portal.como-funciona />
-                        <div class="mt-auto flex flex-col gap-2">
-                            <button type="button" class="w-full rounded-lg px-4 py-2.5 text-sm font-semibold" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">Criar conta e agendar</button>
-                            <button type="button" class="w-full rounded-lg px-4 py-2.5 text-sm font-medium" style="color: var(--cor-texto); background-color: color-mix(in srgb, var(--cor-texto) 6%, transparent);">Já tenho conta</button>
-                        </div>
+                    <div class="flex flex-1 flex-col p-4">
+                        <x-portal.tela-inicio :nome="$nome" :header-url="$headerUrl" />
                     </div>
                 </div>
 
                 {{-- TELA 1 — Login do cliente --}}
-                <div class="flex h-full w-full shrink-0 flex-col overflow-y-auto">
+                <div @class(['flex h-full w-full shrink-0 flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
                     <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
                         <span class="rounded-md px-2.5 py-1 text-xs font-medium" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">Entrar</span>
                     </x-portal.cabecalho>
@@ -79,7 +77,7 @@
                 </div>
 
                 {{-- TELA 2 — Home do cliente logado --}}
-                <div class="flex h-full w-full shrink-0 flex-col overflow-y-auto">
+                <div @class(['flex h-full w-full shrink-0 flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
                     <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
                         <span class="flex size-7 items-center justify-center rounded-full" style="background-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); color: var(--cor-texto-suave);">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5"><path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clip-rule="evenodd"/></svg>
@@ -110,7 +108,7 @@
                 </div>
 
                 {{-- TELA 3 — Fluxo de agendamento (passo serviços) --}}
-                <div class="flex h-full w-full shrink-0 flex-col overflow-y-auto">
+                <div @class(['flex h-full w-full shrink-0 flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
                     <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
                         <span class="rounded-md px-2.5 py-1 text-xs font-medium" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">Entrar</span>
                     </x-portal.cabecalho>

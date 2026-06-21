@@ -174,6 +174,11 @@ funciona, testes de fumaça HTTP adicionados. **91 testes.** Sistema navegável.
     das 4 telas do cliente (Início/Login/Cliente/Agendar), moldura de celular, alternador
     claro/escuro, template aceso e Salvar com reload. Ver
     [[Identidade Visual do Estabelecimento (Tema)]].
+  - **Fundo no portal real + legibilidade + carrossel completo** (✅ 2026-06-21): o
+    **fundo agora aparece no portal real** (a coluna vira translúcida com `.ng-com-fundo`,
+    um scrim fosco sobre a foto); blocos ofuscados ganham `.ng-leitura` (legível nos 2
+    modos, com/sem fundo); o carrossel desliza corretamente as **4 telas** (era `100/total`
+    → só 2) e a tela 1 usa o **mesmo** `x-portal.tela-inicio` da home real.
 
 **Migração de servidor (junho/2026):** clone novo em `192.168.11.210` exigiu ajustes
 de ambiente (drivers `file`/`sync`, IP nos `central_domains`) e reparo de um tenant

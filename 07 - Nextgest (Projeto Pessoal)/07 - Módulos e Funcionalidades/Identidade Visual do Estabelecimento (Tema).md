@@ -91,16 +91,43 @@ portal do cliente — **fonte de verdade única**.
     cor da marca p/ legibilidade). Usado pela **home do visitante (portal real)** e pela
     prévia. É o que faz a imagem de cabeçalho **aparecer de verdade** no portal.
   - `x-portal.como-funciona` — passos. `x-portal.servico` — linha de serviço.
+  - `x-portal.tela-inicio` — composição da tela do visitante (capa + como-funciona +
+    chamadas). **A home real do visitante e a tela 1 do carrossel usam ESTE mesmo
+    componente** (sem markup paralelo).
   - O **fundo** (`fundo_imagem`) entra no `<body>` pelo layout do portal (e na moldura da
     prévia). Imagens servidas por `Aparencia::urlArquivo()` (rota por caminho, anti
     path-traversal).
   - > [!warning] Diretiva Blade dentro de tag de componente Flux quebra a compilação
     > `<flux:heading @if(...) style=... @endif>` dá `ParseError`. Em `x-portal.capa` o
     > estilo condicional é resolvido numa variável PHP e o título usa `<div>` simples.
+
+### Fundo no PORTAL REAL + legibilidade (camada de leitura) — 2026-06-21
+- **Causa do "fundo só na prévia":** o `<body>` do portal recebia o `background-image` do
+  fundo, mas a **coluna de conteúdo** (`max-w-md`) tinha `background-color:
+  var(--cor-superficie)` **sólido** — no mobile (coluna = largura total) ela cobria a foto.
+- **Correção (mesma mecânica no portal real e na prévia):** quando há fundo, marca-se o
+  container com **`.ng-com-fundo`** — um **scrim fosco** (`--cor-superficie` a ~82% + blur)
+  **sobre a foto**: a foto aparece (~18%) atrás de tudo e o texto fica legível. Sem fundo,
+  a coluna é a superfície sólida de sempre. No portal real o scrim vai na **coluna**; na
+  prévia, em **cada tela** (sobre a foto da moldura).
+- **`.ng-leitura`:** blocos que sobre a foto ficariam ofuscados (passos do "como funciona",
+  botão fantasma "Já tenho conta") ganham uma superfície de leitura **só quando há fundo**
+  (`--ng-leitura` definido por `.ng-com-fundo`); sem fundo ficam transparentes (visual
+  limpo). Vale nos dois modos (a cor vem de `--cor-superficie`, token de claro/escuro).
+  > [!note] Camada: `background-image` pinta SOBRE `background-color`
+  > Por isso o scrim **não** pode ser `background-color` no mesmo elemento da foto (a foto
+  > o cobriria). No portal real a foto está no `<body>` e o scrim na coluna; na prévia a
+  > foto está na moldura e o scrim em cada tela (elementos distintos, scrim sobre a foto).
+
 - **Carrossel das telas do cliente** (estilo Instagram, Alpine, somente leitura): 4 telas
-  — **Início** (deslogado/capa), **Login**, **Cliente** (home logado) e **Agendar** (fluxo
-  de serviços) — com setas + dots, dentro de uma **moldura de celular** (mais alta). Dados
-  de exemplo; reusa os componentes acima. Não toca no `Agendador`.
+  — **Início** (deslogado/capa, **mesmo `x-portal.tela-inicio` da home real**), **Login**,
+  **Cliente** (home logado) e **Agendar** (fluxo de serviços) — com setas + dots, dentro de
+  uma **moldura de celular** (mais alta). Dados de exemplo; reusa os componentes acima. Não
+  toca no `Agendador`.
+  > [!warning] Carrossel: deslocar 100% por tela (não `100/total`)
+  > Cada tela é `w-full shrink-0`; o `translateX` do trilho desloca **`-tela * 100%`** (a %
+  > é relativa à largura do trilho = 1 moldura). Usar `100/total` (25%) deslocava só ¼ →
+  > sintoma "só 2 telas aparecem". (Bug corrigido.)
 - **Alternador claro/escuro PRÓPRIO:** toggle Alpine aplica `is-dark` **só na moldura** da
   prévia (todas as telas). Superfícies por `.ng-previa` / `.ng-previa.is-dark` (no
   `app.css`), **independentes** do modo do painel. Acento/secundária/tipografia inline por
