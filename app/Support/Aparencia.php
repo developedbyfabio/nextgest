@@ -161,28 +161,101 @@ class Aparencia
     }
 
     /**
-     * String de `style` com as CSS custom properties (e o accent do Flux),
-     * para injetar no escopo do portal/painel.
+     * Cor de frente (preto/branco) legível sobre uma cor de fundo (D27/6B).
+     *
+     * A cor principal escolhida pelo dono pode ser clara OU escura; texto sobre
+     * ela (ex.: dentro de botões primários) precisa contrastar. Usa a luminância
+     * relativa do WCAG: abaixo do limiar (~0.179, onde o contraste de preto e
+     * branco se cruza) o fundo é escuro → texto branco; acima, texto quase-preto.
+     *
+     * `$claro`/`$escuro` permitem casar com a paleta do design (zinc) em vez de
+     * preto/branco puros. Hex de 3 ou 6 dígitos; entrada inválida → assume escuro.
      */
-    public static function cssVars(?array $a = null): string
+    public static function corDeContraste(string $hex, string $claro = '#ffffff', string $escuro = '#18181b'): string
     {
-        $a = $a ?? self::doTenant();
+        return self::luminancia($hex) < 0.179 ? $claro : $escuro;
+    }
 
-        $vars = [
+    /** Luminância relativa (WCAG) de uma cor hex, no intervalo [0,1]. */
+    public static function luminancia(string $hex): float
+    {
+        $hex = ltrim($hex, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        if (! preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+            return 0.0; // entrada inválida → trata como escuro (texto branco)
+        }
+
+        $canal = static function (int $v): float {
+            $s = $v / 255;
+
+            return $s <= 0.03928 ? $s / 12.92 : (($s + 0.055) / 1.055) ** 2.4;
+        };
+
+        return 0.2126 * $canal((int) hexdec(substr($hex, 0, 2)))
+            + 0.7152 * $canal((int) hexdec(substr($hex, 2, 2)))
+            + 0.0722 * $canal((int) hexdec(substr($hex, 4, 2)));
+    }
+
+    /**
+     * Mapa completo das CSS custom properties da aparência (chave => valor),
+     * incluindo o accent do Flux e a cor de frente legível sobre a marca.
+     *
+     * @return array<string, string>
+     */
+    protected static function mapaVars(array $a): array
+    {
+        $sobre = self::corDeContraste($a['cor_principal']);
+
+        return [
             '--cor-principal' => $a['cor_principal'],
             '--cor-secundaria' => $a['cor_secundaria'],
             '--cor-fundo' => $a['cor_fundo'],
             '--cor-superficie' => $a['cor_superficie'],
             '--cor-texto' => $a['cor_texto'],
             '--cor-texto-suave' => $a['cor_texto_suave'],
+            // Cor de frente legível sobre a cor principal (6B) — texto em botões etc.
+            '--cor-sobre-principal' => $sobre,
             // Faz os componentes Flux (botões primary, foco, links) usarem a marca.
             '--color-accent' => $a['cor_principal'],
             '--color-accent-content' => $a['cor_principal'],
-            '--color-accent-foreground' => '#ffffff',
+            '--color-accent-foreground' => $sobre,
             'font-family' => $a['fonte'],
             'font-size' => $a['tamanho_base'],
         ];
+    }
 
-        return collect($vars)->map(fn ($v, $k) => "{$k}: {$v}")->implode('; ');
+    /**
+     * String de `style` com TODAS as CSS custom properties (identidade completa:
+     * fundo/superfície/texto/fonte + accent). Para o PORTAL do cliente e telas de
+     * auth do tenant, onde a identidade do estabelecimento domina a tela.
+     */
+    public static function cssVars(?array $a = null): string
+    {
+        $a = $a ?? self::doTenant();
+
+        return collect(self::mapaVars($a))->map(fn ($v, $k) => "{$k}: {$v}")->implode('; ');
+    }
+
+    /**
+     * String de `style` só com o ACENTO da marca (cor principal/secundária +
+     * accent do Flux + cor de frente). Para o PAINEL, que mantém as superfícies
+     * neutras do Flux (claro/escuro) e usa a marca apenas como realce — sem pintar
+     * fundos inteiros com cor custom (legibilidade da ferramenta de gestão).
+     */
+    public static function cssVarsAcento(?array $a = null): string
+    {
+        $a = $a ?? self::doTenant();
+
+        $acento = ['--cor-principal', '--cor-secundaria', '--cor-sobre-principal',
+            '--color-accent', '--color-accent-content', '--color-accent-foreground'];
+
+        return collect(self::mapaVars($a))
+            ->only($acento)
+            ->map(fn ($v, $k) => "{$k}: {$v}")
+            ->implode('; ');
     }
 }

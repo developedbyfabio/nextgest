@@ -29,7 +29,7 @@
                 <x-ng.option-card wire:click="selecionarUnidade({{ $unidade->id }})">
                     <span class="font-medium">{{ $unidade->nome }}</span>
                     @if ($unidade->endereco)
-                        <span class="block text-sm text-zinc-500">{{ $unidade->endereco }}</span>
+                        <span class="block text-sm" style="color: var(--cor-texto-suave);">{{ $unidade->endereco }}</span>
                     @endif
                 </x-ng.option-card>
             @endforeach
@@ -44,14 +44,14 @@
             @forelse ($servicosDisponiveis as $servico)
                 <x-ng.option-card :selected="in_array($servico->id, $servicoIds, true)" wire:click="toggleServico({{ $servico->id }})" wire:key="srv-{{ $servico->id }}">
                     <span class="block font-medium">{{ $servico->nome }}</span>
-                    <span class="block text-sm text-zinc-500">{{ $servico->duracao_minutos }} min · R$ {{ number_format((float) $servico->preco, 2, ',', '.') }}</span>
+                    <span class="block text-sm" style="color: var(--cor-texto-suave);">{{ $servico->duracao_minutos }} min · R$ {{ number_format((float) $servico->preco, 2, ',', '.') }}</span>
                 </x-ng.option-card>
             @empty
                 <x-ng.empty icon="scissors" title="Sem serviços" text="Nenhum serviço disponível nesta unidade." />
             @endforelse
 
             @if (! empty($servicoIds))
-                <div class="flex items-center justify-between rounded-lg bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-800">
+                <div class="flex items-center justify-between rounded-lg px-3 py-2 text-sm" style="background-color: color-mix(in srgb, var(--cor-texto) 6%, transparent);">
                     <span>Total: {{ $duracaoTotal }} min</span>
                     <span class="font-semibold">R$ {{ number_format($valorTotal, 2, ',', '.') }}</span>
                 </div>
@@ -73,7 +73,7 @@
 
             <x-ng.option-card wire:click="selecionarProfissional('sem')">
                 <span class="flex items-center gap-3">
-                    <flux:icon name="sparkles" class="size-5 text-indigo-500" />
+                    <flux:icon name="sparkles" class="size-5" style="color: var(--cor-principal);" />
                     <span class="font-medium">Sem preferência</span>
                 </span>
             </x-ng.option-card>

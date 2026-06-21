@@ -10,8 +10,13 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @fluxAppearance
 </head>
-<body class="min-h-screen bg-white dark:bg-zinc-800">
-    @php($tenantId = tenant('id'))
+@php($tenantId = tenant('id'))
+@php($aparencia = \App\Support\Aparencia::doTenant())
+@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
+{{-- Painel: superfícies neutras do Flux (claro/escuro) + a marca do
+     estabelecimento apenas como ACENTO (botões/foco/links/estado ativo). Não
+     pintamos fundos com cor custom — legibilidade da ferramenta vem primeiro. --}}
+<body class="min-h-screen bg-white dark:bg-zinc-800" style="{{ \App\Support\Aparencia::cssVarsAcento($aparencia) }}">
 
     @if (session('suporte_ativo'))
         <div class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
@@ -29,8 +34,17 @@
     <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
-        <flux:brand :href="route('painel.dashboard', ['tenant' => $tenantId])" name="Nextgest" class="px-2 dark:hidden" />
-        <flux:brand :href="route('painel.dashboard', ['tenant' => $tenantId])" name="Nextgest" class="hidden px-2 dark:flex" />
+        {{-- Marca do estabelecimento (logo enviado ou ícone na cor da marca). --}}
+        <a href="{{ route('painel.dashboard', ['tenant' => $tenantId]) }}" class="flex items-center gap-2 px-2 py-1" wire:navigate>
+            @if ($logoUrl)
+                <img src="{{ $logoUrl }}" alt="{{ tenant('nome') }}" class="size-8 rounded-lg object-contain" />
+            @else
+                <span class="flex size-8 items-center justify-center rounded-lg" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">
+                    <flux:icon name="calendar-days" class="size-5" />
+                </span>
+            @endif
+            <span class="truncate font-semibold text-zinc-900 dark:text-white">{{ tenant('nome') }}</span>
+        </a>
 
         <flux:navlist variant="outline">
             <flux:navlist.item icon="home" :href="route('painel.dashboard', ['tenant' => $tenantId])" :current="request()->routeIs('painel.dashboard')" wire:navigate>

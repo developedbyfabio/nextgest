@@ -53,10 +53,25 @@ class Home extends Component
                 ->get()
             : collect();
 
+        // Histórico: já finalizados (concluído/cancelado/não compareceu) ou no
+        // passado. Limitado — é uma visão de acompanhamento, não relatório.
+        $historico = $cliente
+            ? Agendamento::with(['profissional', 'unidade', 'itens.servico'])
+                ->where('cliente_id', $cliente->id)
+                ->where(fn ($q) => $q
+                    ->whereIn('status', ['concluido', 'cancelado', 'nao_compareceu'])
+                    ->orWhere('data_hora_inicio', '<', Carbon::now()))
+                ->orderByDesc('data_hora_inicio')
+                ->limit(8)
+                ->get()
+            : collect();
+
         $agendador = app(Agendador::class);
 
         return view('livewire.portal.home', [
+            'cliente' => $cliente,
             'proximos' => $proximos,
+            'historico' => $historico,
             'podeCancelar' => fn (Agendamento $a) => $agendador->podeCancelar($a),
             'descricao' => Configuracao::valor('descricao'),
         ]);

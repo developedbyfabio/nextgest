@@ -51,6 +51,32 @@ it('valida cor inválida e tamanho fora do formato', function () {
         ->assertHasErrors(['cor_principal', 'tamanho_base']);
 });
 
+it('escolhe a cor de frente legível conforme a luminância da marca (6B)', function () {
+    // Marca clara → texto escuro; marca escura → texto branco.
+    expect(Aparencia::corDeContraste('#ffffff'))->toBe('#18181b');
+    expect(Aparencia::corDeContraste('#fde047'))->toBe('#18181b'); // amarelo claro
+    expect(Aparencia::corDeContraste('#000000'))->toBe('#ffffff');
+    expect(Aparencia::corDeContraste('#4f46e5'))->toBe('#ffffff'); // indigo padrão
+    expect(Aparencia::corDeContraste('azul'))->toBe('#ffffff');    // inválido → assume escuro
+});
+
+it('expõe --cor-sobre-principal e a usa como accent-foreground', function () {
+    $vars = Aparencia::cssVars(['cor_principal' => '#fde047'] + Aparencia::PADRAO);
+
+    expect($vars)->toContain('--cor-sobre-principal: #18181b');
+    expect($vars)->toContain('--color-accent-foreground: #18181b'); // texto escuro sobre amarelo
+});
+
+it('cssVarsAcento traz só o acento — sem pintar fundo/superfície (painel)', function () {
+    $vars = Aparencia::cssVarsAcento(Aparencia::PADRAO);
+
+    expect($vars)->toContain('--color-accent');
+    expect($vars)->toContain('--cor-principal');
+    expect($vars)->toContain('--cor-sobre-principal');
+    expect($vars)->not->toContain('--cor-fundo');
+    expect($vars)->not->toContain('--cor-superficie');
+});
+
 it('reflete as escolhas na prévia ao vivo (CSS vars)', function () {
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 
