@@ -112,6 +112,17 @@ de loading/vazio/erro. Regra de ouro mantida: **dark-safe** — nada de `bg-whit
   Claro/Escuro/Sistema: header do portal (`x-ng.seletor-tema`) e menu de perfil do
   painel. Persistência por `localStorage` (Flux). Ver [[Decisões de Arquitetura]] D36.
 
+## Agenda elevada (Polimento 1, 2026-06-22)
+Tela de maior uso diária, levada ao padrão das demais (tokens da Etapa D, sem zinc
+fixo): cartões em `.ng-surface`/`.ng-surface-interactive` com **barra de acento por
+status** (cor semântica, não a marca); visão **dia** (lista) e **semana** (grade no
+desktop, **scroll horizontal com snap** no mobile, como o kanban); **modal de detalhe**
+(flyout) com ações — cancelar por `flux:modal` (sem `confirm` nativo) e **"gerar
+comanda"** no concluído (Fatia 2B); estados **loading (skeleton) / dia vazio / erro
+recuperável**. **As regras de agenda não foram tocadas** — `MotorDisponibilidade` e
+`Agendador` (disponibilidade/concorrência/lock) seguem intactos; a elevação é só
+apresentação. Ver [[Auditoria de UI (Portal e Painel)]].
+
 ## Kanban temático + DnD elevado (Etapa C, 2026-06-21)
 Colunas (`.ng-surface-muted`) e cartões (`.ng-surface`) seguem a marca; dark-safe.
 DnD (SortableJS) com **handle**, placeholder (`.ng-kanban-ghost`) e elevação

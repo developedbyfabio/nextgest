@@ -63,10 +63,14 @@ tags: [nextgest, ui, auditoria, portal, painel]
   pendente (rodadas futuras).
 - ✅ **Aparência/Tema** e **Onboarding** (`/admin/...`) — existem (editor + prévia;
   wizard de 5 etapas).
-- 🎨 **Pendente:** polimento temático fino das **telas internas** (agenda/cadastros —
-  hoje herdam o `.dark` correto, mas sem acabamento de marca como portal/dashboard/
-  kanban); possível override de claro/escuro por usuário da equipe. Próxima frente
-  grande: **Fatia 2** (produtos/vendas).
+- ✅ **(elevada — Polimento 1, 2026-06-22) Agenda** — tokens da Etapa D
+  (`.ng-surface`/`ng-surface-interactive`, sem zinc fixo), cartões com **acento de
+  status**, modal de detalhe com ações (incl. cancelar por `flux:modal`, sem confirm
+  nativo, e "gerar comanda" no concluído), estados loading/vazio/erro e **semana com
+  scroll+snap** no mobile. Regras (`MotorDisponibilidade`/`Agendador`) **intactas**.
+- 🎨 **Pendente:** polimento temático fino dos **cadastros** (unidades/serviços/equipe/
+  horários/papéis/bloqueios — herdam o `.dark` correto, mas sem o acabamento das telas
+  elevadas); possível override de claro/escuro por usuário da equipe.
 
 ## Lição (anti-divergência teste×navegador)
 `Livewire::test()` verde **não** garante boa aparência: ele não exercita tema/CSS
