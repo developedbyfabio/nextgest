@@ -15,6 +15,8 @@
          estabelecimento entra como ACENTO + logo + tipografia (constante nos dois
          modos); as superfícies vêm dos tokens de claro/escuro. --}}
     @fluxAppearance
+    {{-- Tipografia da marca: carrega a fonte (Google) escolhida pelo tenant, se houver. --}}
+    {!! \App\Support\Aparencia::linkFonteGoogle($aparencia) !!}
 </head>
 {{-- Marca = acento/tipografia (alimenta os componentes Flux: botões/foco/estado
      ativo); as superfícies seguem o modo via tokens (--cor-fundo/--cor-texto). --}}

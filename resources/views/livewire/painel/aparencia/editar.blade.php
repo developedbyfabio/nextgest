@@ -1,4 +1,9 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
+    {{-- Carrega TODAS as fontes do catálogo para a prévia ao vivo refletir
+         qualquer seleção na hora (antes de salvar/recarregar). Nas páginas reais
+         (portal/painel) carrega-se só a fonte escolhida. --}}
+    {!! \App\Support\Aparencia::linksFontesGoogle() !!}
+
     <x-ng.page-header title="Aparência" subtitle="Identidade visual do seu portal de agendamento">
         <x-slot:actions>
             <flux:button wire:click="salvar" variant="primary" icon="check">Salvar</flux:button>
@@ -18,7 +23,6 @@
                             <div class="flex gap-1">
                                 <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_principal'] }}"></span>
                                 <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_secundaria'] }}"></span>
-                                <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_fundo'] }}"></span>
                             </div>
                             <div>
                                 <div class="text-sm font-medium">{{ $t['rotulo'] }}</div>
@@ -31,17 +35,17 @@
 
             <flux:separator />
 
-            {{-- Cores --}}
+            {{-- Cores da marca (acento). As superfícies seguem claro/escuro (D36). --}}
             <div class="flex flex-col gap-3">
-                <flux:heading size="sm">Cores</flux:heading>
+                <flux:heading size="sm">Cores da marca</flux:heading>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    <flux:input type="color" wire:model.live="cor_principal" label="Principal" />
-                    <flux:input type="color" wire:model.live="cor_secundaria" label="Secundária" />
-                    <flux:input type="color" wire:model.live="cor_fundo" label="Fundo" />
-                    <flux:input type="color" wire:model.live="cor_superficie" label="Superfície" />
-                    <flux:input type="color" wire:model.live="cor_texto" label="Texto" />
-                    <flux:input type="color" wire:model.live="cor_texto_suave" label="Texto suave" />
+                    <flux:input type="color" wire:model.live="cor_principal" label="Principal (acento)" />
+                    <flux:input type="color" wire:model.live="cor_secundaria" label="Secundária (realces)" />
                 </div>
+                <flux:text class="text-xs text-zinc-500">
+                    O fundo, as superfícies e o texto seguem o modo <strong>claro/escuro</strong> escolhido por
+                    quem acessa — não são cores fixas. A marca entra como acento (botões, links, destaques).
+                </flux:text>
             </div>
 
             {{-- Tipografia --}}
@@ -49,8 +53,8 @@
                 <flux:heading size="sm">Tipografia</flux:heading>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <flux:select wire:model.live="fonte" label="Fonte">
-                        @foreach ($fontes as $valor => $rotulo)
-                            <flux:select.option value="{{ $valor }}">{{ $rotulo }}</flux:select.option>
+                        @foreach ($fontes as $valor => $meta)
+                            <flux:select.option value="{{ $valor }}" style="font-family: {{ $valor }};">{{ $meta['label'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="tamanho_base" label="Tamanho base">
@@ -59,12 +63,13 @@
                         @endforeach
                     </flux:select>
                 </div>
+                <flux:text class="text-xs text-zinc-500">A fonte e o tamanho são aplicados no portal e no painel.</flux:text>
             </div>
 
             {{-- Imagens --}}
             <div class="flex flex-col gap-3">
                 <flux:heading size="sm">Imagens</flux:heading>
-                <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP. Logo até 2 MB; cabeçalho e fundo até 4 MB.</flux:text>
+                <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP, até 2 MB cada.</flux:text>
 
                 @foreach ([
                     ['campo' => 'logo', 'upload' => 'logoUpload', 'url' => 'logo_url', 'rotulo' => 'Logo'],
@@ -81,7 +86,7 @@
                         </div>
                         <div class="flex flex-1 flex-col gap-1">
                             <flux:label>{{ $img['rotulo'] }}</flux:label>
-                            <input type="file" wire:model="{{ $img['upload'] }}" accept="image/*"
+                            <input type="file" wire:model="{{ $img['upload'] }}" accept="image/png,image/jpeg,image/webp"
                                 class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
                             <div wire:loading wire:target="{{ $img['upload'] }}" class="text-xs text-zinc-500">Enviando…</div>
                             <flux:error name="{{ $img['upload'] }}" />
@@ -92,21 +97,6 @@
                     </div>
                 @endforeach
             </div>
-
-            {{-- Layout --}}
-            <div class="flex flex-col gap-3">
-                <flux:heading size="sm">Layout</flux:heading>
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <flux:select wire:model.live="menu_posicao" label="Posição do menu (painel)">
-                        <flux:select.option value="topo">Topo</flux:select.option>
-                        <flux:select.option value="lateral">Lateral</flux:select.option>
-                    </flux:select>
-                    <flux:select wire:model.live="icone_estilo" label="Estilo de ícone">
-                        <flux:select.option value="outline">Contorno</flux:select.option>
-                        <flux:select.option value="solid">Sólido</flux:select.option>
-                    </flux:select>
-                </div>
-            </div>
         </div>
 
         {{-- Prévia ao vivo --}}
@@ -114,7 +104,7 @@
             <div class="sticky top-6 flex flex-col gap-3">
                 <flux:heading size="sm">Prévia do portal</flux:heading>
                 <x-ng.previa-portal :aparencia="$aparencia" :nome="tenant('nome')" />
-                <flux:text class="text-center text-xs text-zinc-500">Atualiza enquanto você edita.</flux:text>
+                <flux:text class="text-center text-xs text-zinc-500">Em modo claro · atualiza enquanto você edita.</flux:text>
             </div>
         </div>
     </div>

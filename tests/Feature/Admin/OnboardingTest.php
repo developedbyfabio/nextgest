@@ -51,12 +51,12 @@ it('não avança a etapa 1 com dados incompletos', function () {
 it('sugere o template conforme o segmento', function () {
     $this->actingAs(admin(), 'admin');
 
-    // barbearia -> template "barbearia" (#b45309, ícone sólido)
+    // barbearia -> template "barbearia" (#b45309, fonte do sistema)
     Livewire::test(Onboarding::class)
         ->set('segmento', 'barbearia')
         ->assertSet('template', 'barbearia')
         ->assertSet('cor_principal', '#b45309')
-        ->assertSet('icone_estilo', 'solid');
+        ->assertSet('fonte', 'ui-sans-serif, system-ui, sans-serif');
 
     // estetica -> template "premium"
     Livewire::test(Onboarding::class)

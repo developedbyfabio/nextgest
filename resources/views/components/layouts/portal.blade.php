@@ -12,6 +12,8 @@
          estabelecimento entra como ACENTO + logo + tipografia (constante nos dois
          modos); as superfícies vêm dos tokens de claro/escuro. --}}
     @fluxAppearance
+    {{-- Tipografia da marca: carrega a fonte (Google) escolhida pelo tenant, se houver. --}}
+    {!! \App\Support\Aparencia::linkFonteGoogle() !!}
 </head>
 @php($aparencia = \App\Support\Aparencia::doTenant())
 @php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))

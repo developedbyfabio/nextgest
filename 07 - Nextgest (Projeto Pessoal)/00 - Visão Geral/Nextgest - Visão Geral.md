@@ -162,6 +162,12 @@ funciona, testes de fumaça HTTP adicionados. **91 testes.** Sistema navegável.
     `.dark` por luminância.
   - Pendente: polimento temático fino das telas internas (agenda/cadastros).
   Ver [[Auditoria de UI (Portal e Painel)]].
+  - **Auditoria da Aparência** (✅ 2026-06-21): a tela `painel.aparencia` foi alinhada
+    ao D36 — só **Principal/Secundária** (superfícies seguem claro/escuro; as 4 cores de
+    superfície e os controles de **layout** mortos foram removidos), **tipografia real**
+    (16 fontes, Google Fonts sob demanda) e **uploads** corrigidos (limite 2 MB coerente
+    com o PHP; `mimes:png,jpg,jpeg,webp`). Mesmo alinhamento no onboarding. Ver
+    [[Bug - Aparencia (upload, fonte e campos desconectados)]].
 
 **Migração de servidor (junho/2026):** clone novo em `192.168.11.210` exigiu ajustes
 de ambiente (drivers `file`/`sync`, IP nos `central_domains`) e reparo de um tenant

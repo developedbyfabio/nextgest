@@ -15,6 +15,8 @@
          No tenant, a marca entra como acento + logo + tipografia; superfícies pelos
          tokens de claro/escuro. --}}
     @fluxAppearance
+    {{-- Tipografia da marca: no tenant, carrega a fonte (Google) escolhida, se houver. --}}
+    @if ($temTenant){!! \App\Support\Aparencia::linkFonteGoogle($aparencia) !!}@endif
 </head>
 
 @php($logoUrl = $temTenant ? \App\Support\Aparencia::urlArquivo($aparencia['logo']) : null)

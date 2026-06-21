@@ -52,8 +52,29 @@ sugere um template de partida).
 
 ## Edição de tema do dono (`painel.aparencia`)
 - `App\Livewire\Painel\Aparencia\Editar` — formulário do dono (permissão
-  `gerir_aparencia`) para escolher template, ajustar cores/fonte e enviar
+  `gerir_aparencia`) para escolher template, ajustar a marca e enviar
   logo/cabeçalho/fundo, com **prévia ao vivo** ao lado.
+- **Campos da tela (alinhados ao D36 — auditoria de 2026-06-21):**
+  - **Cores da marca:** só **Principal (acento)** e **Secundária (realces)**. As 4
+    cores de **superfície** (fundo/superfície/texto/texto-suave) foram **removidas**
+    da tela — não controlavam o app real (as superfícies seguem claro/escuro), eram
+    "campos que mentiam". A prévia mostra o portal em **modo claro**.
+  - **Tipografia:** **fonte** (catálogo de 16 — `Aparencia::FONTES`, sistema +
+    Google Fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito,
+    Raleway, Work Sans, Space Grotesk, Playfair Display, Merriweather, Georgia,
+    JetBrains Mono) e **tamanho base** (14–18px). Ambos **aplicam** no portal e no
+    painel via `cssVarsAcento()` (font-family/font-size no `<body>`).
+  - **Imagens:** logo, cabeçalho, fundo — `image|mimes:png,jpg,jpeg,webp|max:2048`
+    (**2 MB**), gravadas no disco `public` do tenant e referenciadas por
+    `urlArquivo()`. A prévia só usa `temporaryUrl()` se o arquivo for previewável
+    (não quebra ao escolher um não-imagem antes da validação).
+  - **Layout (posição do menu / estilo de ícone):** **removidos** — eram ganchos no
+    JSON sem nenhum consumo na UI (controles mortos). Idem no onboarding.
+- **Carregamento das fontes Google (sob demanda):** `Aparencia::linkFonteGoogle()`
+  emite o `<link>` da fonte escolhida no `<head>` dos layouts (portal/painel/auth);
+  `linksFontesGoogle()` carrega **todas** só nas telas de edição/onboarding, para a
+  prévia ao vivo refletir qualquer seleção antes de salvar. Lista fechada (sem
+  entrada do usuário → sem injeção; a `href` ainda é escapada).
 
 ## Prévia ao vivo (`x-ng.previa-portal`)
 - Componente reutilizável que renderiza um recorte do portal do cliente aplicando as
@@ -111,10 +132,15 @@ sem alteração. `x-ng.option-card`/`x-ng.empty` mantêm a prop `themed` (no por
 - **Telas internas do painel** (agenda, cadastros) e o **kanban** ainda usam
   superfícies do Flux; herdam o `.dark` correto, mas o polimento temático fino fica
   para a Etapa C (kanban) e seguintes.
-- **A confirmar:** quanto dos ganchos `menu_posicao`/`icone_estilo` já têm efeito
-  visual real (estão nos presets/JSON, mas o consumo na UI pode ser parcial).
+- **`menu_posicao`/`icone_estilo`: resolvido (2026-06-21).** Nunca tiveram consumo na
+  UI — eram controles mortos. **Removidos** da tela de aparência e do onboarding (e
+  dos componentes Livewire). As chaves seguem no PADRÃO/JSON com valor default
+  (`topo`/`outline`), inertes, até que (se um dia) o painel suporte de fato menu
+  lateral / ícones sólidos. Não reintroduzir o controle sem o efeito.
 - Possível melhoria: override de modo claro/escuro por usuário da equipe (hoje o
   painel segue a marca do tenant).
+- Possível melhoria: permitir imagens > 2 MB em produção (hoje limitado pelo
+  `upload_max_filesize=2M` do PHP — ver o bug abaixo).
 
 ## Relacionado
 - Templates de aparência (presets): [[Decisões de Arquitetura]] (D30) — ✅ feito.

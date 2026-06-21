@@ -108,6 +108,35 @@ class Aparencia
         ],
     ];
 
+    /**
+     * Catálogo de fontes oferecidas (D36 — tipografia faz parte da marca).
+     * Chave = stack de `font-family` (valor persistido em `fonte`); o `google` é
+     * a especificação de família p/ a API do Google Fonts (`?family=...`), ou
+     * `null` quando é fonte do sistema/empacotada (Instrument Sans já vem no build).
+     * As fontes Google são carregadas SOB DEMANDA por um `<link>` no `<head>`
+     * (ver linkFonteGoogle) — nada de embutir dezenas de arquivos.
+     *
+     * @var array<string, array{label: string, google: ?string}>
+     */
+    public const FONTES = [
+        "'Instrument Sans', ui-sans-serif, system-ui, sans-serif" => ['label' => 'Instrument Sans (padrão)', 'google' => null],
+        'ui-sans-serif, system-ui, sans-serif' => ['label' => 'Sistema (sans-serif)', 'google' => null],
+        "'Inter', ui-sans-serif, sans-serif" => ['label' => 'Inter', 'google' => 'Inter:wght@400;500;600;700'],
+        "'Poppins', ui-sans-serif, sans-serif" => ['label' => 'Poppins', 'google' => 'Poppins:wght@400;500;600;700'],
+        "'Montserrat', ui-sans-serif, sans-serif" => ['label' => 'Montserrat', 'google' => 'Montserrat:wght@400;500;600;700'],
+        "'Roboto', ui-sans-serif, sans-serif" => ['label' => 'Roboto', 'google' => 'Roboto:wght@400;500;700'],
+        "'Open Sans', ui-sans-serif, sans-serif" => ['label' => 'Open Sans', 'google' => 'Open+Sans:wght@400;500;600;700'],
+        "'Lato', ui-sans-serif, sans-serif" => ['label' => 'Lato', 'google' => 'Lato:wght@400;700'],
+        "'Nunito', ui-sans-serif, sans-serif" => ['label' => 'Nunito', 'google' => 'Nunito:wght@400;600;700'],
+        "'Raleway', ui-sans-serif, sans-serif" => ['label' => 'Raleway', 'google' => 'Raleway:wght@400;500;600;700'],
+        "'Work Sans', ui-sans-serif, sans-serif" => ['label' => 'Work Sans', 'google' => 'Work+Sans:wght@400;500;600;700'],
+        "'Space Grotesk', ui-sans-serif, sans-serif" => ['label' => 'Space Grotesk', 'google' => 'Space+Grotesk:wght@400;500;700'],
+        "'Playfair Display', Georgia, serif" => ['label' => 'Playfair Display (serif)', 'google' => 'Playfair+Display:wght@400;600;700'],
+        "'Merriweather', Georgia, serif" => ['label' => 'Merriweather (serif)', 'google' => 'Merriweather:wght@400;700'],
+        "Georgia, 'Times New Roman', serif" => ['label' => 'Georgia (serif do sistema)', 'google' => null],
+        "'JetBrains Mono', ui-monospace, monospace" => ['label' => 'JetBrains Mono (mono)', 'google' => 'JetBrains+Mono:wght@400;500;700'],
+    ];
+
     /** Campos visuais de um template (sem rótulo/descrição), prontos para o form. */
     public static function template(string $chave): ?array
     {
@@ -259,5 +288,58 @@ class Aparencia
             ->only($marca)
             ->map(fn ($v, $k) => "{$k}: {$v}")
             ->implode('; ');
+    }
+
+    /** Especificação Google da fonte atual do tenant — null se for fonte do sistema. */
+    public static function googleDaFonte(?array $a = null): ?string
+    {
+        $a = $a ?? self::doTenant();
+
+        return self::FONTES[$a['fonte']]['google'] ?? null;
+    }
+
+    /**
+     * `<link>`(s) para carregar a fonte (Google) atual do tenant no `<head>` —
+     * string vazia quando a fonte é do sistema/empacotada. Usado nos layouts
+     * (portal/painel/auth) para que a tipografia escolhida realmente apareça.
+     */
+    public static function linkFonteGoogle(?array $a = null): string
+    {
+        $g = self::googleDaFonte($a);
+
+        return $g === null ? '' : self::montarLinkGoogle([$g]);
+    }
+
+    /**
+     * `<link>` único que carrega TODAS as fontes Google do catálogo — para a
+     * PRÉVIA ao vivo do editor de aparência, onde qualquer seleção precisa
+     * renderizar na hora (antes de salvar/recarregar).
+     */
+    public static function linksFontesGoogle(): string
+    {
+        $familias = collect(self::FONTES)->pluck('google')->filter()->values()->all();
+
+        return self::montarLinkGoogle($familias);
+    }
+
+    /**
+     * Monta o(s) `<link>` para a API do Google Fonts a partir de especificações
+     * de família do catálogo FONTES (lista fechada — sem entrada do usuário, logo
+     * sem injeção). A `href` ainda é escapada por segurança.
+     *
+     * @param  array<int, string>  $familias
+     */
+    private static function montarLinkGoogle(array $familias): string
+    {
+        if ($familias === []) {
+            return '';
+        }
+
+        $query = collect($familias)->map(fn ($f) => 'family='.$f)->implode('&');
+        $href = 'https://fonts.googleapis.com/css2?'.$query.'&display=swap';
+
+        return '<link rel="preconnect" href="https://fonts.googleapis.com">'
+            .'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+            .'<link rel="stylesheet" href="'.e($href).'">';
     }
 }

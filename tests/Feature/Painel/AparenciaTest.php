@@ -21,7 +21,7 @@ it('aplica um template copiando seus valores para o formulário', function () {
     Livewire::test(Editar::class)
         ->call('aplicarTemplate', 'barbearia')
         ->assertSet('cor_principal', '#b45309')
-        ->assertSet('icone_estilo', 'solid')
+        ->assertSet('fonte', 'ui-sans-serif, system-ui, sans-serif')
         ->assertHasNoErrors();
 });
 

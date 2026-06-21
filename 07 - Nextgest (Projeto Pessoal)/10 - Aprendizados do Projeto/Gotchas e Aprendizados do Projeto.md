@@ -132,6 +132,29 @@ há seletor único; ao criar um combo novo, adicione-o (teste
 `WireLoadingSkeletonTest` cobre). `.remove` não entra. Ver
 [[Bug - Skeleton de loading preso (wire-loading nao some)]].
 
+## Upload Livewire "Falha no upload" → limite do PHP, não o código
+"Falha no upload do arquivo X" no Livewire costuma ser o **PHP barrando** antes do
+framework: `upload_max_filesize`/`post_max_size` menores que o arquivo. Em dev o
+`php artisan serve` usa o `php.ini` da **CLI**. A regra `max:` da aplicação precisa
+**caber** no limite do servidor (aqui `upload_max_filesize=2M` → uploads de 2 MB). Para
+mais, subir o limite no php-fpm (prod) ou `php -d ... artisan serve` (dev). Restringir
+tipos a `mimes:png,jpg,jpeg,webp` (não `image`, que aceita SVG com script). Ver
+[[Bug - Aparencia (upload, fonte e campos desconectados)]].
+
+## Controle de UI que não aplica nada = controle que mente
+Depois de uma decisão de arquitetura (ex.: D36, superfícies viram claro/escuro), campos
+antigos da tela podem continuar visíveis **sem efeito** (cores de superfície, posição de
+menu, estilo de ícone na Aparência). Parecem configurar o app e não mudam nada. Ao mexer
+na tela, **alinhar ao modelo**: remover/explicitar o que não aplica — não basta
+"consertar" o que está visível. Ver [[Identidade Visual do Estabelecimento (Tema)]].
+
+## Fonte do tenant: Google Fonts sob demanda no `<head>`
+A tipografia faz parte da marca (D36) e é emitida como `font-family` no `<body>` por
+`cssVarsAcento()`. Mas a fonte só **renderiza** se a folha estiver carregada: o
+`Aparencia::linkFonteGoogle()` injeta o `<link>` da fonte (Google) escolhida no `<head>`
+dos layouts; o editor carrega **todas** (`linksFontesGoogle()`) para a prévia ao vivo.
+Lista fechada (`Aparencia::FONTES`) → sem injeção; `href` escapada.
+
 ## Dark-mode do sistema sobre superfície clara forçada (texto invisível)
 **Sintoma:** no portal, o nome do serviço/profissional sumia, mas a duração
 (cinza-médio) aparecia.

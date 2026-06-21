@@ -117,7 +117,6 @@
                             <div class="flex gap-1">
                                 <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_principal'] }}"></span>
                                 <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_secundaria'] }}"></span>
-                                <span class="size-5 rounded-full border border-black/10" style="background-color: {{ $t['cor_fundo'] }}"></span>
                             </div>
                             <div>
                                 <div class="text-sm font-medium">{{ $t['rotulo'] }}</div>
@@ -127,35 +126,26 @@
                     @endforeach
                 </div>
 
-                {{-- Cores --}}
+                {{-- Carrega as fontes do catálogo p/ a prévia ao vivo refletir a seleção. --}}
+                {!! \App\Support\Aparencia::linksFontesGoogle() !!}
+
+                {{-- Cores da marca (acento). Superfícies seguem claro/escuro (D36). --}}
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    <flux:input type="color" wire:model.live="cor_principal" label="Principal" />
-                    <flux:input type="color" wire:model.live="cor_secundaria" label="Secundária" />
-                    <flux:input type="color" wire:model.live="cor_fundo" label="Fundo" />
-                    <flux:input type="color" wire:model.live="cor_superficie" label="Superfície" />
-                    <flux:input type="color" wire:model.live="cor_texto" label="Texto" />
-                    <flux:input type="color" wire:model.live="cor_texto_suave" label="Texto suave" />
+                    <flux:input type="color" wire:model.live="cor_principal" label="Principal (acento)" />
+                    <flux:input type="color" wire:model.live="cor_secundaria" label="Secundária (realces)" />
                 </div>
 
-                {{-- Tipografia / layout --}}
+                {{-- Tipografia --}}
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <flux:select wire:model.live="fonte" label="Fonte">
-                        @foreach ($fontes as $valor => $rotulo)
-                            <flux:select.option value="{{ $valor }}">{{ $rotulo }}</flux:select.option>
+                        @foreach ($fontes as $valor => $meta)
+                            <flux:select.option value="{{ $valor }}" style="font-family: {{ $valor }};">{{ $meta['label'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="tamanho_base" label="Tamanho base">
                         @foreach (['14px', '15px', '16px', '17px', '18px'] as $tam)
                             <flux:select.option value="{{ $tam }}">{{ $tam }}</flux:select.option>
                         @endforeach
-                    </flux:select>
-                    <flux:select wire:model.live="menu_posicao" label="Posição do menu (painel)">
-                        <flux:select.option value="topo">Topo</flux:select.option>
-                        <flux:select.option value="lateral">Lateral</flux:select.option>
-                    </flux:select>
-                    <flux:select wire:model.live="icone_estilo" label="Estilo de ícone">
-                        <flux:select.option value="outline">Contorno</flux:select.option>
-                        <flux:select.option value="solid">Sólido</flux:select.option>
                     </flux:select>
                 </div>
 
@@ -169,8 +159,8 @@
                         @endif
                     </div>
                     <div class="flex flex-1 flex-col gap-1">
-                        <flux:label>Logo (opcional)</flux:label>
-                        <input type="file" wire:model="logoUpload" accept="image/*"
+                        <flux:label>Logo (opcional) — PNG, JPG ou WebP, até 2 MB</flux:label>
+                        <input type="file" wire:model="logoUpload" accept="image/png,image/jpeg,image/webp"
                             class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
                         <div wire:loading wire:target="logoUpload" class="text-xs text-zinc-500">Enviando…</div>
                         <flux:error name="logoUpload" />

@@ -89,21 +89,9 @@ class OnboardingEstabelecimento extends Component
 
     public string $cor_secundaria = '';
 
-    public string $cor_fundo = '';
-
-    public string $cor_superficie = '';
-
-    public string $cor_texto = '';
-
-    public string $cor_texto_suave = '';
-
     public string $fonte = '';
 
     public string $tamanho_base = '';
-
-    public string $menu_posicao = '';
-
-    public string $icone_estilo = '';
 
     public $logoUpload = null;
 
@@ -140,14 +128,8 @@ class OnboardingEstabelecimento extends Component
 
         $this->cor_principal = $a['cor_principal'];
         $this->cor_secundaria = $a['cor_secundaria'];
-        $this->cor_fundo = $a['cor_fundo'];
-        $this->cor_superficie = $a['cor_superficie'];
-        $this->cor_texto = $a['cor_texto'];
-        $this->cor_texto_suave = $a['cor_texto_suave'];
         $this->fonte = $a['fonte'];
         $this->tamanho_base = $a['tamanho_base'];
-        $this->menu_posicao = $a['menu_posicao'];
-        $this->icone_estilo = $a['icone_estilo'];
     }
 
     // Slug sugerido a partir do nome, até o operador editá-lo manualmente.
@@ -236,15 +218,9 @@ class OnboardingEstabelecimento extends Component
             4 => [
                 'cor_principal' => $hex,
                 'cor_secundaria' => $hex,
-                'cor_fundo' => $hex,
-                'cor_superficie' => $hex,
-                'cor_texto' => $hex,
-                'cor_texto_suave' => $hex,
-                'fonte' => ['required', 'string', 'max:255'],
+                'fonte' => ['required', 'string', Rule::in(array_keys(Aparencia::FONTES))],
                 'tamanho_base' => ['required', 'string', 'regex:/^\d{2}px$/'],
-                'menu_posicao' => ['required', Rule::in(['topo', 'lateral'])],
-                'icone_estilo' => ['required', Rule::in(['outline', 'solid'])],
-                'logoUpload' => ['nullable', 'image', 'max:2048'],
+                'logoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             ],
             default => [],
         };
@@ -303,22 +279,20 @@ class OnboardingEstabelecimento extends Component
         return [
             'cor_principal' => $this->cor_principal,
             'cor_secundaria' => $this->cor_secundaria,
-            'cor_fundo' => $this->cor_fundo,
-            'cor_superficie' => $this->cor_superficie,
-            'cor_texto' => $this->cor_texto,
-            'cor_texto_suave' => $this->cor_texto_suave,
             'fonte' => $this->fonte,
             'tamanho_base' => $this->tamanho_base,
-            'menu_posicao' => $this->menu_posicao,
-            'icone_estilo' => $this->icone_estilo,
         ];
     }
 
     /** Aparência para a prévia ao vivo (com a logo temporária, se houver). */
     public function aparenciaParaPrevia(): array
     {
+        $logoPreviewavel = $this->logoUpload
+            && method_exists($this->logoUpload, 'isPreviewable')
+            && $this->logoUpload->isPreviewable();
+
         return array_merge(Aparencia::PADRAO, $this->aparenciaForm(), [
-            'logo_url' => $this->logoUpload ? $this->logoUpload->temporaryUrl() : null,
+            'logo_url' => $logoPreviewavel ? $this->logoUpload->temporaryUrl() : null,
         ]);
     }
 
@@ -397,12 +371,7 @@ class OnboardingEstabelecimento extends Component
             'segmentos' => self::SEGMENTOS,
             'templates' => Aparencia::TEMPLATES,
             'templateSugerido' => self::SUGESTAO_TEMPLATE[$this->segmento] ?? null,
-            'fontes' => [
-                "'Instrument Sans', ui-sans-serif, system-ui, sans-serif" => 'Instrument Sans',
-                'ui-sans-serif, system-ui, sans-serif' => 'Sistema (sans-serif)',
-                "Georgia, 'Times New Roman', serif" => 'Georgia (serif)',
-                "'Courier New', ui-monospace, monospace" => 'Monoespaçada',
-            ],
+            'fontes' => Aparencia::FONTES,
             'aparencia' => $this->aparenciaParaPrevia(),
         ]);
     }
