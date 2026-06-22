@@ -34,6 +34,8 @@
                 @endforeach
             </flux:table.rows>
         </flux:table>
+
+        <div>{{ $bloqueios->links() }}</div>
     @endif
 
     <x-ng.confirmar name="remover-bloqueio" tom="red" icone="trash" titulo="Remover bloqueio?"

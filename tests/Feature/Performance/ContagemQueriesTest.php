@@ -44,6 +44,11 @@ it('[PERF-002/003] índices de data existem (guarda contra remoção acidental)'
 
     $colunasVendas = collect(Schema::getIndexes('vendas'))->pluck('columns')->flatten();
     expect($colunasVendas)->toContain('data');
+
+    // PERF-004: índices de busca/ordenação em clientes.
+    $colunasClientes = collect(Schema::getIndexes('clientes'))->pluck('columns')->flatten();
+    expect($colunasClientes)->toContain('nome')
+        ->and($colunasClientes)->toContain('telefone');
 });
 
 it('[PERF] Motor com profissional FIXO: contagem baixa e constante', function () {

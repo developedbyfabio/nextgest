@@ -28,6 +28,10 @@ class TenantArquivoController extends Controller
         // Existe e está contido na raiz pública do tenant (anti path traversal).
         abort_if($alvo === false || ! str_starts_with($alvo, $raiz.DIRECTORY_SEPARATOR), 404);
 
-        return response()->file($alvo);
+        // PERF-005: cache longo/imutável — os arquivos têm nome HASHED único por upload
+        // (Storage::store), então uma nova imagem gera uma nova URL; a antiga nunca é
+        // reusada → cachear "forever" é seguro e elimina o re-download a cada visita.
+        // (Last-Modified/ETag continuam vindo do response()->file para revalidação.)
+        return response()->file($alvo, ['Cache-Control' => 'public, max-age=31536000, immutable']);
     }
 }

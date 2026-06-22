@@ -14,6 +14,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * CRUD de bloqueios pontuais (folga, feriado, imprevisto) por profissional.
@@ -27,6 +28,7 @@ use Livewire\Component;
 class Index extends Component
 {
     use AuthorizesRequests;
+    use WithPagination;
 
     public bool $mostrarFormulario = false;
 
@@ -118,7 +120,7 @@ class Index extends Component
     public function render(): View
     {
         return view('livewire.painel.bloqueios.index', [
-            'bloqueios' => Bloqueio::with('user')->orderByDesc('inicio')->get(),
+            'bloqueios' => Bloqueio::with('user')->orderByDesc('inicio')->paginate(15),
             'profissionais' => User::where('e_profissional', true)->where('ativo', true)->orderBy('name')->get(),
         ]);
     }

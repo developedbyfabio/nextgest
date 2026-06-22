@@ -56,3 +56,17 @@ it('bloqueia Profissional (403) na página de bloqueios', function () {
         ->get('/lojaum/painel/bloqueios')
         ->assertForbidden();
 });
+
+it('[PERF-006] a lista de bloqueios é paginada (15 por página)', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+
+    foreach (range(1, 16) as $i) {
+        $dia = str_pad((string) $i, 2, '0', STR_PAD_LEFT);
+        Bloqueio::create(['user_id' => $this->prof->id, 'inicio' => "2026-07-{$dia} 12:00", 'fim' => "2026-07-{$dia} 13:00"]);
+    }
+
+    $bloqueios = Livewire::test(Index::class)->viewData('bloqueios');
+
+    expect($bloqueios->count())->toBe(15)    // página atual limitada
+        ->and($bloqueios->total())->toBe(16); // total preservado (nada perdido)
+});

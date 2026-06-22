@@ -17,9 +17,9 @@ Testes permanentes: `tests/Feature/Performance/ContagemQueriesTest.php`.
 | **PERF-001** ✅ CORRIGIDA | `MotorDisponibilidade::slots` (sem preferência) | N+1 (sobre profissionais) | alta | Era 3 q/profissional (35 q/dia 10 prof, 225 q/semana). Fix: carga em LOTE (`whereIn`) de janelas/agendamentos/bloqueios + agrupamento em memória. Agora **8 q CONSTANTES** para 1/5/10 prof (semana 225→56). Saída idêntica (caracterização) | `ContagemQueriesTest` (PERF-001, constância) + `MotorCaracterizacaoTest` |
 | **PERF-002** ✅ APLICADA | `agendamentos.data_hora_inicio` | índice (CREATE) | média | Índice simples adicionado. EXPLAIN (volume 20k): agregação por data `index`→**`range`**, key `agendamentos_data_hora_inicio_index`, linhas **20196→1444** | `ContagemQueriesTest` (existência) |
 | **PERF-003** ✅ APLICADA | `vendas.data` | índice (CREATE) | média | Índice simples adicionado. EXPLAIN (volume 8k): lista default `ALL`+filesort→**`index`** backward (12); faturamento `ALL`→**`range`** (668); key `vendas_data_index` | `ContagemQueriesTest` (existência) |
-| **PERF-004** | busca de `clientes` (nome/telefone) | índice / forma | baixa | `like '%x%'` (curinga à esquerda) não usa B-tree; contagem ok (1 q), latência a escala. Índice ajuda só prefixo; full-text é Fase futura | — |
-| **PERF-005** | imagens do portal (logo/cabeçalho/fundo) | imagem/render | baixa-média | Servidas **cruas até 5 MB** via `TenantArquivoController` (`response()->file`), sem resize/otimização nem `Cache-Control` longo. 5 MB/visita é lento independente de infra | — |
-| **PERF-006** | `Bloqueios\Index` | paginação | baixa | `Bloqueio::with('user')->orderByDesc('inicio')->get()` — lista **todos** os bloqueios históricos (sem paginação). Cresce com o tempo (volume baixo) | — |
+| **PERF-004** ✅ APLICADA (parcial) | busca de `clientes` (nome/telefone) | índice (CREATE) | baixa | Índices aditivos `clientes(nome)` e `clientes(telefone)` — servem `ORDER BY nome` (dropdown de Vendas, autocomplete do NovoAgendamento) e lookups por prefixo/telefone. **Limite honesto:** `like '%x%'` (curinga à esquerda) nenhum B-tree cobre → busca "contém" em escala = **FULLTEXT (MySQL, Fase 1)**, não portável p/ o SQLite dos testes | `ContagemQueriesTest` (existência) |
+| **PERF-005** ✅ APLICADA (cache) | imagens do portal (logo/cabeçalho/fundo) | imagem/render | baixa-média | `TenantArquivoController` agora serve com `Cache-Control: public, max-age=31536000, immutable` — seguro porque o nome é hashed/único por upload (re-upload = nova URL). Visitas repetidas deixam de re-baixar. **Resize dimensional** (1ª carga) fica como follow-up (toca o pipeline de upload da aparência; precisa de lib/GD — não "sem quebrar" agora) | `ImagemTenantTest` |
+| **PERF-006** ✅ APLICADA | `Bloqueios\Index` | paginação | baixa | Agora `->paginate(15)` (+ `WithPagination` + `links()` no blade). Não carrega mais todo o histórico | `BloqueiosTest` (PERF-006) |
 | (info) | `users.e_profissional` | índice | baixíssima | Sem índice; mas `users` é pequeno (equipe) → ganho irrelevante | — |
 
 ## Comprovadamente eficiente (com teste/medição)
@@ -65,10 +65,15 @@ Migração `database/migrations/tenant/2026_06_22_130001_add_indices_performance
 > para o caso filtrado+ordenado, mas o simples já elimina os full scans/filesort dos caminhos
 > medidos; fica como refino futuro se o EXPLAIN do caso filtrado pedir.
 
-## Plano restante (severidade × esforço — aguarda ok)
-1. **PERF-006 (paginação, baixo):** paginar/limitar `Bloqueios`.
-4. **PERF-005 (imagem, médio):** resize/otimização no upload (ou na exibição) + `Cache-Control`.
-5. **PERF-004 (busca, baixo):** índice de prefixo em `clientes` (ou full-text na Fase futura).
+## Achados — todos endereçados ✅
+PERF-001..006 aplicados (ver linhas acima). Restam **dois follow-ups deliberadamente
+adiados** (escopo/risco; precisam de decisão), NÃO bloqueantes:
+- **Resize dimensional das imagens (1ª carga):** reduzir as dimensões no upload (GD/lib) —
+  toca o pipeline da aparência (D36); fazer com testes dedicados. O `Cache-Control` já
+  resolve as visitas repetidas.
+- **Busca "contém" de clientes em escala:** `FULLTEXT` no MySQL (`MATCH...AGAINST`) — só na
+  Fase 1 (não portável para o SQLite dos testes). Hoje os índices `nome`/`telefone` já
+  cobrem ordenação e prefixo.
 
 ## Checklist de PRODUÇÃO (Fase 1 — não verificável no dev)
 - **opcache** (php-fpm) — ganho grande, só em produção.
