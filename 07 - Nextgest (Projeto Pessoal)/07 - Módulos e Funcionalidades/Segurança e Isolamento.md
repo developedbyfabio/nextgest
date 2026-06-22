@@ -74,3 +74,79 @@ dashboard → 500 em vez de 302 limpo — baixa/robustez, sem vazamento).
 - `APP_KEY` estável (credenciais cifradas dependem dele).
 - Limites do `php.ini` (upload).
 - Backups por tenant.
+
+## Auditoria — separação portal × painel + login alcançável × obscuridade (2026-06-22)
+> Auditoria a pedido do Fabio (login da equipe é visível em `/{slug}/painel`). **Nenhuma
+> mudança aplicada** — mapeamento + plano. Testes novos só comprovam o estado atual
+> (`tests/Feature/Security/SeparacaoPortalPainelTest.php`). Suíte: **352 verde**.
+
+### Premissa (registrada)
+Login **alcançável** não é falha. A proteção é **auth + authz** (provado em D40), não
+esconder a URL. Esconder o painel seria **segurança por obscuridade** (fraca: vaza por
+histórico/print/e-mail/referer; e dá falsa sensação de segurança). Foco real: portal sem
+links para o painel + reforço de defesa do login.
+
+### Mapa portal (`cliente`) × painel (`web`)
+Tudo sob `/{tenant}/…` (grupo `tenant` em `bootstrap/app.php`: `InitializeTenancyByPath`
+→ `GarantirTenantAtivo` → sessão → CSRF → `EscoparAutenticacaoPorTenant`). Slug barrado
+por regex contra `reserved_slugs` (`/admin`, `/login` etc. vão para o app central).
+- **Portal (guard `cliente`)** — `routes/tenant.php`: `GET /` → `Portal\Home`
+  (`tenant.home`); `GET login` → `Auth\ClienteLogin` (`guest:cliente`); `GET registrar`;
+  `GET agendar` (`auth:cliente`). Layout `components/layouts/portal.blade.php`.
+- **Painel (guard `web`)** — prefixo `painel`: `GET login` → `Auth\PainelLogin`
+  (`guest:web`, nome `painel.login`); resto sob `auth:web` + `ForcarTrocaSenha` + `can:`
+  por página. Layout `components/layouts/painel.blade.php`.
+- **Separação:** mesma tenancy path-based, **guards distintos** (`cliente` × `web`,
+  providers `clientes` × `users`) + sessão escopada por tenant. `redirectGuestsTo`
+  (bootstrap) manda anônimo ao login da **área certa** (admin/painel/portal).
+- **Evidência (recap D40):** anônimo em `/{slug}/painel` → **302** `painel.login` (sem
+  dado); cross-tenant → 302 limpo; tenant inativo → 404. (novo teste cobre o 302/200.)
+
+### Vazamento de link portal→painel: **NÃO HÁ** (varrido)
+`grep -rniE "painel" resources/views/` → **zero** ocorrências em `livewire/portal/*`,
+`components/portal/*`, `components/layouts/portal.blade.php`, `livewire/auth/cliente-*` e
+no `auth.blade.php` (layout compartilhado dos logins). Todas as menções a `painel.*`
+vivem **dentro** do próprio painel (layout/telas) ou nos fluxos admin/troca-senha.
+- Rodapé do portal: só `Powered by Nextgest` (texto, sem link).
+- `robots.txt`: `Disallow:` vazio (libera tudo) — **não** referencia `/painel`; **sem**
+  sitemap; sem comentário HTML/asset citando a área da equipe. Landing central cita
+  "equipe e permissões" como feature, sem link para login de tenant.
+- **Conclusão:** o portal já está limpo. Nada a remover (item 1 do pedido: OK por construção).
+
+### Defesa do login da equipe — estado atual × plano (NÃO aplicado)
+Trait único `Auth\Concerns\AutenticaPorGuard` (admin/web/cliente):
+- **Rate limit:** `RateLimiter` 5/min, chave = `lower(email)|IP` → por **(e-mail+IP)**.
+  Não há lockout progressivo nem distinção conta-só × IP-só. Dispara evento `Lockout`,
+  **mas sem listener** (não vira log).
+- **Enumeração:** mensagem genérica única; sem reset/"esqueci senha" → sem superfície. OK.
+- **Sessão:** `session()->regenerate()` no sucesso (anti-fixation). OK.
+- **Log de acesso:** **inexistente** — não há registro de login OK/falha (só `Log::info`
+  de impersonação de suporte e `Log::warning` de recurso desconhecido).
+- **2FA:** inexistente.
+
+**Plano priorizado (proposta — aguarda ok):**
+1. **dev-agora (barato):** listener para `Lockout` + `Failed`/`Login` gravando
+   `tenant, guard, email_mascarado, ip, ua, resultado` (sem senha/sem PII sensível) →
+   canal de log dedicado/tabela `login_attempts` por tenant. Auditoria + base p/ lockout.
+2. **dev-agora:** lockout **progressivo** (backoff: bloqueio cresce a cada janela) e
+   chave **dupla** (e-mail global + IP) para conter brute force distribuído e password
+   spraying sem travar um usuário legítimo por culpa de um IP barulhento.
+3. **pós-VPS (depende de canal e-mail/SMS):** **2FA opcional do Dono** (TOTP como 1ª
+   escolha — não exige canal; SMS/e-mail como fallback) — a defesa real da conta que mexe
+   em dinheiro/credenciais. Aqui só o plano; não construir.
+4. **produção (já no checklist):** cookies `secure`+`samesite`+HSTS, headers de segurança.
+
+### "Slug secreto" para o painel — **NÃO compensa** (obscuridade, não segurança)
+Trocar `/{slug}/painel` por URL secreta quebraria, no mínimo:
+- `redirectGuestsTo`/`redirectUsersTo` (casam `*/painel`), `LogoutController` →
+  `painel.login`, `ForcarTrocaSenha` → `painel.senha`, `Dashboard::mount` → `painel.login`.
+- ~20 `route('painel.*')` no layout/telas do painel + redirects dos componentes; o nome
+  de rota `painel.*` e o prefixo de tenancy path-based; **bookmarks** da equipe; e os
+  testes que assumem `/painel` (Auth/Painel/Smoke).
+- **Veredito (custo × risco × ganho):** alto custo de ref+regressão; ganho nulo —
+  classifica-se como **obscuridade**, não segurança (o segredo vaza por histórico/print/
+  referer e mascara a ausência de defesa real). **Não fazer.**
+
+### Recomendação consolidada (1 frase)
+Manter a URL `/{slug}/painel` e o portal já limpo de links; investir em **defesa real**
+(log de tentativas + lockout progressivo agora; 2FA do Dono pós-VPS) — **não** trocar a URL.
