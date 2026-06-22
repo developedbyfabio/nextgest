@@ -88,6 +88,9 @@
                 @can('ver_financeiro')
                     <flux:navlist.item icon="wallet" :href="route('painel.comissoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.comissoes')" wire:navigate>Comissões</flux:navlist.item>
                 @endcan
+                @can('ver_indicadores')
+                    <flux:navlist.item icon="chart-bar" :href="route('painel.indicadores', ['tenant' => $tenantId])" :current="request()->routeIs('painel.indicadores')" wire:navigate>Indicadores</flux:navlist.item>
+                @endcan
                 @can('editar_permissoes')
                     <flux:navlist.item icon="shield-check" :href="route('painel.papeis', ['tenant' => $tenantId])" :current="request()->routeIs('painel.papeis')" wire:navigate>Papéis e permissões</flux:navlist.item>
                 @endcan

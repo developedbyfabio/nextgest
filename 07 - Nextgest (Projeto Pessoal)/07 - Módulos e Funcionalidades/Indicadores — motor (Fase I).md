@@ -9,8 +9,8 @@ tags: [nextgest, indicadores, retencao, frequencia, metricas, performance, tenan
 # Indicadores — motor (Fase I)
 
 > Projeto: [[Nextgest - Visão Geral]] · Ver [[Performance]], [[Dashboard do Dono]],
-> [[Vendas e Comanda]]. **Fase I = só o motor de números (sem UI).** A aba/tela é a Fase II;
-> os números (1,5 e 3) viram ajuste do Dono na Fase III.
+> [[Vendas e Comanda]]. **Fase I = só o motor de números (sem UI).** A aba/tela é a Fase II
+> ([[Indicadores — aba (Fase II)]]); os números (1,5 e 3) viram ajuste do Dono na Fase III.
 
 ## O que é
 `App\Services\Painel\IndicadoresClientes` — motor de **retenção/frequência** dos clientes, só

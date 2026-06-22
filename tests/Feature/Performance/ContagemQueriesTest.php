@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Painel\Indicadores;
 use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Servico;
@@ -14,6 +15,7 @@ use App\Services\Painel\ResumoDoDia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
 
 /*
 | Auditoria de performance — CONTAGEM de queries (estrutura que transfere p/ produção;
@@ -195,6 +197,40 @@ it('[PERF] Indicadores: contagem de query CONSTANTE por métrica (não cresce co
         ->and($n5['ticket'])->toBeLessThanOrEqual(1)
         ->and($n5['bucket'])->toBeLessThanOrEqual(2)
         ->and($n5['retencao'])->toBeLessThanOrEqual(1);
+
+    Carbon::setTestNow();
+});
+
+it('[PERF] Aba Indicadores: contagem de query CONSTANTE (herda a eficiência do motor)', function () {
+    Carbon::setTestNow(Carbon::create(2026, 6, 22, 12, 0, 0));
+
+    $dono = usuarioComPapel('Dono', ['email' => 'dono@segperf.test']);
+    $this->actingAs($dono, 'web');
+    $dono->can('ver_indicadores'); // aquece o cache de permissões do spatie (carga única)
+
+    $semear = function (int $nClientes) {
+        foreach (range(1, $nClientes) as $i) {
+            $cli = Cliente::create(['nome' => 'C'.uniqid(), 'telefone' => (string) random_int(1, 999999999)]);
+            foreach ([90, 80, 70] as $d) { // 3 visitas pagas → risco + bucket "sempre"
+                $data = Carbon::today()->subDays($d);
+                Venda::create(['unidade_id' => $this->unidade->id, 'cliente_id' => $cli->id, 'status' => 'paga',
+                    'valor_bruto' => 50, 'desconto' => 0, 'valor_total' => 50, 'data' => $data]);
+            }
+        }
+    };
+
+    // Render dos cards + drill-in de risco (exercita serviço + resolução de nomes da página).
+    $render = fn () => Livewire::test(Indicadores::class)->call('abrirRisco');
+
+    $semear(5);
+    $n5 = contarQueries($render);
+
+    $semear(40); // total 45 clientes / 135 visitas
+    $n45 = contarQueries($render);
+
+    // CONSTANTE: a aba não reintroduz N+1 — herda a eficiência do motor.
+    expect($n45)->toBe($n5)
+        ->and($n5)->toBeLessThanOrEqual(20);
 
     Carbon::setTestNow();
 });

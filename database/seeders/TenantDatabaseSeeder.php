@@ -50,6 +50,7 @@ class TenantDatabaseSeeder extends Seeder
         'usar_kanban',
         'gerir_aparencia',
         'ver_dashboard',
+        'ver_indicadores',         // aba Indicadores (retenção/frequência) — Dono+Gerente
         'gerir_kanban',            // quadros/colunas + CRM (Dono/Gerente)
         'ver_kanban_atendimento',  // quadro de atendimento/balcão (inclui Recepção)
         'gerenciar_2fa_proprio',   // ativar/gerir o PRÓPRIO 2FA (TOTP) — só Dono

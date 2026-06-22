@@ -19,6 +19,7 @@ use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
 use App\Livewire\Painel\Funcionamento\Index as FuncionamentoIndex;
+use App\Livewire\Painel\Indicadores as IndicadoresIndex;
 use App\Livewire\Painel\Integracoes\Index as IntegracoesIndex;
 use App\Livewire\Painel\Integracoes\MercadoPago as IntegracaoMercadoPago;
 use App\Livewire\Painel\Integracoes\Whatsapp as IntegracaoWhatsapp;
@@ -150,6 +151,12 @@ Route::middleware(['tenant'])
                 Route::get('comissoes', ComissoesIndex::class)
                     ->middleware('can:ver_financeiro')
                     ->name('comissoes');
+
+                // Indicadores (Fase II): aba que consome o motor IndicadoresClientes (Fase I).
+                // Gate por permissão (Dono+Gerente). Não é módulo de flag — sem recurso:.
+                Route::get('indicadores', IndicadoresIndex::class)
+                    ->middleware('can:ver_indicadores')
+                    ->name('indicadores');
 
                 Route::get('bloqueios', BloqueiosIndex::class)
                     ->middleware('can:gerir_agenda')
