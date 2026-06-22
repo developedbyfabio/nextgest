@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Http\Middleware\InicializarTenancyArquivosLivewire;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Features\SupportFileUploads\FilePreviewController;
 use Livewire\Livewire;
@@ -46,5 +47,12 @@ class AppServiceProvider extends ServiceProvider
         if (! in_array(InicializarTenancyArquivosLivewire::class, FilePreviewController::$middleware, true)) {
             FilePreviewController::$middleware[] = InicializarTenancyArquivosLivewire::class;
         }
+
+        /*
+        | Diretiva @recurso('whatsapp') ... @endrecurso — esconde blocos de UI de um
+        | recurso que esteja DESLIGADO para o tenant atual. Reusa o MESMO helper
+        | tenant_tem_recurso() (sem contexto/chave inválida → false, sem quebrar).
+        */
+        Blade::if('recurso', fn (string $recurso): bool => tenant_tem_recurso($recurso));
     }
 }

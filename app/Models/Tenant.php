@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Recurso;
+use Illuminate\Support\Facades\Log;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
@@ -70,5 +72,55 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return [
             'ativo' => 'boolean',
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Recursos (módulos à la carte) — flag no banco central
+    |--------------------------------------------------------------------------
+    |
+    | Os recursos ligados ficam num array de slugs sob a chave `recursos` do JSON
+    | `data` do stancl (atributo virtual `$this->recursos`, igual ao `segmento`).
+    | NUNCA reatribuir `$this->data` inteiro ao salvar — isso apagaria o segmento;
+    | persista só o atributo virtual: `$tenant->recursos = [...]; $tenant->save();`.
+    |
+    */
+
+    /**
+     * Recursos ligados, NORMALIZADOS: só strings válidas do enum Recurso.
+     * É o ponto único de leitura — descarta null/lixo/slugs desconhecidos, então o
+     * default (DESLIGADO) e a robustez contra dado estranho no `data` saem de graça.
+     *
+     * @return list<string>
+     */
+    public function recursosAtivos(): array
+    {
+        $bruto = $this->recursos; // atributo virtual (mora no `data`); pode vir null/array/lixo
+
+        if (! is_array($bruto)) {
+            return [];
+        }
+
+        $limpos = array_filter($bruto, 'is_string');
+
+        return array_values(array_intersect($limpos, Recurso::valores()));
+    }
+
+    /**
+     * O recurso está ligado para este estabelecimento?
+     * Slug desconhecido (fora do enum) → false + aviso no log (nunca lança).
+     */
+    public function temRecurso(string $recurso): bool
+    {
+        if (! Recurso::valido($recurso)) {
+            Log::warning('Consulta a recurso desconhecido.', [
+                'recurso' => $recurso,
+                'tenant' => $this->getKey(),
+            ]);
+
+            return false;
+        }
+
+        return in_array($recurso, $this->recursosAtivos(), true);
     }
 }

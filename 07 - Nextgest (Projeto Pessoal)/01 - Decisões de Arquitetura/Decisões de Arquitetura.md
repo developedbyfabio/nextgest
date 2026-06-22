@@ -265,3 +265,34 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   expressando identidade pelo **acento** (e logo/tipografia), não mais pelas
   superfícies. `Aparencia::cssVars()` (superfícies completas) segue só na **prévia**
   do editor. Ver [[Identidade Visual do Estabelecimento (Tema)]].
+
+## D37 — Recursos por tenant (feature flags "à la carte") no banco central
+> Fase 0a. Fundação para ligar/desligar módulos (clube, whatsapp, gateway) por
+> estabelecimento, controlado pelo super-admin. NÃO existe `.env` por tenant — esse é
+> justamente o ponto. Credenciais criptografadas dos gateways ficam para a Fase 0b.
+- **Onde mora a flag:** no **registro central** do estabelecimento (`tenants`), dentro
+  do JSON **`data`** do stancl, sob a chave **`recursos`** (array de slugs ligados).
+  **Sem migração** — `data` já está em uso (ex.: `segmento`), então é a opção de menor
+  risco (zero alteração de schema, 100% aditiva) e evita coluna redundante.
+- **Fonte única da lista válida:** enum `App\Enums\Recurso`
+  (`clube`/`whatsapp`/`gateway`, com rótulos pt-BR). Nada de string solta espalhada.
+- **Default = TUDO DESLIGADO** para tenants existentes e novos: chave ausente → `[]`.
+  O comportamento atual não muda para ninguém.
+- **Leitura normalizada (ponto único):** `Tenant::recursosAtivos()` limpa o que vier do
+  `data` (descarta `null`/lixo) e **intersecta com os valores do enum** — slug
+  desconhecido nunca liga recurso. `Tenant::temRecurso()` e o helper global
+  `tenant_tem_recurso()` passam **todos** por aí. Sem contexto de tenant → `false`
+  (não lança); slug fora do enum → `false` + aviso no log.
+- **Escrita preserva o `data`:** persistir **só** o atributo virtual
+  (`$tenant->recursos = [...]; $tenant->save()`), **nunca** reatribuir `$tenant->data`
+  inteiro (apagaria o `segmento`). O `TenantDetalhe` recarrega o tenant completo e
+  salva por ação explícita ("Salvar recursos"), guard `admin`.
+- **Gating:** middleware de rota `recurso:{slug}` (alias em `bootstrap/app.php`,
+  `App\Http\Middleware\VerificaRecurso`) → 404 quando o recurso está off; diretiva
+  Blade `@recurso('whatsapp') ... @endrecurso` para blocos de UI. Ambos reusam o
+  **mesmo** helper.
+- **Convenção:** todo recurso futuro **nasce embrulhado na sua flag** (rota com o
+  middleware + bloco Blade com a diretiva). Assim "recurso desligado nem aparece" passa
+  a valer automaticamente quando cada módulo for construído. Nesta fase **não há UI/menu
+  novo** (clube/whatsapp/gateway ainda não têm tela) — só o mecanismo + a convenção.
+  Ver [[Recursos por Tenant (Feature Flags)]].

@@ -53,6 +53,28 @@
         @endforeach
     </div>
 
+    {{-- Recursos (módulos à la carte) — flag no banco central, por estabelecimento --}}
+    <div class="flex flex-col gap-3">
+        <div>
+            <flux:heading size="lg">Recursos</flux:heading>
+            <flux:subheading>Ligue ou desligue módulos deste estabelecimento. Padrão: tudo desligado.</flux:subheading>
+        </div>
+
+        <flux:card class="flex flex-col gap-4">
+            @foreach (\App\Enums\Recurso::cases() as $recurso)
+                <flux:switch
+                    wire:model="recursos.{{ $recurso->value }}"
+                    :label="$recurso->rotulo()"
+                    :description="$recurso->descricao()"
+                />
+            @endforeach
+
+            <div class="flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                <flux:button wire:click="salvarRecursos" variant="primary" icon="check">Salvar recursos</flux:button>
+            </div>
+        </flux:card>
+    </div>
+
     {{-- Donos --}}
     <div class="flex flex-col gap-2">
         <flux:heading size="lg">Donos</flux:heading>

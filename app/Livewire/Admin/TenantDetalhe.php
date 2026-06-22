@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Enums\Recurso;
 use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Servico;
@@ -28,11 +29,47 @@ class TenantDetalhe extends Component
 {
     public Tenant $tenant;
 
+    /** Estado dos toggles de recurso: [slug => bool]. Pré-carregado do central no mount. */
+    public array $recursos = [];
+
     public function mount(string $tenantId): void
     {
         abort_unless(auth('admin')->check(), 403);
 
         $this->tenant = Tenant::findOrFail($tenantId);
+
+        // Pré-carrega os switches a partir do estado atual (recursos ligados no central).
+        $ativos = $this->tenant->recursosAtivos();
+        foreach (Recurso::cases() as $recurso) {
+            $this->recursos[$recurso->value] = in_array($recurso->value, $ativos, true);
+        }
+    }
+
+    /**
+     * Persiste os recursos ligados no registro CENTRAL do estabelecimento.
+     *
+     * CRÍTICO: grava só o atributo virtual `recursos` (que mora no JSON `data` junto
+     * do `segmento`). Recarrega o Tenant COMPLETO antes de salvar e nunca reatribui o
+     * `data` inteiro — assim o `segmento` (e qualquer outro metadado) sobrevive.
+     */
+    public function salvarRecursos(): void
+    {
+        abort_unless(auth('admin')->check(), 403);
+
+        $ativos = [];
+        foreach (Recurso::cases() as $recurso) {
+            if (! empty($this->recursos[$recurso->value])) {
+                $ativos[] = $recurso->value;
+            }
+        }
+
+        $tenant = Tenant::findOrFail($this->tenant->getKey());
+        $tenant->recursos = $ativos;
+        $tenant->save();
+
+        $this->tenant = $tenant;
+
+        Flux::toast('Recursos atualizados.', variant: 'success');
     }
 
     public function impersonatar()

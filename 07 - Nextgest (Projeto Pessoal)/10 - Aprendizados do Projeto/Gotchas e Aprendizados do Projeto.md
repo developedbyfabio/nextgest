@@ -230,3 +230,23 @@ chama (`wire:click`, `@close`, `$wire.x()`) tem que ser um método **público pr
 Livewire não acha um método público `reset` e estoura. **Correção:** criar um método
 público (`limparFormulario()`) que internamente faça `$this->reset([...])` e apontar o
 gatilho para ele. Ver [[Bug - Alterar senha 500 (reset nao e acao publica do Livewire)]].
+
+## stancl: metadados do tenant vão no `data` como atributo virtual (não invente coluna)
+O `Tenant` do stancl guarda em colunas reais só o que está em `getCustomColumns()`
+(`id`, `nome`, `slug`, `ativo`); **qualquer outro atributo cai no JSON `data`** (via
+VirtualColumn) e é lido transparente como `$tenant->x`. Já usamos isso para `segmento` —
+e agora para `recursos` (array de feature flags). **Padrão:** leia/escreva o atributo
+virtual (`$tenant->recursos = [...]; $tenant->save()`); **NUNCA** reatribua `$tenant->data`
+inteiro (apaga os outros metadados que dividem o mesmo JSON). Não precisa de cast nem de
+migração — um array sob a chave faz round-trip nativo (o `data` é cast `array`). Ver
+[[Recursos por Tenant (Feature Flags)]] e [[Decisões de Arquitetura#D37]].
+
+## stancl em testes: `initialize()` mantém o tenant STALE entre requests no mesmo processo
+`Tenancy::initialize()` tem early-return: se já está inicializado com o **mesmo** tenant
+key, **não troca a instância**. Em produção não importa (cada request é um processo novo,
+resolve fresh). Mas num teste com **dois `$this->get()` para o mesmo tenant**, o tenancy
+do 1º request continua vivo e o 2º reaproveita a instância **stale** — então alterar o
+tenant no banco entre os dois requests **não é visto** (ex.: ligar uma flag e bater de
+novo continuava "desligado"). **Lição/efeito:** teste de toggle por HTTP deve usar **um
+request por teste** (cada teste = ciclo isolado, fiel à produção), não ligar/desligar no
+mesmo teste. (Sintoma diagnosticado na Fase 0a do middleware `recurso:{slug}`.)

@@ -52,6 +52,12 @@ return Application::configure(basePath: dirname(__DIR__))
             EscoparAutenticacaoPorTenant::class,
         ]);
 
+        // Gating de recursos por tenant: ->middleware('recurso:whatsapp')
+        // (idem 'recurso:clube' / 'recurso:gateway'). Ver App\Http\Middleware\VerificaRecurso.
+        $middleware->alias([
+            'recurso' => \App\Http\Middleware\VerificaRecurso::class,
+        ]);
+
         // Webhooks de gateways externos não enviam token CSRF.
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
