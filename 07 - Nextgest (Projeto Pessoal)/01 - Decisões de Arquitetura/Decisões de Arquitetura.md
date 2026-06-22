@@ -321,3 +321,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   Dono+Gerente). Cada **editor** é rota gated por `recurso:{slug}` (0a) + `can:` → recurso
   off dá **404**. Nenhum recurso ligado → "Nenhuma integração disponível" (correto).
   Ver [[Integrações por Tenant (Credenciais)]].
+  > [!note] Atualizado por D39: `gerenciar_pagamentos` passou a ser **só Dono**.
+
+## D39 — RBAC adaptável: gate por permissão, multi-papel e "atende" como atributo
+> Decisão do Fabio para equipes reais variadas (dono que também atende, dois donos, salão
+> sem gerente). Princípios que passam a valer; a maior parte já estava de pé (auditoria).
+- **Credenciais de pagamento = só Dono:** `gerenciar_pagamentos` removido do **Gerente**
+  (fica só no Dono). `gerenciar_whatsapp` permanece em **Dono + Gerente**. Aplicado no
+  `TenantDatabaseSeeder` (lista de exclusão do Gerente) e re-sincronizado nos tenants
+  existentes com **`php artisan tenants:seed`** (idempotente: `syncPermissions`, sem wipe).
+- **Gate por permissão, nunca por papel:** acesso sensível checa `can('permissão')`. A
+  auditoria confirmou que **não havia** `hasRole`/`@role`/`role:` decidindo acesso — nada
+  a trocar. Papel é só um pacote de permissões.
+- **Multi-papel por membro:** a UI de equipe passou de **papel único** (`select`) para
+  **vários papéis** (`flux:checkbox.group`, `syncRoles($papeis)`). Ex.: **Dono +
+  Profissional** na mesma pessoa. Model spatie já suportava; o gap era só a UI.
+- **"Atende/agendável" é atributo, não papel:** já era — coluna `users.e_profissional`
+  (switch próprio na equipe); `MotorDisponibilidade` e as queries de agendáveis filtram por
+  ela. Um Dono atende marcando o switch (Dono é superset). **`MotorDisponibilidade` NÃO foi
+  tocado** (zero regressão de agenda/portal).
+- **Dono é sempre superset** (todas as permissões) — garante cobertura em salão sem Gerente.
+- **Travas de integridade (multi-tenant):** não criar membro **sem papel** (validação
+  `required|array|min:1`); não remover o papel Dono nem inativar o **último Dono ativo** do
+  estabelecimento (bloqueado no `Equipe\Index`). Ver [[Papéis e Permissões (RBAC)]].

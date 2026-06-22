@@ -47,6 +47,8 @@ texto puro, nunca em `.env`, nunca em log. É o **primeiro consumidor real** das
   (`routes/tenant.php`): índice em `painel.integracoes`; editores em
   `painel.integracoes.mercadopago` / `.whatsapp`, **gated** por
   `middleware('recurso:{slug}')` (0a) + `can:{permissão}`. Recurso off → **404**.
+- **Permissões (D39):** Mercado Pago exige `gerenciar_pagamentos` (**só Dono**); WhatsApp
+  exige `gerenciar_whatsapp` (**Dono + Gerente**). Ver [[Papéis e Permissões (RBAC)]].
 
 ## Testes
 `tests/Feature/Painel/IntegracoesTest.php` (efeito + HTTP por tenant):

@@ -66,11 +66,14 @@ class TenantDatabaseSeeder extends Seeder
         $dono = Role::findOrCreate('Dono', 'web');
         $dono->syncPermissions(self::PERMISSOES);
 
-        // Gerente: tudo menos financeiro e edição de permissões (config sensível).
+        // Gerente: tudo menos financeiro, edição de permissões e credenciais de
+        // PAGAMENTO (config sensível). `gerenciar_pagamentos` é exclusivo do Dono;
+        // `gerenciar_whatsapp` o Gerente mantém. (Decisão do Fabio — ver Dxx.)
         $gerente = Role::findOrCreate('Gerente', 'web');
         $gerente->syncPermissions(array_diff(self::PERMISSOES, [
             'ver_financeiro',
             'editar_permissoes',
+            'gerenciar_pagamentos',
         ]));
 
         // Recepção: agenda, clientes, vendas, estoque e kanban de atendimento (balcão).

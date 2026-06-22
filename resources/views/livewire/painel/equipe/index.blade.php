@@ -75,14 +75,13 @@
             <flux:input wire:model="name" label="Nome" required />
             <flux:input wire:model="email" type="email" label="E-mail" required />
 
-            <div class="flex gap-4">
-                <flux:select wire:model="papel" label="Papel" class="flex-1" required placeholder="Selecione...">
-                    @foreach ($papeis as $nomePapel)
-                        <flux:select.option value="{{ $nomePapel }}">{{ $nomePapel }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:input wire:model="password" type="password" label="{{ $editandoId ? 'Nova senha (opcional)' : 'Senha inicial' }}" viewable class="flex-1" :required="! $editandoId" />
-            </div>
+            <flux:input wire:model="password" type="password" label="{{ $editandoId ? 'Nova senha (opcional)' : 'Senha inicial' }}" viewable :required="! $editandoId" />
+
+            <flux:checkbox.group wire:model="papeis" label="Papéis" description="Um membro pode ter mais de um papel (ex.: Dono que também atende).">
+                @foreach ($todosPapeis as $nomePapel)
+                    <flux:checkbox value="{{ $nomePapel }}" label="{{ $nomePapel }}" />
+                @endforeach
+            </flux:checkbox.group>
 
             @if ($todasUnidades->count() > 1)
                 <flux:checkbox.group wire:model="unidades" label="Atua nas unidades">

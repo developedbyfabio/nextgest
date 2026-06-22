@@ -35,7 +35,8 @@ class Index extends Component
 
     public string $email = '';
 
-    public string $papel = '';
+    /** @var array<string> Papéis (spatie) do membro. Um membro pode ter VÁRIOS (ex.: Dono + Profissional). */
+    public array $papeis = [];
 
     public bool $e_profissional = false;
 
@@ -63,7 +64,8 @@ class Index extends Component
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editandoId)],
-            'papel' => ['required', 'string', Rule::exists('roles', 'name')],
+            'papeis' => ['required', 'array', 'min:1'],
+            'papeis.*' => ['string', Rule::exists('roles', 'name')],
             'e_profissional' => ['boolean'],
             'ativo' => ['boolean'],
             'password' => [$this->editandoId ? 'nullable' : 'required', 'string', 'min:8'],
@@ -96,7 +98,7 @@ class Index extends Component
         $this->editandoId = $user->id;
         $this->name = $user->name;
         $this->email = $user->email;
-        $this->papel = $user->roles->first()?->name ?? '';
+        $this->papeis = $user->roles->pluck('name')->all();
         $this->e_profissional = $user->e_profissional;
         $this->ativo = $user->ativo;
         $this->password = '';
@@ -113,6 +115,19 @@ class Index extends Component
         $dados = $this->validate();
 
         $user = $this->editandoId ? User::findOrFail($this->editandoId) : new User;
+
+        // Trava multi-tenant: o estabelecimento não pode ficar SEM Dono ativo. Editar
+        // não pode retirar o papel Dono (nem inativar) do único Dono ativo.
+        if ($this->editandoId) {
+            $eraDonoAtivo = $user->ativo && $user->hasRole('Dono');
+            $continuaDonoAtivo = in_array('Dono', $dados['papeis'], true) && $dados['ativo'];
+            if ($eraDonoAtivo && ! $continuaDonoAtivo && $this->donosAtivosExceto($user->id) === 0) {
+                $this->addError('papeis', 'Este é o último Dono ativo do estabelecimento. Defina outro Dono antes de retirar o papel ou inativar.');
+
+                return;
+            }
+        }
+
         $user->name = $dados['name'];
         $user->email = $dados['email'];
         $user->e_profissional = $dados['e_profissional'];
@@ -123,7 +138,7 @@ class Index extends Component
         }
 
         $user->save();
-        $user->syncRoles([$dados['papel']]);
+        $user->syncRoles($dados['papeis']);
         $user->unidades()->sync($dados['unidades'] ?? []);
         $user->servicos()->sync($dados['e_profissional'] ? ($dados['servicos'] ?? []) : []);
 
@@ -152,8 +167,24 @@ class Index extends Component
             return;
         }
 
+        $alvo = User::find($id);
+        if ($alvo && $alvo->ativo && $alvo->hasRole('Dono') && $this->donosAtivosExceto($id) === 0) {
+            Flux::toast('Não é possível inativar o último Dono ativo do estabelecimento.', variant: 'danger');
+
+            return;
+        }
+
         User::whereKey($id)->update(['ativo' => false]);
         Flux::toast('Membro inativado.');
+    }
+
+    /** Quantos OUTROS Donos ativos existem (exclui o usuário informado). */
+    private function donosAtivosExceto(?int $id): int
+    {
+        return User::role('Dono')
+            ->where('ativo', true)
+            ->when($id, fn ($q) => $q->whereKeyNot($id))
+            ->count();
     }
 
     public function reativar(int $id): void
@@ -165,7 +196,7 @@ class Index extends Component
 
     protected function resetForm(): void
     {
-        $this->reset(['editandoId', 'name', 'email', 'papel', 'e_profissional', 'password', 'unidades', 'servicos']);
+        $this->reset(['editandoId', 'name', 'email', 'papeis', 'e_profissional', 'password', 'unidades', 'servicos']);
         $this->ativo = true;
         $this->resetValidation();
     }
@@ -176,7 +207,7 @@ class Index extends Component
             'membros' => User::with('roles')
                 ->when($this->busca !== '', fn ($q) => $q->where(fn ($s) => $s->where('name', 'like', '%'.$this->busca.'%')->orWhere('email', 'like', '%'.$this->busca.'%')))
                 ->orderBy('name')->get(),
-            'papeis' => Role::orderBy('name')->pluck('name'),
+            'todosPapeis' => Role::orderBy('name')->pluck('name'),
             'todasUnidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
             'todosServicos' => Servico::where('ativo', true)->orderBy('nome')->get(),
         ]);
