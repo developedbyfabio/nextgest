@@ -13,12 +13,15 @@ use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
+use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
 use App\Livewire\Painel\Funcionamento\Index as FuncionamentoIndex;
+use App\Livewire\Painel\Integracoes\Index as IntegracoesIndex;
+use App\Livewire\Painel\Integracoes\MercadoPago as IntegracaoMercadoPago;
+use App\Livewire\Painel\Integracoes\Whatsapp as IntegracaoWhatsapp;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
-use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
 use App\Livewire\Painel\Servicos\Index as ServicosIndex;
@@ -162,6 +165,21 @@ Route::middleware(['tenant'])
                 Route::get('aparencia', AparenciaEditar::class)
                     ->middleware('can:gerir_aparencia')
                     ->name('aparencia');
+
+                // Integrações (credenciais cifradas por tenant — Fase 0b). O índice
+                // lista só os cards disponíveis (flag 0a ligada + permissão). Cada
+                // EDITOR é gated pelo recurso (middleware da 0a) + a permissão dele:
+                // recurso desligado → 404 (o recurso "nem existe" para o tenant).
+                Route::get('integracoes', IntegracoesIndex::class)
+                    ->name('integracoes');
+
+                Route::get('integracoes/mercadopago', IntegracaoMercadoPago::class)
+                    ->middleware(['can:gerenciar_pagamentos', 'recurso:gateway'])
+                    ->name('integracoes.mercadopago');
+
+                Route::get('integracoes/whatsapp', IntegracaoWhatsapp::class)
+                    ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
+                    ->name('integracoes.whatsapp');
             });
         });
     });

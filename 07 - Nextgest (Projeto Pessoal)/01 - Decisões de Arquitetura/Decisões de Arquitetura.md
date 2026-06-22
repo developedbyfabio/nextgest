@@ -296,3 +296,28 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   a valer automaticamente quando cada módulo for construído. Nesta fase **não há UI/menu
   novo** (clube/whatsapp/gateway ainda não têm tela) — só o mecanismo + a convenção.
   Ver [[Recursos por Tenant (Feature Flags)]].
+
+## D38 — Credenciais de integração por tenant: REUSAR os cofres existentes (Fase 0b)
+> Cada salão guarda as credenciais das integrações dele **no banco do próprio tenant**,
+> **cifradas**. Formaliza/estende D21. Esta fase é **só armazenamento + UI** — NÃO chama
+> nenhuma API externa (sem testar conexão/webhook/SDK; isso é Fase 2/4).
+- **Reuso, não nova tabela:** já existiam dois cofres de tenant prontos para cifragem —
+  **`gateways_pagamento`** (model `App\Models\GatewayPagamento`, `credenciais`
+  `encrypted:array`, D21; tem o `GatewayResolver` que a Fase 2 vai usar) e
+  **`whatsapp_config`** (token cifrado). Criar uma tabela `integracoes` nova duplicaria
+  o segredo e divergiria do resolver. Decisão: **mercadopago → `gateways_pagamento`;
+  whatsapp → `whatsapp_config`** (criado o model `App\Models\WhatsappConfig`,
+  `token` cast `encrypted`, `$hidden`). **Sem migração** (tabelas já existem). `clube`
+  NÃO tem credencial (consome o gateway).
+- **Fonte única:** enum `App\Enums\Integracao` (`mercadopago`/`whatsapp`) mapeia cada
+  integração → recurso (flag 0a), → permissão (spatie) e → rota do editor.
+- **Segredo write-only:** o campo de segredo **carrega vazio**; salvar vazio **mantém**,
+  preenchido **substitui**. A tela mostra só status (configurado/não) + **máscara**
+  (`••••1234`) — **nunca** o valor cheio, nunca renderizado de volta, nunca logado
+  (`$hidden` + cast `encrypted`).
+- **Gating (1º consumidor real da 0a):** tela **Integrações** no grupo "Gestão" do painel
+  (`App\Livewire\Painel\Integracoes\*`). O índice lista só os cards disponíveis = recurso
+  ligado (`tenant_tem_recurso`) **+** permissão (`gerenciar_pagamentos`/`gerenciar_whatsapp`,
+  Dono+Gerente). Cada **editor** é rota gated por `recurso:{slug}` (0a) + `can:` → recurso
+  off dá **404**. Nenhum recurso ligado → "Nenhuma integração disponível" (correto).
+  Ver [[Integrações por Tenant (Credenciais)]].

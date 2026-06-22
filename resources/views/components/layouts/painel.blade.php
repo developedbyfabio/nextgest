@@ -94,6 +94,9 @@
                 @can('gerir_aparencia')
                     <flux:navlist.item icon="paint-brush" :href="route('painel.aparencia', ['tenant' => $tenantId])" :current="request()->routeIs('painel.aparencia')" wire:navigate>Aparência</flux:navlist.item>
                 @endcan
+                @if (auth('web')->user()?->hasAnyPermission(\App\Enums\Integracao::permissoes()))
+                    <flux:navlist.item icon="puzzle-piece" :href="route('painel.integracoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.integracoes*')" wire:navigate>Integrações</flux:navlist.item>
+                @endif
             </flux:navlist.group>
         </flux:navlist>
 
