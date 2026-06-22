@@ -9,6 +9,7 @@ use App\Models\Unidade;
 use App\Models\Venda;
 use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Dashboard\Metricas;
+use App\Services\Painel\IndicadoresClientes;
 use App\Services\Painel\ResumoDoDia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +155,46 @@ it('[PERF] Resumo do dia: contagem de query CONSTANTE (agregados, não cresce co
     // pessoal por count + 1 query do próximo). Vermelho se virar N+1.
     expect($n30)->toBe($n3)
         ->and($n3)->toBeLessThanOrEqual(5);
+
+    Carbon::setTestNow();
+});
+
+it('[PERF] Indicadores: contagem de query CONSTANTE por métrica (não cresce com clientes/visitas)', function () {
+    Carbon::setTestNow(Carbon::create(2026, 6, 22, 12, 0, 0));
+    $svc = new IndicadoresClientes;
+
+    $semear = function (int $nClientes) {
+        foreach (range(1, $nClientes) as $i) {
+            $cli = Cliente::create(['nome' => 'C'.uniqid(), 'telefone' => (string) random_int(1, 999999999)]);
+            foreach ([90, 80, 70] as $d) { // 3 visitas pagas (intervalo 10, última 70d → risco/sempre)
+                $data = Carbon::today()->subDays($d);
+                Venda::create(['unidade_id' => $this->unidade->id, 'cliente_id' => $cli->id, 'status' => 'paga',
+                    'valor_bruto' => 50, 'desconto' => 0, 'valor_total' => 50, 'data' => $data]);
+            }
+        }
+    };
+
+    $medir = fn (): array => [
+        'risco' => contarQueries(fn () => $svc->emRisco(20)),
+        'frequencia' => contarQueries(fn () => $svc->frequencia()),
+        'ticket' => contarQueries(fn () => $svc->ticketMedio(Carbon::today()->subDays(60), Carbon::now(), null)),
+        'bucket' => contarQueries(fn () => $svc->clientesPorBucket('sempre', 20)),
+        'retencao' => contarQueries(fn () => $svc->retencao(Carbon::today()->subDays(30), Carbon::now())),
+    ];
+
+    $semear(5);
+    $n5 = $medir();
+
+    $semear(40); // total 45 clientes / 135 visitas pagas
+    $n45 = $medir();
+
+    // CONSTANTE: a contagem NÃO muda com o nº de clientes/visitas (vermelho = N+1).
+    expect($n45)->toBe($n5)
+        ->and($n5['risco'])->toBeLessThanOrEqual(2)        // paginate: count + select
+        ->and($n5['frequencia'])->toBeLessThanOrEqual(1)
+        ->and($n5['ticket'])->toBeLessThanOrEqual(1)
+        ->and($n5['bucket'])->toBeLessThanOrEqual(2)
+        ->and($n5['retencao'])->toBeLessThanOrEqual(1);
 
     Carbon::setTestNow();
 });
