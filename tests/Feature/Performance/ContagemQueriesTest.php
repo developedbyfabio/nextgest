@@ -11,6 +11,7 @@ use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Dashboard\Metricas;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /*
 | Auditoria de performance — CONTAGEM de queries (estrutura que transfere p/ produção;
@@ -35,6 +36,15 @@ function contarQueries(callable $fn): int
 
     return $n;
 }
+
+it('[PERF-002/003] índices de data existem (guarda contra remoção acidental)', function () {
+    // Migração aditiva de tenant: agendamentos.data_hora_inicio e vendas.data.
+    $colunasAg = collect(Schema::getIndexes('agendamentos'))->pluck('columns')->flatten();
+    expect($colunasAg)->toContain('data_hora_inicio');
+
+    $colunasVendas = collect(Schema::getIndexes('vendas'))->pluck('columns')->flatten();
+    expect($colunasVendas)->toContain('data');
+});
 
 it('[PERF] Motor com profissional FIXO: contagem baixa e constante', function () {
     $dia = Carbon::now()->next(Carbon::WEDNESDAY); // dia_semana 3
