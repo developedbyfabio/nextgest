@@ -37,6 +37,9 @@
         </div>
     </div>
 
+    {{-- Resumo do dia (in-app): números de hoje por papel/pessoa. Reusado na agenda. --}}
+    <livewire:painel.resumo-do-dia />
+
     @if ($erro)
         {{-- Estado de ERRO recuperável --}}
         <div class="ng-surface flex flex-col items-center gap-3 px-6 py-12 text-center">

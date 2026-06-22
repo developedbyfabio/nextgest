@@ -70,7 +70,34 @@ Dashboard levado ao nível "de ponta", dark-safe:
 - Ver [[Identidade Visual do Estabelecimento (Tema)]] e
   [[Auditoria de UI (Portal e Painel)]].
 
+## Resumo do dia (in-app, topo do painel)
+Ao logar, o usuário vê um **resumo do dia** no topo — só **leitura** dos agendamentos de
+HOJE (sem estado novo, sem push; push é Fase 1+). Componente **único** reusado no **dashboard
+E na agenda** (cada papel aterrissa num dos dois: gestão no dashboard; profissional/recepção
+na agenda — por isso fica nos dois lugares).
+
+- **Componente:** `App\Livewire\Painel\ResumoDoDia` (fino) + `App\Services\Painel\ResumoDoDia`
+  (cálculo, testável) + view `livewire/painel/resumo-do-dia`. Embutido com
+  `<livewire:painel.resumo-do-dia />` no topo de `dashboard.blade.php` e de `agenda/index.blade.php`.
+- **Conteúdo por papel/pessoa — gate por permissão/atributo, NUNCA por papel (D39):**
+  - **Casa** (`can('ver_agenda')` → Dono/Gerente/Recepção): total de hoje + quantos **a
+    confirmar** (status `pendente`). **Total = ocupantes** (exclui `cancelado`/`nao_compareceu`,
+    igual ao `scopeOcupantes`/agenda).
+  - **Pessoal** (atributo `e_profissional`): "Você tem **N** hoje" + o **próximo horário**
+    (1 query ordenada, limit 1, com o cliente). Conta só os agendamentos **dele**.
+  - **Os dois** (Dono que também atende): mostra os dois blocos compactos.
+- **"Hoje"** = intervalo `[startOfDay, endOfDay]` local sobre `data_hora_inicio` (Carbon respeita
+  `APP_TIMEZONE`) — mesmo critério da agenda.
+- **Eficiência:** casa em **uma query agregada** (`COUNT` + `SUM(CASE WHEN status = 'pendente')`);
+  pessoal = `count` + 1 query do próximo. **Contagem de query CONSTANTE** (não cresce com o
+  volume) — `tests/Feature/Performance/ContagemQueriesTest.php` (`≤ 5`, igual com 3 ou 30
+  agendamentos). **Vazio é estado válido** ("Nenhum agendamento para hoje" / "Nenhum agendamento
+  seu hoje"), nunca erro.
+- **Testes de papel:** `tests/Feature/Painel/ResumoDoDiaTest.php` (profissional vê pessoal;
+  gestão vê casa; Dono-que-atende vê os dois; estados vazios).
+
 ## Relacionado
 - [[Decisões de Arquitetura]] (D31)
 - [[Vendas e Comanda]] (fonte do faturamento real) · [[Produtos e Estoque]]
 - [[Modelo de Dados - Núcleo de Agendamento]] (agendamentos / `agendamento_servico`)
+- [[Papéis e Permissões (RBAC)]] (gate por `ver_agenda` + atributo `e_profissional`)

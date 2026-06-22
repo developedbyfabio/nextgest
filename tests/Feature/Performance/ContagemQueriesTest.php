@@ -9,6 +9,7 @@ use App\Models\Unidade;
 use App\Models\Venda;
 use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Dashboard\Metricas;
+use App\Services\Painel\ResumoDoDia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -120,6 +121,41 @@ it('[PERF] Dashboard: contagem de queries baixa e constante (agregados, não N+1
     });
 
     expect($n)->toBeLessThanOrEqual(25); // medido: 19 contra 20k agendamentos
+});
+
+it('[PERF] Resumo do dia: contagem de query CONSTANTE (agregados, não cresce com o volume)', function () {
+    Carbon::setTestNow(Carbon::today()->setTime(8, 0));
+
+    $cliente = Cliente::create(['nome' => 'C', 'email' => 'c@x.test', 'telefone' => '1', 'password' => 'x12345678']);
+    // Dono que também atende: exercita os DOIS blocos (casa agregada + pessoal + próximo).
+    $dono = usuarioComPapel('Dono', ['email' => 'dono@x.test', 'e_profissional' => true]);
+
+    $criar = function (int $n) use ($cliente, $dono) {
+        foreach (range(1, $n) as $i) {
+            $ini = Carbon::today()->setTime(9, 0)->addMinutes($i); // hoje, futuro (após 08:00)
+            Agendamento::create([
+                'unidade_id' => $this->unidade->id, 'cliente_id' => $cliente->id, 'profissional_id' => $dono->id,
+                'data_hora_inicio' => $ini, 'data_hora_fim' => $ini->copy()->addMinutes(30),
+                'status' => 'pendente', 'origem' => 'cliente', 'valor_total' => 40,
+            ]);
+        }
+    };
+
+    $resumo = new ResumoDoDia($dono);
+    $dono->can('ver_agenda'); // aquece o cache de permissões do spatie (carga única, fora da medição)
+
+    $criar(3);
+    $n3 = contarQueries(fn () => $resumo->dados());
+
+    $criar(27); // total 30 agendamentos hoje
+    $n30 = contarQueries(fn () => $resumo->dados());
+
+    // CONSTANTE: a contagem NÃO muda com o nº de agendamentos (casa por agregado;
+    // pessoal por count + 1 query do próximo). Vermelho se virar N+1.
+    expect($n30)->toBe($n3)
+        ->and($n3)->toBeLessThanOrEqual(5);
+
+    Carbon::setTestNow();
 });
 
 it('[PERF] Vendas: lista paginada + eager tem contagem constante (sem N+1)', function () {

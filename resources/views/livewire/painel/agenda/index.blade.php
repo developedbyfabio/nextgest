@@ -9,6 +9,10 @@
         @endif
     </x-ng.page-header>
 
+    {{-- Resumo do dia (in-app): o profissional que cai na agenda vê "seus N de hoje";
+         gestão (ver_agenda) vê o resumo da casa. Mesmo componente do dashboard. --}}
+    <livewire:painel.resumo-do-dia />
+
     {{-- Controles --}}
     <div class="flex flex-wrap items-center gap-3">
         <flux:button.group>
