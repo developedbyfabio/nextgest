@@ -358,3 +358,41 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `Authenticate` (`prependToPriorityList`), descartando a sessão de outro tenant antes da
   autenticação — redirect limpo ao login, **nunca 500**. Já era sem vazamento; isto é
   higiene do modo de falha. Defesa em profundidade: guarda de usuário nulo no `Dashboard`.
+
+## D41 — 2FA (TOTP) OPCIONAL e SÓ do Dono (app autenticador), local e sem custo
+> Implementa o item 3 do plano de [[Segurança e Isolamento]] (defesa real da conta que mexe
+> em dinheiro/credenciais). Ver [[2FA (TOTP) do Dono]].
+- **Opcional + só Dono:** ninguém é forçado; outros papéis nem veem a opção. Gate por
+  **permissão** (D39, nunca por papel): `gerenciar_2fa_proprio`, atribuída só ao Dono no
+  `TenantDatabaseSeeder` (excluída do Gerente; re-sync via `tenants:seed`).
+- **Biblioteca consagrada, nunca cripto à mão:** `pragmarx/google2fa` (TOTP RFC 6238) +
+  `bacon/bacon-qr-code` (QR SVG inline, sem GD/Imagick). É o stack que o Fortify usa por
+  baixo — **sem** Fortify, que sequestraria as rotas de auth e conflitaria com os 3 guards
+  custom + tenancy por caminho (D24).
+- **Setup é do Dono** (ele escaneia o QR); o super-admin NÃO configura por ele. **Componente
+  ÚNICO** (`App\Livewire\Painel\Seguranca\DoisFatores`) reusado em DOIS lugares do Dono:
+  perfil (modal no layout do painel) e **passo opcional/skippável do 1º login** (rota
+  `painel.2fa.onboarding`, após a troca de senha). Onboarding do Dono ≠ wizard do super-admin
+  (`OnboardingEstabelecimento`), onde o Dono nem está logado.
+- **Nunca ativa sem um código de confirmação válido:** o segredo é gravado (cifrado) já no
+  "Ativar", mas só vira ATIVO ao gravar `two_factor_confirmed_at` após o Dono digitar um
+  código correto (prova que o app sincronizou). `temDoisFatores()` = segredo **e** confirmado.
+- **Segredo + códigos de recuperação cifrados (D38):** colunas aditivas em `users` (tenant)
+  `two_factor_secret` (encrypted), `two_factor_recovery_codes` (encrypted:array),
+  `two_factor_confirmed_at`; os dois segredos no `$hidden` (nunca em log/HTML/snapshot — o
+  segredo nem é propriedade pública do Livewire, só dado local da view durante o setup).
+- **Desafio no login (painel/web):** senha OK + Dono com 2FA → estado "aguardando 2FA"
+  (só `id`+`remember` em sessão `2fa.pendente`, login DESFEITO), tela de desafio aceita
+  **código TOTP OU código de recuperação** (uso único, consumido) → só então `loginUsingId`
+  + `regenerate`. **Throttle** próprio (~5 tentativas → bloqueio). **Caminho só-senha
+  inalterado byte a byte** para quem não tem 2FA (admin/cliente/usuário sem 2FA): o trait
+  `AutenticaPorGuard` segue com `attempt()` + `regenerate()`; o ramo 2FA só roda quando
+  `precisaSegundoFator()` é verdadeiro (sobrescrito só no `PainelLogin`).
+- **Ordem com `ForcarTrocaSenha`:** senha → 2FA → `loginUsingId` → (middleware) troca de
+  senha se `deve_trocar_senha`. Na prática são disjuntos (quem tem 2FA já trocou a senha),
+  mas a ordem é testada.
+- **Reset pelo super-admin** (último recurso, perdeu app E códigos): `/admin` → detalhe →
+  "Resetar 2FA" (modal de confirmação) limpa os campos do Dono no banco do tenant; **logado**
+  (`Log::info`) sem dado sensível. **Desativar pelo Dono** (perfil) exige reconfirmar a senha.
+- **Impersonação de suporte e portal/`admin` não mudam** (impersonate entra por
+  `loginUsingId`, fora do componente de login → não passa pelo desafio, por design).

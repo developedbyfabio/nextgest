@@ -52,6 +52,7 @@ class TenantDatabaseSeeder extends Seeder
         'ver_dashboard',
         'gerir_kanban',            // quadros/colunas + CRM (Dono/Gerente)
         'ver_kanban_atendimento',  // quadro de atendimento/balcão (inclui Recepção)
+        'gerenciar_2fa_proprio',   // ativar/gerir o PRÓPRIO 2FA (TOTP) — só Dono
     ];
 
     public function run(): void
@@ -74,6 +75,7 @@ class TenantDatabaseSeeder extends Seeder
             'ver_financeiro',
             'editar_permissoes',
             'gerenciar_pagamentos',
+            'gerenciar_2fa_proprio', // 2FA é do Dono (decisão fixa: opcional e só Dono)
         ]));
 
         // Recepção: agenda, clientes, vendas, estoque e kanban de atendimento (balcão).

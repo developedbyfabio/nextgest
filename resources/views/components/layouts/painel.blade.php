@@ -113,6 +113,11 @@
                 {{-- Alterar a própria senha (abre o modal embutido x-livewire abaixo). --}}
                 <flux:menu.item icon="key" x-on:click="$flux.modal('alterar-senha').show()">Alterar senha</flux:menu.item>
 
+                {{-- 2FA (TOTP): opcional e SÓ Dono (permissão gerenciar_2fa_proprio, D39). --}}
+                @if (auth('web')->user()?->can('gerenciar_2fa_proprio'))
+                    <flux:menu.item icon="shield-check" x-on:click="$flux.modal('dois-fatores').show()">Autenticação em duas etapas</flux:menu.item>
+                @endif
+
                 <flux:menu.separator />
 
                 {{-- x-model DIRETO em $flux.appearance (não uma cópia local, que ficaria inerte). --}}
@@ -149,6 +154,14 @@
 
     {{-- Modal de alterar senha (self-service, todos os papéis) — aberto pelo menu de perfil. --}}
     <livewire:painel.alterar-senha />
+
+    {{-- Modal de 2FA (TOTP) — SÓ Dono. Embutido só para quem pode gerir (senão o gate
+         do componente abortaria 403 em toda página do painel para os demais papéis). --}}
+    @if (auth('web')->user()?->can('gerenciar_2fa_proprio'))
+        <flux:modal name="dois-fatores" class="md:w-[34rem]">
+            <livewire:painel.seguranca.dois-fatores />
+        </flux:modal>
+    @endif
 
     <flux:toast position="top right" />
 

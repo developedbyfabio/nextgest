@@ -14,6 +14,18 @@
         </flux:callout>
     @endif
 
+    @if (session('reset_2fa_ok'))
+        <flux:callout variant="success" icon="shield-check">
+            <flux:callout.heading>{{ session('reset_2fa_ok') }}</flux:callout.heading>
+        </flux:callout>
+    @endif
+
+    @if (session('reset_2fa_erro'))
+        <flux:callout variant="danger" icon="exclamation-triangle">
+            <flux:callout.heading>{{ session('reset_2fa_erro') }}</flux:callout.heading>
+        </flux:callout>
+    @endif
+
     <flux:callout icon="lock-closed">
         <flux:callout.heading>Dados privados do estabelecimento</flux:callout.heading>
         <flux:callout.text>
@@ -79,15 +91,48 @@
     <div class="flex flex-col gap-2">
         <flux:heading size="lg">Donos</flux:heading>
         @forelse ($resumo['donos'] as $dono)
-            <flux:card class="flex items-center justify-between">
+            <flux:card class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <flux:text class="font-medium">{{ $dono->name }}</flux:text>
                     <flux:text class="text-sm text-zinc-500">{{ $dono->email }}</flux:text>
                 </div>
-                <flux:badge color="indigo" size="sm">Dono</flux:badge>
+                <div class="flex items-center gap-2">
+                    <flux:badge color="indigo" size="sm">Dono</flux:badge>
+                    @if ($dono->two_factor_confirmed_at)
+                        <flux:badge color="green" size="sm" icon="shield-check">2FA ativo</flux:badge>
+                        <flux:button
+                            size="xs"
+                            variant="subtle"
+                            icon="shield-exclamation"
+                            wire:click="confirmarReset({{ $dono->id }})"
+                        >
+                            Resetar 2FA
+                        </flux:button>
+                    @else
+                        <flux:badge color="zinc" size="sm">Sem 2FA</flux:badge>
+                    @endif
+                </div>
             </flux:card>
         @empty
             <x-ng.empty icon="user" title="Sem dono" text="Crie um Dono na lista de estabelecimentos." />
         @endforelse
     </div>
+
+    {{-- Confirmação do RESET de 2FA (último recurso). Modal, não wire:confirm (D27). --}}
+    <flux:modal name="resetar-2fa" class="md:w-96">
+        <div class="flex flex-col gap-4">
+            <div>
+                <flux:heading size="lg">Resetar 2FA do Dono?</flux:heading>
+                <flux:subheading>
+                    Desativa a autenticação em duas etapas deste Dono. Use só quando ele perdeu
+                    o app E os códigos de recuperação. Ele volta a entrar só com a senha e pode
+                    reativar depois.
+                </flux:subheading>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close><flux:button variant="ghost">Cancelar</flux:button></flux:modal.close>
+                <flux:button wire:click="resetar2fa" variant="danger">Resetar 2FA</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

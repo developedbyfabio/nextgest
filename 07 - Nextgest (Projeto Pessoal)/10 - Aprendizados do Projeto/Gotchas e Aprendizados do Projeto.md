@@ -241,6 +241,17 @@ inteiro (apaga os outros metadados que dividem o mesmo JSON). Não precisa de ca
 migração — um array sob a chave faz round-trip nativo (o `data` é cast `array`). Ver
 [[Recursos por Tenant (Feature Flags)]] e [[Decisões de Arquitetura#D37]].
 
+## Componente CENTRAL com `$tenant->run()`: dois run() no mesmo processo podem purgar a conexão
+Em componente do `/admin` que entra no tenant por **`$tenant->run()`** (ex.: `TenantDetalhe`),
+quando o **mesmo processo** faz dois `run()` em sequência — um que **escreve** e outro que
+**renderiza** logo depois — pode estourar `Database connection [tenant] not configured` (o
+primeiro `run()` encerra a tenancy e purga a conexão `tenant`; o segundo tenta reabrir e, no
+**sqlite de teste**/sessão longa de **tinker** com cache stale do spatie, falha). **Produção é
+segura:** cada request faz só **um** `run()` (load = render; ação = ação + redirect). Padrões:
+(1) ação que escreve e redireciona usa **`skipRender()`** (evita o render-run logo após);
+(2) em **teste**, manter `tenancy()->initialize()` aberto (sem `end()`) faz o `run()` interno
+**restaurar** o tenant (sem purge). Diagnosticado no reset de 2FA (ver [[2FA (TOTP) do Dono]]).
+
 ## stancl em testes: `initialize()` mantém o tenant STALE entre requests no mesmo processo
 `Tenancy::initialize()` tem early-return: se já está inicializado com o **mesmo** tenant
 key, **não troca a instância**. Em produção não importa (cada request é um processo novo,

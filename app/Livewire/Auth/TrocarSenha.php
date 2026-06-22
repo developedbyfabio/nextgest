@@ -38,12 +38,20 @@ class TrocarSenha extends Component
     {
         $this->validate(['password' => Senhas::regrasNova()]);
 
-        auth('web')->user()->update([
+        $user = auth('web')->user();
+
+        $user->update([
             'password' => $this->password,
             'deve_trocar_senha' => false,
         ]);
 
         Flux::toast('Senha definida. Tudo certo!', variant: 'success');
+
+        // Passo OPCIONAL de 2FA no 1º login: só para quem pode geri-lo (Dono) e ainda
+        // não tem. É skippável (botão "Pular"). Os demais vão direto ao painel.
+        if ($user->can('gerenciar_2fa_proprio') && ! $user->temDoisFatores()) {
+            return redirect()->route('painel.2fa.onboarding', ['tenant' => tenant('id')]);
+        }
 
         return redirect()->route('painel.dashboard', ['tenant' => tenant('id')]);
     }

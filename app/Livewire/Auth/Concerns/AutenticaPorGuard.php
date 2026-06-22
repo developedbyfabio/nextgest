@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Auth\Concerns;
 
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -59,10 +60,26 @@ trait AutenticaPorGuard
     }
 
     /**
-     * Valida, aplica throttle e tenta autenticar no guard informado.
-     * Em caso de sucesso, regenera a sessão.
+     * Indica se o usuário recém-validado por senha ainda precisa de um SEGUNDO fator
+     * (2FA). Padrão: não. Sobrescrito só pelo login do painel (web). Para admin/cliente
+     * continua false → o caminho abaixo é idêntico ao de sempre.
      */
-    protected function autenticar(string $guard): void
+    protected function precisaSegundoFator(Authenticatable $user): bool
+    {
+        return false;
+    }
+
+    /**
+     * Valida, aplica throttle e tenta autenticar no guard informado.
+     *
+     * Retorno:
+     * - null  → login efetivado (sessão regenerada). Caminho SÓ-SENHA, byte a byte como
+     *   sempre: `attempt()` + `regenerate()`. É o que admin/cliente e usuários sem 2FA usam.
+     * - User  → senha OK, mas o usuário exige 2FA: o login é DESFEITO (estado pendente) e
+     *   o usuário é devolvido para o chamador montar o desafio. Só ocorre no painel quando
+     *   `precisaSegundoFator()` é verdadeiro — não afeta o caminho sem 2FA.
+     */
+    protected function autenticar(string $guard): ?Authenticatable
     {
         $this->validate([
             'email' => ['required', 'string', 'email'],
@@ -79,7 +96,9 @@ trait AutenticaPorGuard
             $this->credenciaisExtras(),
         );
 
-        if (! Auth::guard($guard)->attempt($credenciais, $this->remember)) {
+        $guardInstance = Auth::guard($guard);
+
+        if (! $guardInstance->attempt($credenciais, $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             // Mensagem genérica: não distingue "e-mail não existe" de "senha errada".
@@ -90,6 +109,17 @@ trait AutenticaPorGuard
 
         RateLimiter::clear($this->throttleKey());
 
+        $user = $guardInstance->user();
+
+        if ($user !== null && $this->precisaSegundoFator($user)) {
+            // Desfaz o login: até passar o 2FA, NÃO há acesso a nada.
+            $guardInstance->logout();
+
+            return $user;
+        }
+
         session()->regenerate();
+
+        return null;
     }
 }

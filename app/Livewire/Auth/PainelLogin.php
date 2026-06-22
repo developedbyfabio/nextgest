@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Auth;
 
 use App\Livewire\Auth\Concerns\AutenticaPorGuard;
+use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -24,9 +26,26 @@ class PainelLogin extends Component
         return ['ativo' => true];
     }
 
+    /** Só o Dono com 2FA confirmado exige o segundo fator; os demais logam só com senha. */
+    protected function precisaSegundoFator(Authenticatable $user): bool
+    {
+        return $user instanceof User && $user->temDoisFatores();
+    }
+
     public function login()
     {
-        $this->autenticar('web');
+        $pendente = $this->autenticar('web');
+
+        // 2FA ativo: senha OK, mas falta o segundo fator. Guarda a pendência (só id +
+        // remember, sem segredo) e manda ao desafio. Até passar, não há acesso a nada.
+        if ($pendente !== null) {
+            session()->put('2fa.pendente', [
+                'id' => $pendente->getAuthIdentifier(),
+                'remember' => $this->remember,
+            ]);
+
+            return $this->redirectRoute('painel.2fa.desafio', ['tenant' => tenant('id')], navigate: true);
+        }
 
         return $this->redirectRoute('painel.dashboard', ['tenant' => tenant('id')], navigate: true);
     }

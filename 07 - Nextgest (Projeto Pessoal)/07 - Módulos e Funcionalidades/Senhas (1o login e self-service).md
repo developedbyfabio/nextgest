@@ -48,6 +48,11 @@ flag; rejeita senha fraca/sem confirmação; tela redireciona se a flag já est�
 self-service recusa senha atual errada e senha fraca, e troca com sucesso **nos 4 papéis**;
 o **portal não é afetado**. `OnboardingTest` confere que o Dono nasce com `deve_trocar_senha`.
 
+## 2FA opcional no 1º login do Dono
+Após a troca forçada, o `TrocarSenha::salvar()` leva o **Dono** (quem tem `gerenciar_2fa_proprio`)
+que ainda não tem 2FA ao passo **opcional/skippável** de ativação (`painel.2fa.onboarding`); os
+demais papéis vão direto ao painel. Ver [[2FA (TOTP) do Dono]].
+
 ## Relacionado
 - [[Onboarding Guiado de Estabelecimento]] · [[Decisões de Arquitetura]] (guards/tenancy) ·
-  `EscoparAutenticacaoPorTenant` (isolamento de sessão por tenant).
+  [[2FA (TOTP) do Dono]] · `EscoparAutenticacaoPorTenant` (isolamento de sessão por tenant).

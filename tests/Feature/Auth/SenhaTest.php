@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\AlterarSenha;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
@@ -37,11 +36,25 @@ it('a troca forçada atualiza o hash e limpa a flag', function () {
         ->set('password', 'nova-senha-segura-9')
         ->set('password_confirmation', 'nova-senha-segura-9')
         ->call('salvar')
-        ->assertRedirect('/lojasenha/painel');
+        // Dono sem 2FA é levado ao passo OPCIONAL de 2FA (1º login); demais vão ao painel.
+        ->assertRedirect('/lojasenha/painel/2fa-inicial');
 
     $dono->refresh();
     expect($dono->deve_trocar_senha)->toBeFalse()
         ->and(Hash::check('nova-senha-segura-9', $dono->password))->toBeTrue();
+});
+
+it('a troca forçada de um NÃO-Dono vai direto ao painel (sem passo de 2FA)', function () {
+    $gerente = usuarioComPapel('Gerente', ['email' => 'ger@senha.test', 'deve_trocar_senha' => true, 'password' => 'senha-inicial-1']);
+    $this->actingAs($gerente, 'web');
+
+    Livewire::test(TrocarSenha::class)
+        ->set('password', 'nova-senha-segura-9')
+        ->set('password_confirmation', 'nova-senha-segura-9')
+        ->call('salvar')
+        ->assertRedirect('/lojasenha/painel');
+
+    expect($gerente->fresh()->deve_trocar_senha)->toBeFalse();
 });
 
 it('a troca forçada rejeita senha sem confirmação / fraca', function () {

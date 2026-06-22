@@ -8,6 +8,7 @@ use App\Http\Controllers\TenantArquivoController;
 use App\Http\Middleware\ForcarTrocaSenha;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
+use App\Livewire\Auth\DesafioDoisFatores;
 use App\Livewire\Auth\PainelLogin;
 use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
@@ -24,6 +25,7 @@ use App\Livewire\Painel\Integracoes\Whatsapp as IntegracaoWhatsapp;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
+use App\Livewire\Painel\Seguranca\DoisFatores as SegurancaDoisFatores;
 use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Painel\Vendas\Detalhe as VendasDetalhe;
@@ -89,6 +91,13 @@ Route::middleware(['tenant'])
                 ->middleware('guest:web')
                 ->name('login');
 
+            // Desafio de 2FA (estado "aguardando 2FA", pós-senha). Fica em guest:web:
+            // o usuário pendente ainda NÃO está logado no painel. A pendência mora na
+            // sessão (`2fa.pendente`); sem ela, o componente volta ao login.
+            Route::get('2fa', DesafioDoisFatores::class)
+                ->middleware('guest:web')
+                ->name('2fa.desafio');
+
             // ForcarTrocaSenha: 1º login com `deve_trocar_senha` cai na tela de troca
             // (exceto a própria rota, logout e sair do suporte). Só painel (guard web).
             Route::middleware(['auth:web', ForcarTrocaSenha::class])->group(function () {
@@ -98,6 +107,11 @@ Route::middleware(['tenant'])
 
                 // Troca de senha obrigatória no 1º login (isenta do middleware acima).
                 Route::get('senha', TrocarSenha::class)->name('senha');
+
+                // Passo OPCIONAL de 2FA no 1º login do Dono (após a troca de senha).
+                // Reusa o MESMO componente do perfil; layout `auth` + botão "Pular".
+                // Gate só-Dono dentro do componente (permissão gerenciar_2fa_proprio).
+                Route::get('2fa-inicial', SegurancaDoisFatores::class)->name('2fa.onboarding');
 
                 // Encerrar o modo suporte (impersonação) e voltar ao /admin.
                 Route::post('suporte/sair', [SuporteController::class, 'sair'])->name('suporte.sair');

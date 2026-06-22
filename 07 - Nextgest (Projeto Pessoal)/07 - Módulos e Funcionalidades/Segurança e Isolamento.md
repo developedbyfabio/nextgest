@@ -131,9 +131,10 @@ Trait único `Auth\Concerns\AutenticaPorGuard` (admin/web/cliente):
 2. **dev-agora:** lockout **progressivo** (backoff: bloqueio cresce a cada janela) e
    chave **dupla** (e-mail global + IP) para conter brute force distribuído e password
    spraying sem travar um usuário legítimo por culpa de um IP barulhento.
-3. **pós-VPS (depende de canal e-mail/SMS):** **2FA opcional do Dono** (TOTP como 1ª
-   escolha — não exige canal; SMS/e-mail como fallback) — a defesa real da conta que mexe
-   em dinheiro/credenciais. Aqui só o plano; não construir.
+3. **2FA opcional do Dono (TOTP) — ✅ IMPLEMENTADO** (não exigiu canal e-mail/SMS; roda
+   local/dev). A defesa real da conta que mexe em dinheiro/credenciais. Ver
+   [[2FA (TOTP) do Dono]] e [[Decisões de Arquitetura#D41]]. (Itens 1 e 2 — log de
+   tentativas + lockout progressivo — seguem pendentes.)
 4. **produção (já no checklist):** cookies `secure`+`samesite`+HSTS, headers de segurança.
 
 ### "Slug secreto" para o painel — **NÃO compensa** (obscuridade, não segurança)

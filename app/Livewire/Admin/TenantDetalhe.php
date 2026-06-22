@@ -72,6 +72,75 @@ class TenantDetalhe extends Component
         Flux::toast('Recursos atualizados.', variant: 'success');
     }
 
+    /** Id do Dono alvo do reset de 2FA (preenchido ao abrir o modal de confirmação). */
+    public ?int $resetAlvo = null;
+
+    /** Abre a confirmação de reset de 2FA para um Dono. */
+    public function confirmarReset(int $userId): void
+    {
+        abort_unless(auth('admin')->check(), 403);
+
+        $this->resetAlvo = $userId;
+        Flux::modal('resetar-2fa')->show();
+    }
+
+    /**
+     * RESET de 2FA pelo super-admin (último recurso: Dono perdeu o celular E os códigos).
+     * Desativa o 2FA do Dono (limpa os campos cifrados) no banco do tenant. Ação
+     * reversível: o Dono pode reativar depois. Logada para auditoria, SEM dado sensível.
+     */
+    public function resetar2fa(?int $userId = null)
+    {
+        abort_unless(auth('admin')->check(), 403);
+
+        // Botão do modal usa o alvo guardado; aceitamos o id explícito como fallback.
+        $userId ??= $this->resetAlvo;
+
+        if (! $userId) {
+            return null;
+        }
+
+        $resetado = $this->tenant->run(function () use ($userId) {
+            $user = User::role('Dono')->find($userId);
+
+            if (! $user) {
+                return false; // só reseta Donos (defesa)
+            }
+
+            $user->two_factor_secret = null;
+            $user->two_factor_recovery_codes = null;
+            $user->two_factor_confirmed_at = null;
+            $user->save();
+
+            return true;
+        });
+
+        $this->resetAlvo = null;
+
+        // Vamos redirecionar (recarrega o detalhe). skipRender evita um re-render que,
+        // logo após o run() acima ter encerrado a tenancy, tentaria reabrir o banco do
+        // tenant à toa — desnecessário já que a página recarrega.
+        $this->skipRender();
+
+        if (! $resetado) {
+            session()->flash('reset_2fa_erro', 'Dono não encontrado.');
+
+            return redirect()->route('admin.tenant.detalhe', ['tenantId' => $this->tenant->id]);
+        }
+
+        Log::info('Suporte: 2FA do Dono resetado pelo super-admin', [
+            'tenant' => $this->tenant->id,
+            'dono_id' => $userId,
+            'ip' => request()->ip(),
+        ]);
+
+        // Redirect (recarrega o detalhe mostrando "Sem 2FA") em vez de re-render no
+        // mesmo request — mesmo padrão de impersonatar(). Mensagem via flash.
+        session()->flash('reset_2fa_ok', '2FA do Dono desativado. Ele volta a entrar só com a senha.');
+
+        return redirect()->route('admin.tenant.detalhe', ['tenantId' => $this->tenant->id]);
+    }
+
     public function impersonatar()
     {
         abort_unless(auth('admin')->check(), 403);
@@ -114,7 +183,7 @@ class TenantDetalhe extends Component
                 'clientes' => Cliente::count(),
                 'servicos' => Servico::count(),
                 'agendamentos' => Agendamento::count(),
-                'donos' => User::role('Dono')->get(['id', 'name', 'email']),
+                'donos' => User::role('Dono')->get(['id', 'name', 'email', 'two_factor_confirmed_at']),
             ];
         });
 
