@@ -56,7 +56,7 @@ it('[PERF] Motor com profissional FIXO: contagem baixa e constante', function ()
     expect($n)->toBeLessThanOrEqual(10); // caminho saudável
 });
 
-it('[PERF-001] Motor SEM preferência não deveria crescer com o nº de profissionais (N+1)', function () {
+it('[PERF-001] Motor SEM preferência: contagem CONSTANTE (não cresce com nº de profissionais)', function () {
     $dia = Carbon::now()->next(Carbon::WEDNESDAY);
     $motor = app(MotorDisponibilidade::class);
 
@@ -64,12 +64,16 @@ it('[PERF-001] Motor SEM preferência não deveria crescer com o nº de profissi
     profissionalAgenda($this->unidade, [$this->servico], [[3, '09:00', '18:00']], ['email' => 'p2@x.test']);
     $com2 = contarQueries(fn () => $motor->slots($this->unidade->id, [$this->servico->id], null, $dia->copy()));
 
-    profissionalAgenda($this->unidade, [$this->servico], [[3, '09:00', '18:00']], ['email' => 'p3@x.test']);
-    profissionalAgenda($this->unidade, [$this->servico], [[3, '09:00', '18:00']], ['email' => 'p4@x.test']);
-    $com4 = contarQueries(fn () => $motor->slots($this->unidade->id, [$this->servico->id], null, $dia->copy()));
+    foreach (['p3', 'p4', 'p5', 'p6'] as $e) {
+        profissionalAgenda($this->unidade, [$this->servico], [[3, '09:00', '18:00']], ['email' => "{$e}@x.test"]);
+    }
+    $com6 = contarQueries(fn () => $motor->slots($this->unidade->id, [$this->servico->id], null, $dia->copy()));
 
-    expect($com4)->toBe($com2); // saudável seria constante
-})->skip('PERF-001 (alta): Motor sem preferência faz 3 queries POR profissional (HorarioTrabalho+Agendamento+Bloqueio em loop). Medido no volume: 35 q/dia (10 prof), 225 q/semana. Fix = batch whereIn (núcleo) — aguarda aprovação.');
+    // Carga em lote (whereIn): a contagem NÃO muda com o nº de profissionais.
+    // Vermelho se o N+1 voltar (com 6 prof o loop daria ~3x mais queries).
+    expect($com6)->toBe($com2)
+        ->and($com2)->toBeLessThanOrEqual(10);
+});
 
 it('[PERF] Dashboard: contagem de queries baixa e constante (agregados, não N+1)', function () {
     $cliente = Cliente::create(['nome' => 'C', 'email' => 'c@x.test', 'telefone' => '1', 'password' => 'x12345678']);

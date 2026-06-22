@@ -75,19 +75,31 @@ class MotorDisponibilidade
         $ehHoje = $data->isSameDay($agora);
         $diaSemana = (int) $data->dayOfWeek;
 
+        $profIds = $profissionais->pluck('id')->all();
+
+        // Carga em LOTE (PERF-001): janelas de trabalho, agendamentos ocupantes e
+        // bloqueios de TODOS os profissionais em UMA query cada (whereIn), escopadas ao
+        // dia — depois agrupadas em memória por profissional. Substitui o N+1 (3 queries
+        // por profissional no loop) por contagem CONSTANTE, sem alterar a saída.
+        $janelasPorProf = HorarioTrabalho::whereIn('user_id', $profIds)
+            ->where('unidade_id', $unidadeId)
+            ->where('dia_semana', $diaSemana)
+            ->orderBy('id')
+            ->get()
+            ->groupBy('user_id');
+
+        $ocupadosPorProf = $this->intervalosOcupadosEmLote($profIds, $data, $ignorarAgendamentoId);
+
         $porHora = [];
 
         foreach ($profissionais as $prof) {
-            $janelas = HorarioTrabalho::where('user_id', $prof->id)
-                ->where('unidade_id', $unidadeId)
-                ->where('dia_semana', $diaSemana)
-                ->get();
+            $janelas = $janelasPorProf->get($prof->id);
 
-            if ($janelas->isEmpty()) {
+            if ($janelas === null || $janelas->isEmpty()) {
                 continue;
             }
 
-            $ocupados = $this->intervalosOcupados($prof->id, $data, $ignorarAgendamentoId);
+            $ocupados = $ocupadosPorProf[$prof->id] ?? [];
 
             foreach ($janelas as $janela) {
                 $faixaFim = $data->copy()->setTimeFromTimeString($janela->hora_fim);
@@ -263,6 +275,44 @@ class MotorDisponibilidade
             });
 
         return $intervalos;
+    }
+
+    /**
+     * Versão em LOTE de intervalosOcupados: agendamentos ocupantes + bloqueios de VÁRIOS
+     * profissionais (whereIn), agrupados por profissional. Uma query para agendamentos e
+     * uma para bloqueios — independente do nº de profissionais (anti N+1, PERF-001).
+     *
+     * @param  array<int, int>  $profIds
+     * @return array<int, array<int, array{0: Carbon, 1: Carbon}>> profId => [[inicio, fim], ...]
+     */
+    protected function intervalosOcupadosEmLote(array $profIds, Carbon $data, ?int $ignorarAgendamentoId = null): array
+    {
+        $inicioDia = $data->copy()->startOfDay();
+        $fimDia = $data->copy()->endOfDay();
+
+        $mapa = [];
+
+        Agendamento::query()
+            ->whereIn('profissional_id', $profIds)
+            ->ocupantes()
+            ->when($ignorarAgendamentoId, fn ($q) => $q->whereKeyNot($ignorarAgendamentoId))
+            ->where('data_hora_inicio', '<', $fimDia)
+            ->where('data_hora_fim', '>', $inicioDia)
+            ->get(['profissional_id', 'data_hora_inicio', 'data_hora_fim'])
+            ->each(function ($a) use (&$mapa) {
+                $mapa[$a->profissional_id][] = [$a->data_hora_inicio, $a->data_hora_fim];
+            });
+
+        Bloqueio::query()
+            ->whereIn('user_id', $profIds)
+            ->where('inicio', '<', $fimDia)
+            ->where('fim', '>', $inicioDia)
+            ->get(['user_id', 'inicio', 'fim'])
+            ->each(function ($b) use (&$mapa) {
+                $mapa[$b->user_id][] = [$b->inicio, $b->fim];
+            });
+
+        return $mapa;
     }
 
     protected function slotLivre(Carbon $inicio, Carbon $fim, array $ocupados, bool $ehHoje, Carbon $agora): bool
