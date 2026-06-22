@@ -42,6 +42,12 @@ class Dashboard extends Component
     {
         $user = auth('web')->user();
 
+        // Defesa em profundidade (VULN-001): se a sessão foi descartada (ex.: acesso
+        // cross-tenant), volta ao login do tenant em vez de estourar com usuário nulo.
+        if (! $user) {
+            return $this->redirectRoute('painel.login', ['tenant' => tenant('id')], navigate: true);
+        }
+
         // Sem visão de negócio: profissional/recepção caem na agenda.
         if (! $user->can('ver_dashboard')) {
             if ($user->can('ver_agenda') || $user->can('ver_agenda_propria')) {

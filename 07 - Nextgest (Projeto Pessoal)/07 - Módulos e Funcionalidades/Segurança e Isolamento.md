@@ -23,8 +23,8 @@ que produzem falso resultado neste projeto:
 |----|------|-----------|------------------------|-------|
 | — | Isolamento DB-per-tenant | OK (protegido) | id de B é `null` no contexto de A | `IsolamentoTenantTest` (find null) |
 | — | Sessão cross-tenant (web/cliente) | OK | sessão de A não autentica em B; **sem vazamento** de dado de B (live: 302/500, leak=False) | `IsolamentoTenantTest` |
-| **VULN-001** | Robustez cross-tenant (painel) | **baixa** | `/{outro}/painel` (dashboard) → **500** em vez de 302 (usuário nulo após logout do EscoparAutenticacaoPorTenant, que roda DEPOIS do Authenticate; dashboard não tem `can:`). **Sem vazamento** de dados. Stack trace só vazaria com `APP_DEBUG=true` (proibido em prod) | doc (live) |
-| **VULN-002** | Tenant inativo | **média** | `tenant.ativo=false` ainda serve portal/painel → **200**. Não há middleware checando `tenant('ativo')`; só o `ativo` do USUÁRIO é checado no login | `IsolamentoTenantTest` (`skip` VULN-002) |
+| **VULN-001** ✅ CORRIGIDA | Robustez cross-tenant (painel) | baixa | Era: `/{outro}/painel` → **500**. Fix: `EscoparAutenticacaoPorTenant` reordenado ANTES do `Authenticate` (+ guarda de usuário nulo no `Dashboard`). Agora → **302 limpo**, sem vazamento (confirmado live) | `IsolamentoTenantTest` (exige 302) |
+| **VULN-002** ✅ CORRIGIDA | Tenant inativo | média | Era: tenant inativo servia **200**. Fix: `App\Http\Middleware\GarantirTenantAtivo` no grupo de tenant (após o init) → **404** em painel e portal (inclusive login do tenant). Admin/central intactos | `IsolamentoTenantTest` (404 painel+portal; ativo 200) |
 | — | Autorização por permissão (`can`) | OK | Recepção→comissões 403; Profissional→equipe 403; Gerente→papéis 403; **camada dupla** (rota `can:` + `authorize`/`abort_unless` no `mount`) | `AutorizacaoTest` |
 | — | IDOR de comanda (`VendaPolicy`) | OK | Profissional só gere a própria comanda (com `agendamento_id`); avulsa/de outro → bloqueado | `AutorizacaoTest` |
 | — | Livewire server-side + snapshot | OK | Gerente barrado no editor de pagamento no servidor; snapshot sem o segredo | `AutorizacaoTest` |
@@ -52,14 +52,17 @@ no repo/histórico.
 **Gaps reais:** VULN-002 (tenant inativo não bloqueado — média); VULN-001 (cross-tenant no
 dashboard → 500 em vez de 302 limpo — baixa/robustez, sem vazamento).
 
-## Plano de correção priorizado (aguarda aprovação — NÃO aplicado)
-1. **VULN-002 (média):** middleware (ou check no grupo `tenant`) que aborta 404/503 quando
-   `tenant('ativo') === false`, isentando rotas de suporte/login do admin. Teste: remover o
-   `skip` e exigir bloqueio. (Decidir: portal e painel bloqueiam; o que mostrar — 404 ou
-   página "estabelecimento suspenso".)
-2. **VULN-001 (baixa):** ordenar `EscoparAutenticacaoPorTenant` ANTES do `Authenticate`
-   (ou fazê-lo redirecionar/abortar limpo) para que cross-tenant dê 302, não 500; e/ou
-   guarda de usuário nulo no `Dashboard`. Teste: cross-tenant no dashboard → 302.
+## Correções aplicadas (ambas fechadas — ver [[Decisões de Arquitetura#D40]])
+1. **VULN-002 (média) → fechada:** `App\Http\Middleware\GarantirTenantAtivo` adicionado ao
+   grupo `tenant` (logo após `InitializeTenancyByPath`): `tenant.ativo === false` → `abort(404)`.
+   Vale para painel (`web`) e portal (`cliente`), inclusive o login do tenant. Rotas
+   centrais/`admin` não passam pelo grupo → intactas. Inativar continua reversível (não apaga).
+2. **VULN-001 (baixa) → fechada:** `EscoparAutenticacaoPorTenant` reordenado ANTES do
+   `Authenticate` via `prependToPriorityList(before: Authenticate::class, ...)` em
+   `bootstrap/app.php` — a sessão cross-tenant é descartada antes do `Authenticate`, que
+   redireciona limpo (302) ao login do tenant. Defesa em profundidade: guarda de usuário nulo
+   no `Dashboard::mount`. Confirmado live: cross-tenant → 302 (não 500), `leak=False`;
+   mesmo-tenant → 200 (sem regressão).
 
 ## Checklist de PRODUÇÃO (Fase 1 — não verificável no dev)
 - `APP_DEBUG=false`, `APP_ENV=production` (senão 500 vaza stack trace — ver VULN-001).

@@ -33,18 +33,18 @@ it('[T1] DB-per-tenant: id de usuário do tenant B não existe no contexto do te
     expect($achadoEmA)->toBeNull(); // bancos separados — VERMELHO se compartilhassem DB
 });
 
-it('[T1] sessão de equipe do tenant A não autentica no painel do tenant B', function () {
+it('[T1][VULN-001] sessão de equipe do A no painel do B → 302 LIMPO (não 500), sem vazar', function () {
     $donoA = criarTenant('sega')->run(fn () => usuarioComPapel('Dono', ['email' => 'dono@a.test']));
-    criarTenant('segb'); // B não tem o id de A → resolução por banco do tenant falha
+    criarTenant('segb');
 
     $resp = $this->withSession(sessaoLogin('web', $donoA->id, 'sega'))
-        ->get('/segb/painel/equipe');
+        ->get('/segb/painel');
 
-    expect($resp->status())->not->toBe(200);                     // não acessa o painel de B
-    expect($resp->getContent())->not->toContain('dono@a.test');  // e não vaza dado
+    $resp->assertStatus(302);                                    // redirect LIMPO ao login (não 500)
+    expect($resp->getContent())->not->toContain('dono@a.test');  // e não vaza dado de A nem de B
 });
 
-it('[T1] sessão de cliente do tenant A não autentica no portal do tenant B', function () {
+it('[T1] sessão de cliente do A no portal autenticado do B → 302 limpo', function () {
     $cliA = criarTenant('sega')->run(fn () => Cliente::create([
         'nome' => 'Cli A', 'email' => 'cli@a.test', 'telefone' => '11999990000', 'password' => 'segredo-cli-123',
     ]));
@@ -53,8 +53,17 @@ it('[T1] sessão de cliente do tenant A não autentica no portal do tenant B', f
     $resp = $this->withSession(sessaoLogin('cliente', $cliA->id, 'sega'))
         ->get('/segb/agendar');
 
-    expect($resp->status())->not->toBe(200);
+    $resp->assertStatus(302);
     expect($resp->getContent())->not->toContain('cli@a.test');
+});
+
+it('[T1] sessão VÁLIDA do PRÓPRIO tenant acessa o painel (200 — não-regressão do fix)', function () {
+    $dono = criarTenant('segown')->run(fn () => usuarioComPapel('Dono', ['email' => 'dono@own.test']));
+
+    $resp = $this->withSession(sessaoLogin('web', $dono->id, 'segown'))
+        ->get('/segown/painel');
+
+    $resp->assertOk(); // mesmo-tenant segue funcionando com o EscoparAutenticacaoPorTenant reordenado
 });
 
 it('[T1] página pública de um tenant não vaza o slug de outro (banco central)', function () {
@@ -68,15 +77,40 @@ it('[T1] página pública de um tenant não vaza o slug de outro (banco central)
 });
 
 /*
-| VULN-002 (média) — tenant INATIVO continua servindo (200). Não há middleware que
-| barre `tenant('ativo') === false`; só o `ativo` do USUÁRIO é checado no login. O teste
-| abaixo descreve o comportamento SEGURO esperado e fica `skip` até o fix (suite verde).
+| VULN-002 (CORRIGIDA) — tenant INATIVO é bloqueado (404) em todo o grupo de tenant,
+| via App\Http\Middleware\GarantirTenantAtivo (após o init da tenancy). Painel e portal.
 */
-it('[T1][VULN-002] tenant INATIVO deveria bloquear o acesso ao portal', function () {
+it('[T1][VULN-002] tenant INATIVO bloqueia (404) painel e portal', function () {
     criarTenant('seginativo');
     Tenant::whereKey('seginativo')->update(['ativo' => false]);
 
-    $resp = $this->get('/seginativo');
+    $this->get('/seginativo')->assertNotFound();               // portal (home pública)
+    $this->get('/seginativo/painel/login')->assertNotFound();  // login do tenant (não se loga em salão suspenso)
+    $this->get('/seginativo/agendar')->assertNotFound();       // portal autenticado
+});
 
-    expect($resp->status())->toBeIn([403, 404, 503]); // hoje retorna 200
-})->skip('VULN-002: tenant inativo não é bloqueado (retorna 200). Aguardando fix aprovado.');
+it('[T1] tenant ATIVO segue acessível (não-regressão da VULN-002)', function () {
+    criarTenant('segativo');
+
+    $this->get('/segativo')->assertOk();
+    $this->get('/segativo/painel/login')->assertOk();
+});
+
+it('[T1] inativar bloqueia mas NÃO apaga dado (reversível)', function () {
+    $t = criarTenant('segreativa');
+    $t->run(fn () => usuarioComPapel('Dono', ['email' => 'dono@r.test']));
+
+    Tenant::whereKey('segreativa')->update(['ativo' => false]); // inativar (soft)
+    $this->get('/segreativa')->assertNotFound();                // acesso barrado
+
+    // O dado continua lá (inativar é reversível; reativar volta a funcionar — ver teste
+    // de "tenant ATIVO → 200"). Cada request é um processo: o re-GET pós-reativação no
+    // MESMO teste cairia no early-return de Tenancy::initialize (instância stale).
+    expect($t->run(fn () => User::where('email', 'dono@r.test')->exists()))->toBeTrue();
+    expect(Tenant::find('segreativa'))->not->toBeNull(); // tenant não foi apagado
+});
+
+it('[T1] o admin/central NÃO é afetado pelo bloqueio de tenant (login do admin abre)', function () {
+    // Rotas centrais não passam pelo grupo de tenant → GarantirTenantAtivo não as alcança.
+    $this->get('/admin/login')->assertOk();
+});

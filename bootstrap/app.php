@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Middleware\EscoparAutenticacaoPorTenant;
+use App\Http\Middleware\GarantirTenantAtivo;
+use App\Http\Middleware\InicializarTenancyArquivosLivewire;
+use App\Http\Middleware\VerificaRecurso;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -9,6 +13,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Contracts\TenantCouldNotBeIdentifiedException;
@@ -37,14 +42,26 @@ return Application::configure(basePath: dirname(__DIR__))
         // dele — o usuário do tenant era procurado no banco central → 500. Aqui
         // garantimos que a tenancy inicialize ANTES do throttle.
         $middleware->prependToPriorityList(
-            before: \Illuminate\Routing\Middleware\ThrottleRequests::class,
-            prepend: \App\Http\Middleware\InicializarTenancyArquivosLivewire::class,
+            before: ThrottleRequests::class,
+            prepend: InicializarTenancyArquivosLivewire::class,
+        );
+
+        // VULN-001: o EscoparAutenticacaoPorTenant precisa rodar ANTES do Authenticate.
+        // O Authenticate é prioritário e rodava primeiro; quando a sessão era de OUTRO
+        // tenant, o Escopar (que vinha depois) deslogava tarde demais e o componente
+        // estourava com usuário nulo (500). Com ele antes, a sessão cross-tenant é
+        // descartada e o Authenticate redireciona LIMPO para o login do tenant (302).
+        $middleware->prependToPriorityList(
+            before: Authenticate::class,
+            prepend: EscoparAutenticacaoPorTenant::class,
         );
 
         $middleware->group('tenant', [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             InitializeTenancyByPath::class,
+            // VULN-002: barra estabelecimento inativo (404) logo após carregar o tenant.
+            GarantirTenantAtivo::class,
             StartSession::class,
             ShareErrorsFromSession::class,
             ValidateCsrfToken::class,
@@ -55,7 +72,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Gating de recursos por tenant: ->middleware('recurso:whatsapp')
         // (idem 'recurso:clube' / 'recurso:gateway'). Ver App\Http\Middleware\VerificaRecurso.
         $middleware->alias([
-            'recurso' => \App\Http\Middleware\VerificaRecurso::class,
+            'recurso' => VerificaRecurso::class,
         ]);
 
         // Webhooks de gateways externos não enviam token CSRF.

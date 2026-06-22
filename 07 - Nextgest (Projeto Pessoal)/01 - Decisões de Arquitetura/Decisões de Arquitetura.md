@@ -344,3 +344,17 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Travas de integridade (multi-tenant):** não criar membro **sem papel** (validação
   `required|array|min:1`); não remover o papel Dono nem inativar o **último Dono ativo** do
   estabelecimento (bloqueado no `Equipe\Index`). Ver [[Papéis e Permissões (RBAC)]].
+
+## D40 — Estabelecimento inativo bloqueia acesso (404); cross-tenant falha limpo (302)
+> Fecha os achados VULN-002 e VULN-001 da verificação de segurança. Ver
+> [[Segurança e Isolamento]].
+- **Tenant inativo → `abort(404)`** em todo o grupo de tenant (painel `web` e portal
+  `cliente`), via `App\Http\Middleware\GarantirTenantAtivo` (logo após o init da tenancy).
+  Inclui o **login** do tenant (não se loga em salão suspenso). Rotas **centrais/`admin`**
+  não passam pelo grupo → **intactas**; a reativação é feita pelo super-admin (`/admin` →
+  "Ativar"). Inativar é **reversível** (não apaga dado). Sem página "suspenso" agora (fica
+  para o billing — troca de 1 linha).
+- **Cross-tenant → 302 limpo:** `EscoparAutenticacaoPorTenant` roda **antes** do
+  `Authenticate` (`prependToPriorityList`), descartando a sessão de outro tenant antes da
+  autenticação — redirect limpo ao login, **nunca 500**. Já era sem vazamento; isto é
+  higiene do modo de falha. Defesa em profundidade: guarda de usuário nulo no `Dashboard`.
