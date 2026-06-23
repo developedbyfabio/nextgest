@@ -288,3 +288,26 @@ Ao mexer no shell do painel (D45), três coisas a lembrar do `flux:sidebar`:
   trivial aqui (`wire:navigate` reseta; `@persist` congelaria o realce do item ativo). Aceitável.
 - **Cor de acento sem cor nova:** `style="color: var(--cor-principal)"` no toggle (D36). O estado
   ativo dos itens já segue `--color-accent`, que `Aparencia::cssVarsAcento` aponta p/ a cor da marca.
+
+## Item de TOPO numa `flux:sidebar` colapsável precisa ser `flux:sidebar.item`, não `flux:navlist.item`
+Dentro de uma `flux:sidebar collapsible`, item solto de topo (ex.: "Início") **tem** de ser
+`flux:sidebar.item`. Só ele carrega as classes do estado **recolhido**
+(`in-data-flux-sidebar-collapsed-desktop:w-10` + `justify-center` + oculta-texto + tooltip). O
+`flux:navlist.item` **não tem nenhuma** dessas — na faixa de ícones (`w-14/px-2`) ele continua
+`w-full px-3` com o texto visível e fica **"espremido"/desalinhado** (foi o sintoma real, D46). Os
+itens **dentro** de `flux:sidebar.group` podem seguir `navlist.item`: ao recolher, o grupo **troca o
+container inteiro** por um ícone + dropdown (o ramo de disclosure é escondido), então o filho nunca
+aparece "cru" na faixa. Diagnóstico veio de **ler a fonte dos stubs** do Flux
+(`vendor/livewire/flux/stubs/.../sidebar/item.blade.php` × `.../navlist/item.blade.php`), não de supor.
+
+## Recorte de imagem no cliente: Cropper.js empacotado via Vite → blob → `$wire.upload`
+Foto de perfil (D46) recorta no navegador e sobe pelo Livewire sem caminho de upload novo:
+`getCroppedCanvas({width:512,height:512})` → `canvas.toBlob(...)` → `new File([blob],'x.png')` →
+`this.$wire.upload('foto', file, finishCb)` e, no `finishCb`, `this.$wire.salvar()`. **Pinar Cropper.js
+v1** (`cropperjs@^1.6.2`): a API `getCroppedCanvas` é da v1; a v2 é outra (web component). Importar o
+CSS no `app.js` (`import 'cropperjs/dist/cropper.css'`) — o Vite extrai num asset próprio (`@vite` no
+layout linka sozinho). `[x-cloak]{display:none!important}` no `app.css` evita o flash do palco antes do
+Alpine montar. O `$wire` dentro de `Alpine.data` funciona porque o `x-data` está **dentro** do DOM do
+componente Livewire. Avatar do rodapé é renderizado **no layout** (fora do componente) → após salvar,
+**reload** (`navigate:false`, padrão da Aparência) para refletir; reativo exigiria mover o avatar pra
+um componente.

@@ -492,3 +492,33 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   e gruda no scroll; mobile vira drawer; gates Clube/Financeiro intactos) e suíte 416/416 verde.
 - **Isolamento:** portal (`portal.blade.php`) e a **prévia da Aparência** (`x-ng.previa-portal`) não
   usam `flux:sidebar` → inalterados.
+
+---
+
+## D46 — Polimento do menu do painel: "Início" no padrão, dropdown com nome, e foto de perfil
+> Continuação do D45 (mesmo arquivo `painel.blade.php` + 1 componente Livewire novo). Layout +
+> upload **cercado**; NÃO toca rotas/gates/negócio. Suíte 433/433 verde.
+- **"Início" usa `flux:sidebar.item` (não `flux:navlist.item`).** Causa real do "espremido" (lida na
+  fonte dos componentes Flux, não suposição): só o `flux:sidebar.item` traz as classes do estado
+  **recolhido** (`in-data-flux-sidebar-collapsed-desktop:w-10` + `justify-center` + oculta-texto +
+  tooltip). O `navlist.item` não tem nenhuma → na faixa de ícones (`w-14/px-2`) ficava `w-full px-3`
+  com texto visível. Trocado, o Início acompanha os **cabeçalhos de grupo** (os outros itens de topo):
+  expandido idêntico (h-8, px-3, gap-3, ícone+texto, estado ativo outline), recolhido vira ícone
+  centralizado, mobile h-10. Os **itens dentro dos grupos** seguem `navlist.item` (o grupo troca o
+  container inteiro por ícone+dropdown ao recolher — não tinham o bug). Ver gotcha em [[Gotchas e Aprendizados do Projeto]].
+- **Dropdown do perfil com cabeçalho (Item 4):** o **nome** vira cabeçalho em destaque e o **e-mail**
+  fica menor/secundário abaixo (antes o e-mail era um `flux:menu.item` inerte, que parecia clicável e
+  não fazia nada). Cores zinc do Flux (superfície do popover, claro/escuro).
+- **Foto de perfil (Item 5) — REUSA o caminho da Aparência (D36), sem caminho paralelo:** coluna
+  **aditiva** `users.foto_perfil` (string, nullable) + `$fillable`. Upload self-service (todos os
+  papéis) pelo dropdown → modal com **recorte QUADRADO no cliente** (Cropper.js **empacotado via
+  Vite**, sem CDN, sem localStorage): canvas 512×512 → blob PNG → `$wire.upload('foto')` →
+  `salvar()`. Servidor: `WithFileUploads` + `store('aparencia','public')` no disco do tenant
+  (isolado), servido por `TenantArquivoController` via `Aparencia::urlArquivo`; validação
+  `['nullable','image','mimes:png,jpg,jpeg,webp','max:5120']` (**sem SVG**). **Não reintroduz** o
+  gotcha do 500 (disco temp central + tenancy antes do throttle, intactos). Avatar do rodapé
+  (`flux:avatar` via `flux:sidebar.profile`) usa `:avatar` com **fallback nas iniciais** quando nulo;
+  "Remover foto" volta às iniciais. Após salvar/remover, **reload** (`navigate:false`) para o avatar
+  do layout refletir (mesmo padrão da Aparência). `[x-cloak]` no `app.css` evita flash do palco.
+- **Gates intactos (guard-rail testado):** Recepção não vê Financeiro/Comissões; Dono vê. O ajuste do
+  menu não afrouxou `@can`/`@recurso` (Clube `recurso:clube`, Financeiro `ver_financeiro`).

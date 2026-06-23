@@ -80,7 +80,12 @@ Tabela padrão de autenticação do Laravel, com alguns campos a mais.
 | password | string | Senha (hash — nunca em texto puro) |
 | e_profissional | boolean | Se aparece na agenda como prestador de serviço |
 | ativo | boolean | Se pode acessar |
+| foto_perfil | string null | Caminho da foto no disco do tenant (`aparencia/...`), servida por `TenantArquivoController` via `Aparencia::urlArquivo`. NULL → avatar cai nas iniciais. Recorte quadrado no cliente (Cropper.js). Aditiva, D46 |
 | timestamps | datetime | — |
+
+> **Colunas aditivas (pós-criação):** `deve_trocar_senha` (troca obrigatória no 1º login),
+> `two_factor_secret` / `two_factor_recovery_codes` / `two_factor_confirmed_at` (2FA opcional do Dono,
+> cifrados, D38) e `foto_perfil` (D46). Todas nullable; usuários existentes não são afetados.
 
 Os **papéis e permissões** (Dono, Gerente, etc.) ficam nas tabelas que o
 `spatie/laravel-permission` cria (`roles`, `permissions`, `model_has_roles`...).
