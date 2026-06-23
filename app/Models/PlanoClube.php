@@ -21,6 +21,12 @@ class PlanoClube extends Model
         'preco_mensal',
         'periodicidade',
         'ativo',
+        // Cobertura (D44): limite/dias/capacidade no nível do plano.
+        'ilimitado',
+        'limite_usos',
+        'periodo',
+        'dias_semana',
+        'capacidade',
     ];
 
     protected function casts(): array
@@ -28,7 +34,31 @@ class PlanoClube extends Model
         return [
             'preco_mensal' => 'decimal:2',
             'ativo' => 'boolean',
+            'ilimitado' => 'boolean',
+            'limite_usos' => 'integer',
+            'dias_semana' => 'array',
+            'capacidade' => 'integer',
         ];
+    }
+
+    /** Ids dos serviços COBERTOS pelo plano (reusa a pivô plano_beneficios). */
+    public function servicosCobertosIds(): array
+    {
+        return $this->beneficios()->pluck('servico_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /** O plano cobre este serviço? */
+    public function cobreServico(int $servicoId): bool
+    {
+        return in_array($servicoId, $this->servicosCobertosIds(), true);
+    }
+
+    /** O dia da semana (0=dom..6=sáb) é elegível? Vazio/null = todos os dias. */
+    public function cobreDia(int $diaSemana): bool
+    {
+        $dias = $this->dias_semana ?? [];
+
+        return $dias === [] || in_array($diaSemana, array_map('intval', $dias), true);
     }
 
     public function beneficios(): HasMany

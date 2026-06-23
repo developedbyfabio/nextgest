@@ -5,63 +5,125 @@ declare(strict_types=1);
 namespace App\Services\Clube;
 
 use App\Models\AssinaturaClube;
-use App\Models\PlanoDesconto;
+use App\Models\UsoClube;
 use App\Models\Venda;
 use App\Services\Venda\Comanda;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Aplica o benefício do Clube (v1 = DESCONTO PERCENTUAL) na comanda de um cliente com
- * assinatura ATIVA. Reusa Comanda::definirDesconto (não reescreve o núcleo da comanda);
- * só desconto, sem cobrir item/consumir cota (isso é fase futura, schema já pronto).
- *
- * Regra: só assinante ATIVO recebe (inadimplente/cancelado/pendente não).
+ * Benefício do Clube (D44) = COBERTURA de serviços (100%). Para um assinante ATIVO, os
+ * serviços COBERTOS pelo plano, no DIA permitido e DENTRO DO TETO, saem zerados na
+ * comanda; o resto (produtos, serviço fora do plano, dia não permitido, além do teto) é
+ * pago normalmente no balcão. Cada cobertura registra um `uso_clube` (consumo por
+ * assinatura no período — a família divide o teto). Reusa `Comanda::recalcular` (não
+ * reescreve o núcleo). Substitui o "% desconto" da Fase A (depreciado).
  */
 class BeneficioClube
 {
     public function __construct(private readonly Comanda $comanda) {}
 
-    /** % de desconto do Clube para o cliente (assinatura ATIVA), ou null se não houver. */
-    public function percentualDoCliente(?int $clienteId): ?float
+    /** Assinatura ATIVA do cliente: como TITULAR ou como BENEFICIÁRIO com conta. */
+    public function assinaturaDoCliente(?int $clienteId): ?AssinaturaClube
     {
         if (! $clienteId) {
             return null;
         }
 
-        $assinatura = AssinaturaClube::ativas()
-            ->where('cliente_id', $clienteId)
+        return AssinaturaClube::query()
+            ->where('status', AssinaturaClube::STATUS_ATIVA)
+            ->where(function ($q) use ($clienteId) {
+                $q->where('cliente_id', $clienteId)
+                    ->orWhereHas('beneficiarios', fn ($b) => $b->where('cliente_id', $clienteId));
+            })
+            ->with('plano')
             ->latest('data_inicio')
             ->first();
+    }
 
-        if (! $assinatura) {
+    /** Usos consumidos pela assinatura no período (mês 'Y-m'). */
+    public function usosNoPeriodo(AssinaturaClube $assinatura, string $periodo): int
+    {
+        return UsoClube::where('assinatura_id', $assinatura->id)
+            ->where('periodo_referencia', $periodo)
+            ->count();
+    }
+
+    /** Saldo de usos no período; null = ilimitado (sem teto). */
+    public function saldoRestante(AssinaturaClube $assinatura, string $periodo): ?int
+    {
+        $plano = $assinatura->plano;
+
+        if (! $plano || $plano->ilimitado || is_null($plano->limite_usos)) {
             return null;
         }
 
-        $desconto = PlanoDesconto::where('plano_id', $assinatura->plano_id)
-            ->where('tipo_desconto', PlanoDesconto::TIPO_PERCENTUAL)
-            ->where('aplica_em', PlanoDesconto::APLICA_TODOS)
-            ->orderByDesc('valor')
-            ->first();
-
-        return $desconto ? (float) $desconto->valor : null;
+        return max(0, (int) $plano->limite_usos - $this->usosNoPeriodo($assinatura, $periodo));
     }
 
     /**
-     * Aplica o desconto % do Clube na comanda do assinante ativo. Retorna o valor de
-     * desconto aplicado (R$), ou null se o cliente não tem benefício ativo.
+     * Aplica a cobertura na comanda. Retorna o nº de itens cobertos (0 = nada coberto:
+     * sem assinatura ativa, dia não permitido, serviço fora do plano ou teto esgotado).
      */
-    public function aplicarNaComanda(Venda $venda): ?float
+    public function aplicarCobertura(Venda $venda): int
     {
-        $pct = $this->percentualDoCliente($venda->cliente_id);
+        $assinatura = $this->assinaturaDoCliente($venda->cliente_id);
 
-        if ($pct === null || $pct <= 0) {
-            return null;
+        if (! $assinatura || ! $assinatura->plano) {
+            return 0;
         }
 
-        $venda->refresh();
-        $desconto = round((float) $venda->valor_bruto * $pct / 100, 2);
+        $plano = $assinatura->plano;
+        $quando = $venda->data ?? Carbon::now();
 
-        $this->comanda->definirDesconto($venda, $desconto);
+        if (! $plano->cobreDia($quando->dayOfWeek)) {
+            return 0;
+        }
 
-        return $desconto;
+        $cobertosIds = $plano->servicosCobertosIds();
+
+        if ($cobertosIds === []) {
+            return 0;
+        }
+
+        $periodo = $quando->format('Y-m');
+        $saldo = $this->saldoRestante($assinatura, $periodo); // null = ilimitado
+        $cobertos = 0;
+
+        DB::transaction(function () use ($venda, $assinatura, $plano, $cobertosIds, $periodo, $quando, &$saldo, &$cobertos) {
+            foreach ($venda->itens()->where('tipo', 'servico')->where('coberto_por_assinatura', false)->get() as $item) {
+                if (! in_array((int) $item->servico_id, $cobertosIds, true)) {
+                    continue;
+                }
+
+                if ($saldo !== null && $saldo <= 0) {
+                    break; // teto do período esgotado
+                }
+
+                $item->update([
+                    'subtotal' => 0,
+                    'coberto_por_assinatura' => true,
+                    'assinatura_id' => $assinatura->id,
+                ]);
+
+                UsoClube::create([
+                    'assinatura_id' => $assinatura->id,
+                    'plano_beneficio_id' => $plano->beneficios()->where('servico_id', $item->servico_id)->value('id'),
+                    'servico_id' => $item->servico_id,
+                    'venda_item_id' => $item->id,
+                    'periodo_referencia' => $periodo,
+                    'data' => $quando,
+                ]);
+
+                if ($saldo !== null) {
+                    $saldo--;
+                }
+                $cobertos++;
+            }
+
+            $this->comanda->recalcular($venda);
+        });
+
+        return $cobertos;
     }
 }

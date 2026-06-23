@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Clube;
 
 use App\Models\AssinaturaClube;
+use App\Models\BeneficiarioAssinatura;
 use App\Models\EventoAssinaturaClube;
 use App\Models\PlanoClube;
 use Carbon\Carbon;
@@ -43,10 +44,50 @@ class Assinaturas
                 $assinatura->update(['gateway_assinatura_id' => $idGateway]);
             }
 
+            // O titular também é beneficiário (usa o próprio plano).
+            $assinatura->beneficiarios()->create([
+                'cliente_id' => $clienteId,
+                'titular' => true,
+            ]);
+
             $this->registrarEvento($assinatura, EventoAssinaturaClube::TIPO_CRIADA);
 
             return $assinatura;
         });
+    }
+
+    /**
+     * Adiciona um beneficiário à assinatura: com conta (`clienteId`) OU sem conta (`nome`),
+     * respeitando a `capacidade` do plano (titular incluso na contagem). Lança se cheio ou
+     * sem identificação.
+     */
+    public function adicionarBeneficiario(AssinaturaClube $assinatura, ?int $clienteId = null, ?string $nome = null): BeneficiarioAssinatura
+    {
+        $capacidade = (int) ($assinatura->plano?->capacidade ?? 1);
+
+        if ($assinatura->beneficiarios()->count() >= $capacidade) {
+            throw new \RuntimeException("Capacidade do plano atingida ({$capacidade}).");
+        }
+
+        if (! $clienteId && ! trim((string) $nome)) {
+            throw new \InvalidArgumentException('Informe um cliente ou um nome.');
+        }
+
+        return $assinatura->beneficiarios()->create([
+            'cliente_id' => $clienteId,
+            'nome' => $clienteId ? null : trim((string) $nome),
+            'titular' => false,
+        ]);
+    }
+
+    /** Remove um beneficiário (o titular não pode ser removido). */
+    public function removerBeneficiario(BeneficiarioAssinatura $beneficiario): void
+    {
+        if ($beneficiario->titular) {
+            return;
+        }
+
+        $beneficiario->delete();
     }
 
     /**

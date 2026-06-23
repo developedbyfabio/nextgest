@@ -164,11 +164,11 @@ class Detalhe extends Component
     }
 
     /**
-     * Aplica o benefício do Clube (desconto %) na comanda do assinante ATIVO. Reusa o
-     * mecanismo de desconto da comanda (Comanda::definirDesconto via o serviço). Só com
-     * a flag `clube` ligada e cliente com assinatura ativa que dá desconto.
+     * Aplica a COBERTURA do Clube (D44): zera 100% os itens de serviço cobertos pelo plano
+     * do assinante ATIVO, no dia permitido e dentro do teto; registra o consumo. Reusa
+     * Comanda::recalcular (via o serviço); não toca estoque/pagamento. Só com a flag `clube`.
      */
-    public function aplicarBeneficioClube(BeneficioClube $clube): void
+    public function aplicarCobertura(BeneficioClube $clube): void
     {
         $venda = $this->venda();
         $this->authorize('gerir', $venda);
@@ -177,13 +177,13 @@ class Detalhe extends Component
             return;
         }
 
-        $aplicado = $clube->aplicarNaComanda($venda);
+        $cobertos = $clube->aplicarCobertura($venda);
         $this->sincronizar();
 
-        if ($aplicado !== null) {
-            Flux::toast('Benefício do clube aplicado: desconto de R$ '.number_format($aplicado, 2, ',', '.').'.', variant: 'success');
+        if ($cobertos > 0) {
+            Flux::toast("Cobertura do clube aplicada: {$cobertos} serviço(s) zerado(s).", variant: 'success');
         } else {
-            Flux::toast('Cliente sem assinatura ativa com benefício.', variant: 'danger');
+            Flux::toast('Nada coberto (sem assinatura ativa, fora do dia/teto, ou serviço fora do plano).', variant: 'danger');
         }
     }
 
@@ -275,10 +275,10 @@ class Detalhe extends Component
             'servicos' => Servico::where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'preco']),
             'profissionais' => User::where('e_profissional', true)->where('ativo', true)->orderBy('name')->get(['id', 'name']),
             'comissaoTotal' => (float) $venda->itens->sum('valor_comissao'),
-            // Benefício do Clube (v1: desconto %): só com a flag ligada e assinante ativo.
-            'beneficioClubePct' => ($venda->status === 'aberta' && tenant_tem_recurso('clube'))
-                ? app(BeneficioClube::class)->percentualDoCliente($venda->cliente_id)
-                : null,
+            // Cobertura do Clube (D44): botão só com a flag ligada e assinante ATIVO.
+            'temCoberturaClube' => ($venda->status === 'aberta' && tenant_tem_recurso('clube'))
+                ? app(BeneficioClube::class)->assinaturaDoCliente($venda->cliente_id) !== null
+                : false,
             'metodos' => Pagamento::METODO_LABEL,
             'somaPagamentos' => $soma,
             'totalVenda' => $total,

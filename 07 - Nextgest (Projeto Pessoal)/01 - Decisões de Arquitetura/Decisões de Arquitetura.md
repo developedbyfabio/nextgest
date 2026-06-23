@@ -437,3 +437,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Export CSV** agregado (cabeçalho tenant+período+aviso), **sem PII**.
 - **Gate `ver_financeiro`** (só Dono, D40), camada dupla (rota `can:` + mount), nunca `hasRole`.
   Grupo "Financeiro" no menu só com a permissão. Sem migração (leitura).
+
+## D44 — Clube: benefício de COBERTURA (100%) + família/beneficiários (substitui % desconto)
+> Migra o benefício do Clube de "% desconto" (Fase A, depreciado) para "cobertura de serviços".
+> Regra definitiva em [[Regra de Negócio — Clube de Assinatura]]. Adapta a Fase A (não reconstrói).
+> **NÃO toca a agenda** (agendar para beneficiário = próximo prompt).
+- **Plano (cobertura):** colunas aditivas em `planos_clube` — `ilimitado`, `limite_usos`, `periodo`,
+  `dias_semana` (json 0=dom..6=sáb; null=todos), `capacidade`. **Serviços cobertos reusam a pivô
+  `plano_beneficios`** (plano_id+servico_id). Limite/dias/capacidade são **do plano** (compartilhados
+  pela assinatura — a família divide o teto). `plano_descontos` (% ) **depreciado**, não dropado.
+- **Beneficiários:** nova `beneficiarios_assinatura` — `cliente_id` (com conta) **ou** `nome` (sem
+  conta), `titular` bool. O titular vira beneficiário na criação. Trava `≤ capacidade`
+  (`App\Services\Clube\Assinaturas::adicionarBeneficiario`). 1 titular ↔ 1 plano ativo (já era).
+- **Cobertura na comanda** (`BeneficioClube::aplicarCobertura`): assinante **ativo** (titular OU
+  beneficiário com conta) → zera 100% os itens de **serviço coberto**, no **dia permitido**, dentro
+  do **teto** (saldo por assinatura/mês em `usos_clube`); marca `coberto_por_assinatura`+`assinatura_id`
+  e registra `uso_clube`. Resto (produto/fora do plano/dia errado/além do teto) cobrado no balcão.
+  **Reusa `Comanda::recalcular`** (zera `subtotal` do item) — núcleo intocado; substitui o botão de %
+  no `Vendas\Detalhe`.
+- **Consumo compartilhado:** contado por **assinatura** no mês (não por beneficiário) — a família
+  divide o teto. Ilimitado nunca bloqueia.
+- **Gate `gerenciar_clube`** (Dono+Gerente) reusado; flag `recurso:clube`. Indicadores set-based
+  seguem **constantes** (não regrediu). Migração só aditiva; sem destrutivo.
+- **Cobrança recorrente** continua **costura manual** (`GatewayRecorrente`) — sem gateway/webhook.

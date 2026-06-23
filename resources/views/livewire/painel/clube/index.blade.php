@@ -118,7 +118,6 @@
             @else
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($planos as $plano)
-                        @php($pct = $plano->descontos->firstWhere(fn ($d) => $d->tipo_desconto === 'percentual' && $d->aplica_em === 'todos'))
                         <div class="ng-surface flex flex-col gap-2 p-5">
                             <div class="flex items-start justify-between gap-2">
                                 <flux:heading size="lg" style="color: var(--cor-texto);">{{ $plano->nome }}</flux:heading>
@@ -128,8 +127,20 @@
                             @if ($plano->descricao)
                                 <flux:text class="text-sm" style="color: var(--cor-texto-suave);">{{ $plano->descricao }}</flux:text>
                             @endif
-                            <div class="flex flex-wrap items-center gap-2 text-sm" style="color: var(--cor-texto-suave);">
-                                @if ($pct)<flux:badge color="indigo" size="sm" icon="gift">{{ rtrim(rtrim(number_format((float) $pct->valor, 2, ',', '.'), '0'), ',') }}% de desconto</flux:badge>@endif
+                            <div class="flex flex-wrap items-center gap-1.5 text-sm" style="color: var(--cor-texto-suave);">
+                                @forelse ($plano->beneficios as $b)
+                                    <flux:badge color="indigo" size="sm" icon="scissors">{{ $b->servico?->nome }}</flux:badge>
+                                @empty
+                                    <flux:badge color="amber" size="sm">Sem serviços cobertos</flux:badge>
+                                @endforelse
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs" style="color: var(--cor-texto-suave);">
+                                <span>{{ $plano->ilimitado ? 'Uso ilimitado' : (($plano->limite_usos ?? 0).'/mês') }}</span>
+                                <span>·</span>
+                                <span>{{ empty($plano->dias_semana) ? 'Todos os dias' : collect($plano->dias_semana)->map(fn ($d) => $diasLabel[(int) $d] ?? $d)->implode(', ') }}</span>
+                                <span>·</span>
+                                <span>{{ (int) $plano->capacidade }} {{ (int) $plano->capacidade > 1 ? 'contas' : 'conta' }}</span>
+                                <span>·</span>
                                 <span>{{ $plano->ativas_count }} ativo(s)</span>
                             </div>
                             <div class="mt-2 flex gap-2">
@@ -189,20 +200,25 @@
                                     <td class="py-2 pr-4">{{ optional($a->data_inicio)->format('d/m/Y') }}</td>
                                     <td class="py-2 pr-4 tabular-nums">R$ {{ number_format((float) $a->preco_contratado, 2, ',', '.') }}</td>
                                     <td class="py-2 pr-4">
-                                        <flux:dropdown>
-                                            <flux:button size="xs" variant="subtle" icon="ellipsis-horizontal">Status</flux:button>
-                                            <flux:menu>
-                                                @if ($a->status !== 'ativa')
-                                                    <flux:menu.item wire:click="mudarStatus({{ $a->id }}, 'ativa')" icon="check">Marcar ativa</flux:menu.item>
-                                                @endif
-                                                @if ($a->status !== 'inadimplente')
-                                                    <flux:menu.item wire:click="mudarStatus({{ $a->id }}, 'inadimplente')" icon="exclamation-triangle">Marcar inadimplente</flux:menu.item>
-                                                @endif
-                                                @if ($a->status !== 'cancelada')
-                                                    <flux:menu.item wire:click="mudarStatus({{ $a->id }}, 'cancelada')" icon="x-mark" variant="danger">Cancelar</flux:menu.item>
-                                                @endif
-                                            </flux:menu>
-                                        </flux:dropdown>
+                                        <div class="flex items-center gap-2">
+                                            <flux:button wire:click="gerirBeneficiarios({{ $a->id }})" size="xs" variant="subtle" icon="users">
+                                                Beneficiários ({{ $a->beneficiarios_count }})
+                                            </flux:button>
+                                            <flux:dropdown>
+                                                <flux:button size="xs" variant="subtle" icon="ellipsis-horizontal">Status</flux:button>
+                                                <flux:menu>
+                                                    @if ($a->status !== 'ativa')
+                                                        <flux:menu.item wire:click="mudarStatus({{ $a->id }}, 'ativa')" icon="check">Marcar ativa</flux:menu.item>
+                                                    @endif
+                                                    @if ($a->status !== 'inadimplente')
+                                                        <flux:menu.item wire:click="mudarStatus({{ $a->id }}, 'inadimplente')" icon="exclamation-triangle">Marcar inadimplente</flux:menu.item>
+                                                    @endif
+                                                    @if ($a->status !== 'cancelada')
+                                                        <flux:menu.item wire:click="mudarStatus({{ $a->id }}, 'cancelada')" icon="x-mark" variant="danger">Cancelar</flux:menu.item>
+                                                    @endif
+                                                </flux:menu>
+                                            </flux:dropdown>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -267,19 +283,97 @@
         @endif
     @endif
 
-    {{-- Modal: criar/editar plano --}}
-    <flux:modal name="plano-clube" class="md:w-96">
+    {{-- Modal: criar/editar plano (cobertura) --}}
+    <flux:modal name="plano-clube" class="md:w-[32rem]">
         <form wire:submit="salvarPlano" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ $planoId ? 'Editar plano' : 'Novo plano' }}</flux:heading>
             <flux:input wire:model="planoNome" label="Nome" required />
             <flux:input wire:model="planoPreco" type="number" step="0.01" min="0" label="Preço mensal (R$)" required />
-            <flux:input wire:model="planoDescontoPct" type="number" step="0.01" min="0" max="100" label="Desconto do clube (%)" description="Aplicado na comanda do assinante ativo. Deixe 0 para nenhum." />
+
+            <flux:field>
+                <flux:label>Serviços cobertos (100%)</flux:label>
+                <div class="flex flex-col gap-1 rounded-lg border p-3" style="border-color: color-mix(in srgb, var(--cor-texto) 12%, transparent); max-height: 12rem; overflow-y: auto;">
+                    @forelse ($servicos as $s)
+                        <flux:checkbox wire:model="planoServicos" :value="$s->id" :label="$s->nome" />
+                    @empty
+                        <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Nenhum serviço ativo.</flux:text>
+                    @endforelse
+                </div>
+            </flux:field>
+
+            <flux:field variant="inline">
+                <flux:checkbox wire:model.live="planoIlimitado" />
+                <flux:label>Uso ilimitado</flux:label>
+            </flux:field>
+            @unless ($planoIlimitado)
+                <flux:input wire:model="planoLimite" type="number" min="1" label="Limite de usos por mês (compartilhado pela assinatura)" />
+            @endunless
+
+            <flux:field>
+                <flux:label>Dias permitidos (vazio = todos)</flux:label>
+                <div class="flex flex-wrap gap-3">
+                    @foreach ($diasLabel as $num => $rotulo)
+                        <flux:checkbox wire:model="planoDias" :value="$num" :label="$rotulo" />
+                    @endforeach
+                </div>
+            </flux:field>
+
+            <flux:input wire:model="planoCapacidade" type="number" min="1" label="Capacidade de contas (1 = individual, 2+ = família)" required />
             <flux:textarea wire:model="planoDescricao" label="Descrição (opcional)" rows="2" />
+
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="ghost">Cancelar</flux:button></flux:modal.close>
                 <flux:button type="submit" variant="primary">Salvar</flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    {{-- Modal: beneficiários da assinatura --}}
+    <flux:modal name="beneficiarios" class="md:w-[32rem]">
+        <div class="flex flex-col gap-4">
+            <div>
+                <flux:heading size="lg">Beneficiários</flux:heading>
+                @if ($assinaturaGeridaModel)
+                    <flux:subheading>
+                        {{ $assinaturaGeridaModel->plano?->nome }} · {{ $beneficiariosGeridos->count() }}/{{ (int) ($assinaturaGeridaModel->plano?->capacidade ?? 1) }} contas
+                    </flux:subheading>
+                @endif
+            </div>
+
+            <div class="flex flex-col gap-1">
+                @foreach ($beneficiariosGeridos as $b)
+                    <div class="flex items-center justify-between rounded-lg px-2 py-1" style="background-color: color-mix(in srgb, var(--cor-texto) 4%, transparent);">
+                        <span style="color: var(--cor-texto);">
+                            {{ $b->cliente?->nome ?? $b->nome }}
+                            @if ($b->titular)<flux:badge size="sm" color="indigo">Titular</flux:badge>@endif
+                            @unless ($b->cliente_id)<flux:badge size="sm" color="zinc">sem conta</flux:badge>@endunless
+                        </span>
+                        @unless ($b->titular)
+                            <flux:button wire:click="removerBeneficiario({{ $b->id }})" size="xs" variant="ghost" icon="trash">Remover</flux:button>
+                        @endunless
+                    </div>
+                @endforeach
+            </div>
+
+            @if ($assinaturaGeridaModel && $beneficiariosGeridos->count() < (int) ($assinaturaGeridaModel->plano?->capacidade ?? 1))
+                <form wire:submit="adicionarBeneficiario" class="flex flex-col gap-3 border-t pt-3" style="border-color: color-mix(in srgb, var(--cor-texto) 12%, transparent);">
+                    <flux:select wire:model="benClienteId" label="Cliente com conta (ou deixe vazio e use o nome)">
+                        <flux:select.option value="">— sem conta —</flux:select.option>
+                        @foreach ($clientes as $c)
+                            <flux:select.option :value="$c->id">{{ $c->nome }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:input wire:model="benNome" label="Nome (beneficiário sem conta)" placeholder="ex.: filho(a)" />
+                    <flux:button type="submit" variant="primary" icon="user-plus" class="self-start">Adicionar beneficiário</flux:button>
+                </form>
+            @else
+                <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Capacidade do plano atingida.</flux:text>
+            @endif
+
+            <div class="flex justify-end">
+                <flux:modal.close><flux:button variant="ghost">Fechar</flux:button></flux:modal.close>
+            </div>
+        </div>
     </flux:modal>
 
     {{-- Modal: novo assinante --}}

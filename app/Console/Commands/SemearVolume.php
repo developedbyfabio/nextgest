@@ -6,7 +6,6 @@ namespace App\Console\Commands;
 
 use App\Models\HorarioTrabalho;
 use App\Models\PlanoClube;
-use App\Models\PlanoDesconto;
 use App\Models\Servico;
 use App\Models\Tenant;
 use App\Models\Unidade;
@@ -156,14 +155,26 @@ class SemearVolume extends Command
         $this->info("Inserindo planos + {$n} assinaturas do clube...");
         $agora = now();
 
-        // 3 planos, cada um com um desconto percentual (benefício v1).
+        // 3 planos de COBERTURA: serviços cobertos + limite/dias/capacidade (D44).
+        $servicoIds = Servico::pluck('id')->all();
+        $defs = [
+            // [nome, preço, ilimitado, limite, dias(null=todos), capacidade, nº serviços cobertos]
+            ['Mensal', 79.90, true, null, null, 1, 1],
+            ['Premium', 129.90, false, 8, [1, 2, 3, 4, 5], 1, 2],
+            ['Família', 199.90, false, 12, null, 2, 3],
+        ];
         $precoPorPlano = [];
-        foreach ([['Mensal', 79.90, 5], ['Premium', 129.90, 10], ['VIP', 199.90, 15]] as [$nome, $preco, $pct]) {
-            $plano = PlanoClube::firstOrCreate(['nome' => $nome], ['preco_mensal' => $preco, 'ativo' => true]);
-            PlanoDesconto::firstOrCreate(
-                ['plano_id' => $plano->id, 'tipo_desconto' => 'percentual', 'aplica_em' => 'todos'],
-                ['valor' => $pct],
-            );
+        foreach ($defs as [$nome, $preco, $ilimitado, $limite, $dias, $cap, $nServ]) {
+            $plano = PlanoClube::firstOrCreate(['nome' => $nome], [
+                'preco_mensal' => $preco, 'ativo' => true,
+                'ilimitado' => $ilimitado, 'limite_usos' => $limite, 'periodo' => 'mes',
+                'dias_semana' => $dias, 'capacidade' => $cap,
+            ]);
+            if ($plano->beneficios()->count() === 0) {
+                foreach (array_slice($servicoIds, 0, $nServ) as $sid) {
+                    $plano->beneficios()->create(['servico_id' => $sid, 'tipo' => 'ilimitado']);
+                }
+            }
             $precoPorPlano[$plano->id] = (float) $preco;
         }
         $idsPlanos = array_keys($precoPorPlano);
@@ -215,6 +226,20 @@ class SemearVolume extends Command
                 }
             }
             DB::table('eventos_assinatura_clube')->insert($eventos);
+        });
+
+        // Beneficiários: o titular de cada assinatura (cliente_id). Em lote, só p/ as que
+        // ainda não têm beneficiário (idempotente em re-runs).
+        $this->info('Inserindo beneficiários (titulares) do clube...');
+        DB::table('assinaturas_clube')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('beneficiarios_assinatura as b')->whereColumn('b.assinatura_id', 'assinaturas_clube.id'))
+            ->orderBy('id')->chunk(2000, function ($assinaturas) use ($agora) {
+            DB::table('beneficiarios_assinatura')->insert(
+                collect($assinaturas)->map(fn ($a) => [
+                    'assinatura_id' => $a->id, 'cliente_id' => $a->cliente_id, 'nome' => null,
+                    'titular' => true, 'created_at' => $agora, 'updated_at' => $agora,
+                ])->all()
+            );
         });
     }
 }

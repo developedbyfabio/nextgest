@@ -90,7 +90,25 @@ EXPLAIN (volumeteste, 1500 assinaturas/1668 eventos): agregações usam índice 
 = 4 (paginação). `nextgest:semear-volume` estendido (`--assinaturas`, planos/assinaturas/eventos;
 blocos com guard `>0`). `laravel.log` vazio.
 
+## Evolução D44 — cobertura (100%) + família/beneficiários (substitui % desconto)
+> Regra definitiva: [[Regra de Negócio — Clube de Assinatura]] · Decisão: [[Decisões de Arquitetura#D44]].
+
+O benefício deixou de ser **% desconto** e passou a ser **cobertura de serviços (100%)**:
+- **Plano** ganhou `ilimitado`/`limite_usos`/`periodo`/`dias_semana`/`capacidade` (aditivo em
+  `planos_clube`). **Serviços cobertos** reusam `plano_beneficios`. Limite/dias/capacidade são **do
+  plano** (a assinatura/família compartilha o teto). `plano_descontos` (% ) ficou **depreciado**.
+- **Beneficiários** (`beneficiarios_assinatura`): com conta (`cliente_id`) ou sem conta (`nome`); o
+  titular é beneficiário; trava `≤ capacidade`. UI na aba (gerir beneficiários do assinante).
+- **Cobertura na comanda** (`BeneficioClube::aplicarCobertura`): zera 100% os serviços cobertos do
+  assinante ativo (titular ou beneficiário com conta), no dia permitido e dentro do teto; registra
+  `uso_clube`; o resto é pago no balcão. Reusa `Comanda::recalcular`. Botão "Aplicar cobertura" no
+  `Vendas\Detalhe` (substitui o de %).
+- **Aba:** planos mostram serviços cobertos + limite + dias + capacidade; assinantes mostram
+  beneficiários. Indicadores set-based seguem **constantes** (`ClubeTest` + `ContagemQueriesTest`).
+- `nextgest:semear-volume` semeia planos de cobertura (Mensal/Premium/Família) + beneficiários (titular).
+
 ## Fora de escopo (futuro)
-Cobrança recorrente real (MP Preapproval + webhook, Fase 2/3), cobertura por cota/serviços inclusos
-(`usos_clube`), item-pai "Financeiro", billing da plataforma. **Gancho Fase 4:** a lista de
-inadimplentes/risco é o ponto de partida do disparo de WhatsApp.
+**Agendar para beneficiário** (toca a agenda/`MotorDisponibilidade`) = **próximo prompt**. Cobrança
+recorrente real (MP Preapproval + webhook, Fase 2/3) — segue costura manual. Cota por-serviço (vs
+por-plano) e item-pai "Financeiro"/billing da plataforma ficam para depois. **Gancho Fase 4:**
+inadimplentes/risco → disparo de WhatsApp.

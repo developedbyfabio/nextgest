@@ -78,6 +78,11 @@ class AssinaturaClube extends Model
         return $this->hasMany(UsoClube::class, 'assinatura_id');
     }
 
+    public function beneficiarios(): HasMany
+    {
+        return $this->hasMany(BeneficiarioAssinatura::class, 'assinatura_id');
+    }
+
     public function scopeAtivas($query)
     {
         return $query->where('status', self::STATUS_ATIVA);

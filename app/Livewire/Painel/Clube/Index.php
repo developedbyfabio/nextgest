@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Livewire\Painel\Clube;
 
 use App\Models\AssinaturaClube;
+use App\Models\BeneficiarioAssinatura;
 use App\Models\Cliente;
 use App\Models\PlanoClube;
-use App\Models\PlanoDesconto;
+use App\Models\Servico;
 use App\Services\Clube\Assinaturas;
 use App\Services\Clube\IndicadoresClube;
 use Carbon\Carbon;
@@ -46,7 +47,7 @@ class Index extends Component
 
     public ?string $relFim = null;
 
-    // Formulário de plano (benefício v1 = desconto %).
+    // Formulário de plano (benefício = COBERTURA de serviços).
     public ?int $planoId = null;
 
     public string $planoNome = '';
@@ -55,12 +56,29 @@ class Index extends Component
 
     public string $planoDescricao = '';
 
-    public string $planoDescontoPct = '';
+    /** Ids dos serviços cobertos. */
+    public array $planoServicos = [];
+
+    public bool $planoIlimitado = true;
+
+    public string $planoLimite = '';
+
+    /** Dias da semana elegíveis (0=dom..6=sáb); vazio = todos. */
+    public array $planoDias = [];
+
+    public string $planoCapacidade = '1';
 
     // Novo assinante.
     public ?int $novoClienteId = null;
 
     public ?int $novoPlanoId = null;
+
+    // Gestão de beneficiários (de uma assinatura).
+    public ?int $assinaturaGerida = null;
+
+    public ?int $benClienteId = null;
+
+    public string $benNome = '';
 
     public bool $erro = false;
 
@@ -98,7 +116,10 @@ class Index extends Component
     public function novoPlano(): void
     {
         $this->gate();
-        $this->reset('planoId', 'planoNome', 'planoPreco', 'planoDescricao', 'planoDescontoPct');
+        $this->reset('planoId', 'planoNome', 'planoPreco', 'planoDescricao', 'planoServicos', 'planoLimite');
+        $this->planoIlimitado = true;
+        $this->planoDias = [];
+        $this->planoCapacidade = '1';
         $this->resetValidation();
         Flux::modal('plano-clube')->show();
     }
@@ -106,15 +127,17 @@ class Index extends Component
     public function editarPlano(int $id): void
     {
         $this->gate();
-        $plano = PlanoClube::with('descontos')->findOrFail($id);
-        $pct = $plano->descontos
-            ->firstWhere(fn ($d) => $d->tipo_desconto === PlanoDesconto::TIPO_PERCENTUAL && $d->aplica_em === PlanoDesconto::APLICA_TODOS);
+        $plano = PlanoClube::with('beneficios')->findOrFail($id);
 
         $this->planoId = $plano->id;
         $this->planoNome = $plano->nome;
         $this->planoPreco = (string) $plano->preco_mensal;
         $this->planoDescricao = (string) $plano->descricao;
-        $this->planoDescontoPct = $pct ? (string) (float) $pct->valor : '';
+        $this->planoServicos = $plano->servicosCobertosIds();
+        $this->planoIlimitado = (bool) $plano->ilimitado;
+        $this->planoLimite = $plano->limite_usos ? (string) $plano->limite_usos : '';
+        $this->planoDias = array_map('intval', $plano->dias_semana ?? []);
+        $this->planoCapacidade = (string) max(1, (int) $plano->capacidade);
         $this->resetValidation();
         Flux::modal('plano-clube')->show();
     }
@@ -127,10 +150,11 @@ class Index extends Component
             'planoNome' => ['required', 'string', 'max:255'],
             'planoPreco' => ['required', 'numeric', 'min:0'],
             'planoDescricao' => ['nullable', 'string', 'max:1000'],
-            'planoDescontoPct' => ['nullable', 'numeric', 'min:0', 'max:100'],
-        ], attributes: [
-            'planoNome' => 'nome', 'planoPreco' => 'preço', 'planoDescontoPct' => 'desconto',
-        ]);
+            'planoServicos' => ['array'],
+            'planoServicos.*' => ['integer', 'exists:servicos,id'],
+            'planoCapacidade' => ['required', 'integer', 'min:1'],
+            'planoLimite' => ['nullable', 'integer', 'min:1'],
+        ], attributes: ['planoNome' => 'nome', 'planoPreco' => 'preço', 'planoCapacidade' => 'capacidade']);
 
         $plano = PlanoClube::updateOrCreate(
             ['id' => $this->planoId],
@@ -138,26 +162,63 @@ class Index extends Component
                 'nome' => $dados['planoNome'],
                 'preco_mensal' => $dados['planoPreco'],
                 'descricao' => $dados['planoDescricao'] ?: null,
+                'ilimitado' => $this->planoIlimitado,
+                'limite_usos' => $this->planoIlimitado ? null : ((int) $this->planoLimite ?: null),
+                'periodo' => 'mes',
+                'dias_semana' => $this->planoDias === [] ? null : array_values(array_map('intval', $this->planoDias)),
+                'capacidade' => (int) $dados['planoCapacidade'],
             ],
         );
 
-        // Benefício v1 = desconto % (em "todos"). Sincroniza um único plano_desconto.
-        $pct = (float) ($dados['planoDescontoPct'] ?: 0);
-        $plano->descontos()
-            ->where('tipo_desconto', PlanoDesconto::TIPO_PERCENTUAL)
-            ->where('aplica_em', PlanoDesconto::APLICA_TODOS)
-            ->delete();
-
-        if ($pct > 0) {
-            $plano->descontos()->create([
-                'aplica_em' => PlanoDesconto::APLICA_TODOS,
-                'tipo_desconto' => PlanoDesconto::TIPO_PERCENTUAL,
-                'valor' => $pct,
-            ]);
+        // Serviços cobertos: sincroniza a pivô plano_beneficios (uma linha por serviço).
+        $plano->beneficios()->delete();
+        foreach (array_unique(array_map('intval', $this->planoServicos)) as $servicoId) {
+            $plano->beneficios()->create(['servico_id' => $servicoId, 'tipo' => 'ilimitado']);
         }
 
         Flux::modal('plano-clube')->close();
         Flux::toast('Plano salvo.', variant: 'success');
+    }
+
+    // ---- Beneficiários ------------------------------------------------------
+
+    public function gerirBeneficiarios(int $assinaturaId): void
+    {
+        $this->gate();
+        $this->assinaturaGerida = $assinaturaId;
+        $this->reset('benClienteId', 'benNome');
+        $this->resetValidation();
+        Flux::modal('beneficiarios')->show();
+    }
+
+    public function adicionarBeneficiario(Assinaturas $assinaturas): void
+    {
+        $this->gate();
+        $assinatura = AssinaturaClube::with('plano')->findOrFail($this->assinaturaGerida);
+
+        $this->validate([
+            'benClienteId' => ['nullable', 'integer', 'exists:clientes,id'],
+            'benNome' => ['nullable', 'string', 'max:255'],
+        ], attributes: ['benClienteId' => 'cliente', 'benNome' => 'nome']);
+
+        try {
+            $assinaturas->adicionarBeneficiario($assinatura, $this->benClienteId ?: null, $this->benNome ?: null);
+        } catch (\Throwable $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        $this->reset('benClienteId', 'benNome');
+        Flux::toast('Beneficiário adicionado.', variant: 'success');
+    }
+
+    public function removerBeneficiario(int $beneficiarioId, Assinaturas $assinaturas): void
+    {
+        $this->gate();
+        $beneficiario = BeneficiarioAssinatura::findOrFail($beneficiarioId);
+        $assinaturas->removerBeneficiario($beneficiario);
+        Flux::toast('Beneficiário removido.', variant: 'success');
     }
 
     public function alternarPlano(int $id): void
@@ -252,9 +313,11 @@ class Index extends Component
                 $dados['inadimplentes'] = $indicadores->inadimplentes(10);
                 $dados['evolucao'] = $indicadores->evolucao(6);
             } elseif ($this->aba === 'planos') {
-                $dados['planos'] = PlanoClube::with('descontos')->withCount(['assinaturas as ativas_count' => fn ($q) => $q->where('status', AssinaturaClube::STATUS_ATIVA)])->orderBy('nome')->get();
+                $dados['planos'] = PlanoClube::with('beneficios.servico:id,nome')
+                    ->withCount(['assinaturas as ativas_count' => fn ($q) => $q->where('status', AssinaturaClube::STATUS_ATIVA)])
+                    ->orderBy('nome')->get();
             } elseif ($this->aba === 'assinantes') {
-                $dados['assinantes'] = $this->queryAssinaturas()->paginate(15);
+                $dados['assinantes'] = $this->queryAssinaturas()->withCount('beneficiarios')->paginate(15);
             } elseif ($this->aba === 'relatorios') {
                 $dados['relatorio'] = $this->queryAssinaturas()->paginate(15);
             }
@@ -263,10 +326,22 @@ class Index extends Component
             $this->erro = true;
         }
 
+        // Beneficiários da assinatura em gestão (modal).
+        $beneficiariosGeridos = $this->assinaturaGerida
+            ? BeneficiarioAssinatura::with('cliente:id,nome')->where('assinatura_id', $this->assinaturaGerida)->get()
+            : collect();
+        $assinaturaGeridaModel = $this->assinaturaGerida
+            ? AssinaturaClube::with('plano:id,nome,capacidade')->find($this->assinaturaGerida)
+            : null;
+
         return view('livewire.painel.clube.index', array_merge($dados, [
             'planosAtivos' => PlanoClube::ativo()->orderBy('nome')->get(['id', 'nome', 'preco_mensal']),
             'statusLabel' => AssinaturaClube::STATUS_LABEL,
+            'servicos' => $this->aba === 'planos' ? Servico::where('ativo', true)->orderBy('nome')->get(['id', 'nome']) : collect(),
             'clientes' => $this->aba === 'assinantes' ? Cliente::orderBy('nome')->limit(500)->get(['id', 'nome']) : collect(),
+            'beneficiariosGeridos' => $beneficiariosGeridos,
+            'assinaturaGeridaModel' => $assinaturaGeridaModel,
+            'diasLabel' => [0 => 'Dom', 1 => 'Seg', 2 => 'Ter', 3 => 'Qua', 4 => 'Qui', 5 => 'Sex', 6 => 'Sáb'],
         ]));
     }
 }
