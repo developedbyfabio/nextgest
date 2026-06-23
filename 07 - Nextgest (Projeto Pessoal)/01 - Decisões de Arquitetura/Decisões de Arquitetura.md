@@ -396,3 +396,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   (`Log::info`) sem dado sensível. **Desativar pelo Dono** (perfil) exige reconfirmar a senha.
 - **Impersonação de suporte e portal/`admin` não mudam** (impersonate entra por
   `loginUsingId`, fora do componente de login → não passa pelo desafio, por design).
+
+## D42 — Clube de Assinatura (Fase A): fundação pronta p/ gateway, cobrança atrás de costura
+> Constrói modelos+aba+indicadores+relatórios do Clube, gated pela flag `clube` (D37). **Não
+> cobra de verdade** (recorrência real = MP Preapproval+webhook = Fase 2/3, com VPS). Ver
+> [[Clube de Assinatura (Fase A)]] e [[Modelo de Dados - Clube de Assinatura]].
+- **Schema rico (D15–D18) já existia** (migração `190003`: planos/benefícios/descontos/assinaturas/
+  usos + colunas em `venda_itens`). A Fase A só **adiciona** `eventos_assinatura_clube` (auditoria/
+  churn) + índice `assinaturas_clube.status`. Status real: enum `ativa|suspensa|cancelada|inadimplente`
+  (não há `pendente`).
+- **Costura do gateway recorrente:** interface `App\Services\Clube\GatewayRecorrente` +
+  `GatewayRecorrenteManual` (não cobra, sem webhook; status manual). O MP Preapproval entra como
+  OUTRA implementação no futuro, sem mudar a aba. `gateway_assinatura_id`/`proxima_cobranca` prontos.
+- **Eventos = fonte do churn/evolução:** toda mudança de status (via `App\Services\Clube\Assinaturas`)
+  grava um evento. Indicadores (`IndicadoresClube`) são **set-based** (ativos/inadimplentes por status;
+  novos/cancelados/evolução por eventos), com **teste de contagem constante**.
+- **Benefício v1 = desconto %** (`plano_descontos` percentual/todos), aplicado na comanda do
+  assinante **ativo** reusando `Comanda::definirDesconto` (núcleo intocado). Cota/inclusos
+  (`plano_beneficios`/`usos_clube`) = schema pronto, aplicação futura.
+- **Gate:** `recurso:clube` (off → menu some + rota 404) + permissão **reusada `gerenciar_clube`**
+  (Dono+Gerente, sem novo seeder; nunca `hasRole`). Aba com Visão/Planos/Assinantes/Relatórios+CSV.
+- **Lição (auditoria):** as tabelas do clube já existiam de `190003` — a T0 mirou models (não havia)
+  e perdeu isso. Guards `hasTable` na migração nova + reconciliação evitaram schema divergente.
+  Confirma a lição "auditar migrations, não só models, antes de criar tabela".

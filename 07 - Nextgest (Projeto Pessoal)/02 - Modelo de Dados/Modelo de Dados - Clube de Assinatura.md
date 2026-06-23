@@ -186,3 +186,24 @@ A tabela `venda_itens` ganha duas colunas para suportar o clube:
 1. Pagamentos (gateway plugável, tokenização, cobrança recorrente do clube).
 2. Kanban.
 3. Automações de WhatsApp.
+
+---
+
+## 10. Fase A — implementado (2026-06-23)
+
+Estas tabelas (3.1–3.5) **já existiam** desde a migração
+`2026_06_14_190003_create_produtos_clube_pagamentos_tables` (schema, sem models/UI). A **Fase A**
+(ver [[Clube de Assinatura (Fase A)]] e [[Decisões de Arquitetura#D42]]) montou models, serviços,
+aba e indicadores em cima delas e **acrescentou**:
+
+- **`eventos_assinatura_clube`** (nova tabela; migração `2026_06_23_100001`): histórico de mudanças
+  de status — `assinatura_id`, `tipo` (`criada`/`renovada`/`pagamento_ok`/`pagamento_falhou`/
+  `cancelada`/`reativada`), `ocorrido_em`, `payload` (json null), timestamps. Índices
+  `(tipo, ocorrido_em)` e `(ocorrido_em)`. **É a fonte da evolução/churn** dos indicadores.
+- **Índice `assinaturas_clube.status`** (migração `2026_06_23_100002`) para os indicadores por status.
+- **status (confirmado no schema):** enum `ativa | suspensa | cancelada | inadimplente` (default
+  `ativa`). Não há `pendente`.
+- **Cobrança recorrente:** atrás da costura `App\Services\Clube\GatewayRecorrente` (impl. manual na
+  Fase A; MP Preapproval no futuro). `proxima_cobranca`/`gateway_assinatura_id` são os ganchos.
+- **Benefício v1 = desconto %** (via `plano_descontos`). Cobertura por cota/inclusos (`usos_clube` +
+  `venda_itens.coberto_por_assinatura`) segue com schema pronto, aplicação em fase futura.

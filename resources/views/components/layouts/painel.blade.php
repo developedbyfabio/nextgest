@@ -91,6 +91,11 @@
                 @can('ver_indicadores')
                     <flux:navlist.item icon="chart-bar" :href="route('painel.indicadores', ['tenant' => $tenantId])" :current="request()->routeIs('painel.indicadores')" wire:navigate>Indicadores</flux:navlist.item>
                 @endcan
+                @recurso('clube')
+                    @can('gerenciar_clube')
+                        <flux:navlist.item icon="ticket" :href="route('painel.clube', ['tenant' => $tenantId])" :current="request()->routeIs('painel.clube')" wire:navigate>Clube de Assinatura</flux:navlist.item>
+                    @endcan
+                @endrecurso
                 @can('editar_permissoes')
                     <flux:navlist.item icon="shield-check" :href="route('painel.papeis', ['tenant' => $tenantId])" :current="request()->routeIs('painel.papeis')" wire:navigate>Papéis e permissões</flux:navlist.item>
                 @endcan

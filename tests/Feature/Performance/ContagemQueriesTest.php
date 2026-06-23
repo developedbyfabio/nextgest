@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 use App\Livewire\Painel\Indicadores;
 use App\Models\Agendamento;
+use App\Models\AssinaturaClube;
 use App\Models\Cliente;
+use App\Models\PlanoClube;
 use App\Models\Servico;
 use App\Models\Unidade;
 use App\Models\Venda;
 use App\Services\Agendamento\MotorDisponibilidade;
+use App\Services\Clube\Assinaturas as AssinaturasClube;
+use App\Services\Clube\IndicadoresClube;
 use App\Services\Dashboard\Metricas;
 use App\Services\Painel\IndicadoresClientes;
 use App\Services\Painel\ResumoDoDia;
@@ -231,6 +235,45 @@ it('[PERF] Aba Indicadores: contagem de query CONSTANTE (herda a eficiência do 
     // CONSTANTE: a aba não reintroduz N+1 — herda a eficiência do motor.
     expect($n45)->toBe($n5)
         ->and($n5)->toBeLessThanOrEqual(20);
+
+    Carbon::setTestNow();
+});
+
+it('[PERF] Indicadores do Clube: contagem de query CONSTANTE (não cresce com assinantes)', function () {
+    Carbon::setTestNow(Carbon::create(2026, 6, 15, 12, 0, 0));
+    $plano = PlanoClube::create(['nome' => 'VIP', 'preco_mensal' => 99.90, 'ativo' => true]);
+    $svc = app(AssinaturasClube::class);
+    $ind = new IndicadoresClube;
+
+    $semear = function (int $n) use ($plano, $svc) {
+        foreach (range(1, $n) as $i) {
+            $cli = Cliente::create(['nome' => 'C'.uniqid(), 'telefone' => (string) random_int(1, 999999999)]);
+            $a = $svc->criar($cli->id, $plano, AssinaturaClube::STATUS_ATIVA);
+            if ($i % 5 === 0) {
+                $svc->alterarStatus($a, AssinaturaClube::STATUS_CANCELADA);
+            }
+        }
+    };
+
+    $medir = fn (): array => [
+        'ativos' => contarQueries(fn () => $ind->assinantesAtivos()),
+        'novos' => contarQueries(fn () => $ind->novosNoMes()),
+        'cancelados' => contarQueries(fn () => $ind->canceladosNoMes()),
+        'inadimplentes' => contarQueries(fn () => $ind->inadimplentes(10)),
+        'evolucao' => contarQueries(fn () => $ind->evolucao(6)),
+    ];
+
+    $semear(5);
+    $n5 = $medir();
+    $semear(40); // 45 assinaturas + eventos
+    $n45 = $medir();
+
+    expect($n45)->toBe($n5)
+        ->and($n5['ativos'])->toBeLessThanOrEqual(1)
+        ->and($n5['novos'])->toBeLessThanOrEqual(1)
+        ->and($n5['cancelados'])->toBeLessThanOrEqual(1)
+        ->and($n5['inadimplentes'])->toBeLessThanOrEqual(4)
+        ->and($n5['evolucao'])->toBeLessThanOrEqual(1);
 
     Carbon::setTestNow();
 });

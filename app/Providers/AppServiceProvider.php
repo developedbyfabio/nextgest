@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Http\Middleware\InicializarTenancyArquivosLivewire;
+use App\Services\Clube\GatewayRecorrente;
+use App\Services\Clube\GatewayRecorrenteManual;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Features\SupportFileUploads\FilePreviewController;
@@ -15,7 +17,13 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Costura do gateway recorrente do Clube: hoje sempre a impl. MANUAL (não cobra).
+        // O Mercado Pago Preapproval entra como outra impl. desta interface no futuro
+        // (Fase 2/3, com VPS), trocando só este binding — sem mexer na aba/serviço.
+        $this->app->bind(
+            GatewayRecorrente::class,
+            GatewayRecorrenteManual::class,
+        );
     }
 
     public function boot(): void

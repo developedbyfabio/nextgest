@@ -114,6 +114,11 @@
 
             @if ($editavel)
                 <flux:input wire:model.blur="desconto" type="number" step="0.01" min="0" label="Desconto (R$)" />
+                @if (! is_null($beneficioClubePct) && $beneficioClubePct > 0)
+                    <flux:button wire:click="aplicarBeneficioClube" variant="subtle" size="sm" icon="gift" class="self-start">
+                        Aplicar {{ rtrim(rtrim(number_format($beneficioClubePct, 2, ',', '.'), '0'), ',') }}% do clube
+                    </flux:button>
+                @endif
             @else
                 <div class="flex items-center justify-between text-sm">
                     <span style="color: var(--cor-texto-suave);">Desconto</span>

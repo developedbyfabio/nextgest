@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Livewire\Painel\Vendas;
 
+use App\Models\Pagamento;
 use App\Models\Produto;
 use App\Models\Servico;
 use App\Models\User;
 use App\Models\Venda;
 use App\Models\VendaItem;
+use App\Services\Clube\BeneficioClube;
 use App\Services\Venda\Comanda;
 use App\Services\Venda\EstoqueInsuficienteException;
 use App\Services\Venda\PagamentoInvalidoException;
@@ -161,6 +163,30 @@ class Detalhe extends Component
         $this->sincronizar();
     }
 
+    /**
+     * Aplica o benefício do Clube (desconto %) na comanda do assinante ATIVO. Reusa o
+     * mecanismo de desconto da comanda (Comanda::definirDesconto via o serviço). Só com
+     * a flag `clube` ligada e cliente com assinatura ativa que dá desconto.
+     */
+    public function aplicarBeneficioClube(BeneficioClube $clube): void
+    {
+        $venda = $this->venda();
+        $this->authorize('gerir', $venda);
+
+        if ($venda->status !== 'aberta') {
+            return;
+        }
+
+        $aplicado = $clube->aplicarNaComanda($venda);
+        $this->sincronizar();
+
+        if ($aplicado !== null) {
+            Flux::toast('Benefício do clube aplicado: desconto de R$ '.number_format($aplicado, 2, ',', '.').'.', variant: 'success');
+        } else {
+            Flux::toast('Cliente sem assinatura ativa com benefício.', variant: 'danger');
+        }
+    }
+
     public function pedirPagar(): void
     {
         // Pré-preenche uma forma (dinheiro) com o total da comanda.
@@ -249,7 +275,11 @@ class Detalhe extends Component
             'servicos' => Servico::where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'preco']),
             'profissionais' => User::where('e_profissional', true)->where('ativo', true)->orderBy('name')->get(['id', 'name']),
             'comissaoTotal' => (float) $venda->itens->sum('valor_comissao'),
-            'metodos' => \App\Models\Pagamento::METODO_LABEL,
+            // Benefício do Clube (v1: desconto %): só com a flag ligada e assinante ativo.
+            'beneficioClubePct' => ($venda->status === 'aberta' && tenant_tem_recurso('clube'))
+                ? app(BeneficioClube::class)->percentualDoCliente($venda->cliente_id)
+                : null,
+            'metodos' => Pagamento::METODO_LABEL,
             'somaPagamentos' => $soma,
             'totalVenda' => $total,
             'faltaPagamento' => round($total - $soma, 2),

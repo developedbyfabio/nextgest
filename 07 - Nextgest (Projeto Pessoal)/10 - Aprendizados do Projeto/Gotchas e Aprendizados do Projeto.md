@@ -241,6 +241,17 @@ inteiro (apaga os outros metadados que dividem o mesmo JSON). Não precisa de ca
 migração — um array sob a chave faz round-trip nativo (o `data` é cast `array`). Ver
 [[Recursos por Tenant (Feature Flags)]] e [[Decisões de Arquitetura#D37]].
 
+## Auditoria: checar MIGRATIONS, não só models, antes de criar tabela
+Na Fase A do Clube, a T0 concluiu "não há clube" olhando `app/Models` (não havia models) e as
+migrations recentes (`ls | tail`). Mas as tabelas (`planos_clube`, `assinaturas_clube`, …) **já
+existiam** desde uma migração antiga (`190003`), com schema próprio (status `enum`, não `string`).
+Criar uma migração nova com `Schema::create` cego teria dado "table already exists" (e o pior:
+schema divergente em tenant novo, onde as duas migrações rodam). **Lições:** (1) auditar
+`database/migrations/**` e o `EXPLAIN`/`SHOW COLUMNS` real, não só os models; (2) toda migração de
+tabela que pode já existir usa **`Schema::hasTable` guard** (reparo aditivo, sem DROP); (3) alinhar
+models/enum ao schema REAL (aqui: status `ativa|suspensa|cancelada|inadimplente`, sem `pendente`).
+Ver [[Clube de Assinatura (Fase A)]].
+
 ## Componente CENTRAL com `$tenant->run()`: dois run() no mesmo processo podem purgar a conexão
 Em componente do `/admin` que entra no tenant por **`$tenant->run()`** (ex.: `TenantDetalhe`),
 quando o **mesmo processo** faz dois `run()` em sequência — um que **escreve** e outro que

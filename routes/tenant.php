@@ -14,6 +14,7 @@ use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
+use App\Livewire\Painel\Clube\Index as ClubeIndex;
 use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
@@ -157,6 +158,12 @@ Route::middleware(['tenant'])
                 Route::get('indicadores', IndicadoresIndex::class)
                     ->middleware('can:ver_indicadores')
                     ->name('indicadores');
+
+                // Clube de Assinatura (Fase A): só existe com a flag `clube` ligada
+                // (recurso:clube → 404 se off) + permissão de gestão (Dono+Gerente).
+                Route::get('clube', ClubeIndex::class)
+                    ->middleware(['recurso:clube', 'can:gerenciar_clube'])
+                    ->name('clube');
 
                 Route::get('bloqueios', BloqueiosIndex::class)
                     ->middleware('can:gerir_agenda')
