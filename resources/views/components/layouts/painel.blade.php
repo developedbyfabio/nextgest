@@ -145,7 +145,13 @@
             <flux:sidebar.profile :name="auth('web')->user()?->name" :initials="\Illuminate\Support\Str::of(auth('web')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
 
             <flux:menu>
-                <flux:menu.item icon="user">{{ auth('web')->user()?->email }}</flux:menu.item>
+                {{-- Cabeçalho do dropdown: NOME em destaque + e-mail menor abaixo (Item 4).
+                     Antes o e-mail era um flux:menu.item inerte (parecia clicável e não fazia
+                     nada). Cores zinc do Flux para contrastar na superfície do popover (claro/escuro). --}}
+                <div class="flex flex-col px-2 py-1.5">
+                    <span class="truncate text-sm font-semibold text-zinc-800 dark:text-white">{{ auth('web')->user()?->name }}</span>
+                    <span class="truncate text-xs text-zinc-500 dark:text-zinc-400">{{ auth('web')->user()?->email }}</span>
+                </div>
 
                 <flux:menu.separator />
 
