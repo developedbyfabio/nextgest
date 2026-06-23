@@ -146,6 +146,12 @@ class Index extends Component
     {
         $this->gate();
 
+        // "Teto" (não-ilimitado) exige o número de usos preenchido e > 0 — senão o plano
+        // viraria ilimitado silenciosamente (limite_usos = null). O ilimitado segue sem número.
+        $regraLimite = $this->planoIlimitado
+            ? ['nullable']
+            : ['required', 'integer', 'min:1'];
+
         $dados = $this->validate([
             'planoNome' => ['required', 'string', 'max:255'],
             'planoPreco' => ['required', 'numeric', 'min:0'],
@@ -154,10 +160,12 @@ class Index extends Component
             'planoServicos' => ['required', 'array', 'min:1'],
             'planoServicos.*' => ['integer', 'exists:servicos,id'],
             'planoCapacidade' => ['required', 'integer', 'min:1'],
-            'planoLimite' => ['nullable', 'integer', 'min:1'],
+            'planoLimite' => $regraLimite,
         ], messages: [
             'planoServicos.required' => 'Selecione ao menos um serviço coberto pelo plano.',
             'planoServicos.min' => 'Selecione ao menos um serviço coberto pelo plano.',
+            'planoLimite.required' => 'Informe o limite de usos por mês (ou marque o plano como ilimitado).',
+            'planoLimite.min' => 'O limite de usos por mês precisa ser maior que zero.',
         ], attributes: ['planoNome' => 'nome', 'planoPreco' => 'preço', 'planoCapacidade' => 'capacidade']);
 
         $plano = PlanoClube::updateOrCreate(

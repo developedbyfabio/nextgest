@@ -284,3 +284,36 @@ it('plano: exige ao menos 1 serviço coberto', function () {
         ->assertHasNoErrors();
     expect(PlanoClube::where('nome', 'Com Serviço')->first()?->beneficios()->count())->toBe(1);
 });
+
+it('plano: modo teto exige limite > 0 (sem ilimitado silencioso); ilimitado salva sem número', function () {
+    ligarClube();
+    $corte = Servico::create(['nome' => 'Corte', 'duracao_minutos' => 30, 'preco' => 50, 'ativo' => true]);
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@clube.test']), 'web');
+
+    $base = fn (string $nome) => Livewire::test(Index::class)
+        ->set('planoNome', $nome)
+        ->set('planoPreco', '50')
+        ->set('planoServicos', [$corte->id]);
+
+    // Teto SEM número → erro; não cria.
+    $base('Teto vazio')->set('planoIlimitado', false)->set('planoLimite', '')
+        ->call('salvarPlano')->assertHasErrors(['planoLimite']);
+    expect(PlanoClube::where('nome', 'Teto vazio')->exists())->toBeFalse();
+
+    // Teto = 0 → erro (min:1).
+    $base('Teto zero')->set('planoIlimitado', false)->set('planoLimite', '0')
+        ->call('salvarPlano')->assertHasErrors(['planoLimite']);
+    expect(PlanoClube::where('nome', 'Teto zero')->exists())->toBeFalse();
+
+    // Teto = 4 → salva com limite_usos = 4.
+    $base('Teto 4')->set('planoIlimitado', false)->set('planoLimite', '4')
+        ->call('salvarPlano')->assertHasNoErrors();
+    $teto = PlanoClube::where('nome', 'Teto 4')->first();
+    expect($teto?->ilimitado)->toBeFalse()->and($teto?->limite_usos)->toBe(4);
+
+    // Ilimitado → salva sem número.
+    $base('Ilimitado')->set('planoIlimitado', true)->set('planoLimite', '')
+        ->call('salvarPlano')->assertHasNoErrors();
+    $ilim = PlanoClube::where('nome', 'Ilimitado')->first();
+    expect($ilim?->ilimitado)->toBeTrue()->and($ilim?->limite_usos)->toBeNull();
+});
