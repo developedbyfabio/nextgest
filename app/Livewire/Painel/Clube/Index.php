@@ -150,10 +150,14 @@ class Index extends Component
             'planoNome' => ['required', 'string', 'max:255'],
             'planoPreco' => ['required', 'numeric', 'min:0'],
             'planoDescricao' => ['nullable', 'string', 'max:1000'],
-            'planoServicos' => ['array'],
+            // Plano de COBERTURA tem de cobrir pelo menos 1 serviço (regra "1+", D44).
+            'planoServicos' => ['required', 'array', 'min:1'],
             'planoServicos.*' => ['integer', 'exists:servicos,id'],
             'planoCapacidade' => ['required', 'integer', 'min:1'],
             'planoLimite' => ['nullable', 'integer', 'min:1'],
+        ], messages: [
+            'planoServicos.required' => 'Selecione ao menos um serviço coberto pelo plano.',
+            'planoServicos.min' => 'Selecione ao menos um serviço coberto pelo plano.',
         ], attributes: ['planoNome' => 'nome', 'planoPreco' => 'preço', 'planoCapacidade' => 'capacidade']);
 
         $plano = PlanoClube::updateOrCreate(

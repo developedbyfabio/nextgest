@@ -258,3 +258,29 @@ it('a aba exige flag (404 no mount)', function () {
     $this->actingAs($dono, 'web');
     Livewire::test(Index::class)->assertStatus(404);
 });
+
+// ---- Validação de plano (hardening) ---------------------------------------
+
+it('plano: exige ao menos 1 serviço coberto', function () {
+    ligarClube();
+    $corte = Servico::create(['nome' => 'Corte', 'duracao_minutos' => 30, 'preco' => 50, 'ativo' => true]);
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@clube.test']), 'web');
+
+    // Sem serviço → erro de validação; não cria o plano.
+    Livewire::test(Index::class)
+        ->set('planoNome', 'Sem Serviço')
+        ->set('planoPreco', '50')
+        ->set('planoServicos', [])
+        ->call('salvarPlano')
+        ->assertHasErrors(['planoServicos']);
+    expect(PlanoClube::where('nome', 'Sem Serviço')->exists())->toBeFalse();
+
+    // Com ≥1 serviço → salva e grava a cobertura na pivô.
+    Livewire::test(Index::class)
+        ->set('planoNome', 'Com Serviço')
+        ->set('planoPreco', '50')
+        ->set('planoServicos', [$corte->id])
+        ->call('salvarPlano')
+        ->assertHasNoErrors();
+    expect(PlanoClube::where('nome', 'Com Serviço')->first()?->beneficios()->count())->toBe(1);
+});
