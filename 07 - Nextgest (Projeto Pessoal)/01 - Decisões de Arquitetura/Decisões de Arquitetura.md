@@ -419,3 +419,21 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Lição (auditoria):** as tabelas do clube já existiam de `190003` — a T0 mirou models (não havia)
   e perdeu isso. Guards `hasTable` na migração nova + reconciliação evitaram schema divergente.
   Confirma a lição "auditar migrations, não só models, antes de criar tabela".
+
+## D43 — Financeiro v1: números do negócio (sem despesas), prontos pro contador
+> Item-pai "Financeiro" com faturamento/recebimentos/lucro BRUTO por período + export CSV.
+> Leitura/agregação (sem migração). Ver [[Financeiro (v1)]]. v2 = despesas → lucro líquido.
+- **Responsabilidade explícita (decisão do Fabio):** mostra os números organizados/exportáveis;
+  **NÃO** calcula imposto/DAS/regime, **NÃO** substitui contador. Banner fixo **na tela e no
+  export** ("não é cálculo de impostos"). Nenhuma afirmação de conformidade fiscal.
+- **Fonte única:** `App\Services\Financeiro\ResumoFinanceiro` reusa o critério de receita do
+  `Metricas` (paga + `data`) → o Financeiro **bate** com o dashboard (garantido por teste). Filtro
+  extra por profissional/unidade/forma. Tudo set-based, contagem de query constante.
+- **Lucro BRUTO** = receita − comissões − **CPV**; fórmula visível na tela. CPV = Σ
+  (`produtos.preco_custo` atual × qtd) dos itens-produto — **sem snapshot histórico** (ressalva na
+  tela; `venda_itens` não guarda custo). **Lucro líquido NÃO é prometido** (despesas = v2).
+- **Recebido = `vendas.data` + `status=paga`** (regime alinhado ao dashboard, não `pago_em`).
+  Recebimentos por forma = `pagamentos` aprovados dessas pagas (somam o faturamento).
+- **Export CSV** agregado (cabeçalho tenant+período+aviso), **sem PII**.
+- **Gate `ver_financeiro`** (só Dono, D40), camada dupla (rota `can:` + mount), nunca `hasRole`.
+  Grupo "Financeiro" no menu só com a permissão. Sem migração (leitura).

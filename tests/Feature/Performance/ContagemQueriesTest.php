@@ -14,6 +14,7 @@ use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Clube\Assinaturas as AssinaturasClube;
 use App\Services\Clube\IndicadoresClube;
 use App\Services\Dashboard\Metricas;
+use App\Services\Financeiro\ResumoFinanceiro;
 use App\Services\Painel\IndicadoresClientes;
 use App\Services\Painel\ResumoDoDia;
 use Carbon\Carbon;
@@ -235,6 +236,38 @@ it('[PERF] Aba Indicadores: contagem de query CONSTANTE (herda a eficiência do 
     // CONSTANTE: a aba não reintroduz N+1 — herda a eficiência do motor.
     expect($n45)->toBe($n5)
         ->and($n5)->toBeLessThanOrEqual(20);
+
+    Carbon::setTestNow();
+});
+
+it('[PERF] Financeiro: contagem de query CONSTANTE (faturamento/recebimentos/série/CPV)', function () {
+    Carbon::setTestNow(Carbon::create(2026, 6, 15, 12, 0, 0));
+    $cliente = Cliente::create(['nome' => 'C', 'email' => 'c@x.test', 'telefone' => '1', 'password' => 'x12345678']);
+
+    $semear = function (int $n) use ($cliente) {
+        foreach (range(1, $n) as $i) {
+            $venda = Venda::create(['unidade_id' => $this->unidade->id, 'cliente_id' => $cliente->id, 'status' => 'paga',
+                'valor_bruto' => 60, 'desconto' => 0, 'valor_total' => 60, 'data' => Carbon::today()->subDays($i % 30)]);
+            $venda->pagamentos()->create(['metodo' => 'pix', 'valor' => 60, 'status' => 'aprovado', 'pago_em' => Carbon::now()]);
+        }
+    };
+
+    $fin = new ResumoFinanceiro(Carbon::today()->subDays(60)->startOfDay(), Carbon::today()->endOfDay());
+    $medir = fn (): array => [
+        'totais' => contarQueries(fn () => $fin->totais()),
+        'comissoes' => contarQueries(fn () => $fin->comissoes()),
+        'cpv' => contarQueries(fn () => $fin->cpv()),
+        'recebimentos' => contarQueries(fn () => $fin->recebimentosPorForma()),
+        'serie' => contarQueries(fn () => $fin->faturamentoPorDia()),
+    ];
+
+    $semear(5);
+    $n5 = $medir();
+    $semear(40);
+    $n45 = $medir();
+
+    expect($n45)->toBe($n5)
+        ->and(array_sum($n5))->toBeLessThanOrEqual(6); // 1 por método, set-based
 
     Carbon::setTestNow();
 });

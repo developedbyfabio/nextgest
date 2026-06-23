@@ -106,6 +106,12 @@
                     <flux:navlist.item icon="puzzle-piece" :href="route('painel.integracoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.integracoes*')" wire:navigate>Integrações</flux:navlist.item>
                 @endif
             </flux:navlist.group>
+
+            @can('ver_financeiro')
+                <flux:navlist.group heading="Financeiro" expandable :expanded="true">
+                    <flux:navlist.item icon="currency-dollar" :href="route('painel.financeiro', ['tenant' => $tenantId])" :current="request()->routeIs('painel.financeiro')" wire:navigate>Visão financeira</flux:navlist.item>
+                </flux:navlist.group>
+            @endcan
         </flux:navlist>
 
         <flux:spacer />

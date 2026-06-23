@@ -19,6 +19,7 @@ use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
 use App\Livewire\Painel\Equipe\Horarios as EquipeHorarios;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
+use App\Livewire\Painel\Financeiro\Index as FinanceiroIndex;
 use App\Livewire\Painel\Funcionamento\Index as FuncionamentoIndex;
 use App\Livewire\Painel\Indicadores as IndicadoresIndex;
 use App\Livewire\Painel\Integracoes\Index as IntegracoesIndex;
@@ -152,6 +153,12 @@ Route::middleware(['tenant'])
                 Route::get('comissoes', ComissoesIndex::class)
                     ->middleware('can:ver_financeiro')
                     ->name('comissoes');
+
+                // Financeiro v1 (números do negócio). Gate por permissão (só Dono, D40).
+                // Leitura/agregação — sem migração. NÃO é cálculo fiscal.
+                Route::get('financeiro', FinanceiroIndex::class)
+                    ->middleware('can:ver_financeiro')
+                    ->name('financeiro');
 
                 // Indicadores (Fase II): aba que consome o motor IndicadoresClientes (Fase I).
                 // Gate por permissão (Dono+Gerente). Não é módulo de flag — sem recurso:.
