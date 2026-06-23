@@ -1,6 +1,7 @@
 @php($tenantId = tenant('id'))
 @php($aparencia = \App\Support\Aparencia::doTenant())
 @php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
+@php($fotoPerfilUrl = \App\Support\Aparencia::urlArquivo(auth('web')->user()?->foto_perfil))
 <!DOCTYPE html>
 {{-- font-size base no <html>: o "tamanho base" do tenant escala a UI (rem). --}}
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="font-size: {{ $aparencia['tamanho_base'] }};">
@@ -142,7 +143,7 @@
         {{-- Rodapé FIXO: usuário + ações (perfil/senha/2FA/tema/sair). Aparece também no
              drawer mobile; recolhido no desktop mostra só o avatar (flux:sidebar.profile). --}}
         <flux:dropdown position="top" align="start" class="shrink-0">
-            <flux:sidebar.profile :name="auth('web')->user()?->name" :initials="\Illuminate\Support\Str::of(auth('web')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
+            <flux:sidebar.profile :name="auth('web')->user()?->name" :avatar="$fotoPerfilUrl" :initials="\Illuminate\Support\Str::of(auth('web')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
 
             <flux:menu>
                 {{-- Cabeçalho do dropdown: NOME em destaque + e-mail menor abaixo (Item 4).
@@ -154,6 +155,9 @@
                 </div>
 
                 <flux:menu.separator />
+
+                {{-- Foto de perfil (self-service, todos os papéis) — abre o modal de upload+recorte. --}}
+                <flux:menu.item icon="camera" x-on:click="$flux.modal('foto-perfil').show()">Foto de perfil</flux:menu.item>
 
                 {{-- Alterar a própria senha (abre o modal embutido x-livewire abaixo). --}}
                 <flux:menu.item icon="key" x-on:click="$flux.modal('alterar-senha').show()">Alterar senha</flux:menu.item>
@@ -206,6 +210,9 @@
 
     {{-- Modal de alterar senha (self-service, todos os papéis) — aberto pelo menu de perfil. --}}
     <livewire:painel.alterar-senha />
+
+    {{-- Modal de foto de perfil (self-service, todos os papéis) — aberto pelo menu de perfil. --}}
+    <livewire:painel.perfil.foto />
 
     {{-- Modal de 2FA (TOTP) — SÓ Dono. Embutido só para quem pode gerir (senão o gate
          do componente abortaria 403 em toda página do painel para os demais papéis). --}}

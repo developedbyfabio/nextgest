@@ -1,5 +1,7 @@
 import Chart from 'chart.js/auto';
 import Sortable from 'sortablejs';
+import Cropper from 'cropperjs';
+import 'cropperjs/dist/cropper.css';
 
 /*
 | Gráficos do dashboard (Etapa 4).
@@ -48,6 +50,86 @@ document.addEventListener('alpine:init', () => {
                     });
                 },
             });
+        },
+    }));
+
+    /*
+    | Foto de perfil (Item 5): recorte QUADRADO no cliente com Cropper.js (empacotado
+    | via Vite, sem CDN, sem localStorage). Fluxo: escolher imagem → palco do Cropper
+    | (aspectRatio 1) → "Salvar" gera um canvas 512x512 → blob PNG → $wire.upload('foto')
+    | → ao concluir o upload, $wire.salvar() persiste no disco do tenant (reusa o caminho
+    | da Aparência) e recarrega a página para o avatar do rodapé refletir. Sem foto, o
+    | flux:avatar cai para as iniciais.
+    */
+    window.Alpine.data('cropperFoto', () => ({
+        cropper: null,
+        temImagem: false,
+        enviando: false,
+
+        selecionar(event) {
+            const file = event.target.files && event.target.files[0];
+            // Permite re-selecionar o mesmo arquivo numa próxima vez.
+            event.target.value = '';
+            if (!file) return;
+
+            const url = URL.createObjectURL(file);
+            this.temImagem = true;
+
+            // Espera o x-show revelar o <img> (com layout) antes de instanciar o Cropper.
+            this.$nextTick(() => {
+                this.destruir();
+                const img = this.$refs.imagem;
+                img.src = url;
+                this.cropper = new Cropper(img, {
+                    aspectRatio: 1,        // recorte sempre QUADRADO
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 1,
+                    background: false,
+                    responsive: true,
+                    checkOrientation: true,
+                    ready() { URL.revokeObjectURL(url); },
+                });
+            });
+        },
+
+        girar() {
+            if (this.cropper) this.cropper.rotate(90);
+        },
+
+        salvar() {
+            if (!this.cropper || this.enviando) return;
+            this.enviando = true;
+
+            const canvas = this.cropper.getCroppedCanvas({
+                width: 512,
+                height: 512,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            if (!canvas) { this.enviando = false; return; }
+
+            canvas.toBlob((blob) => {
+                if (!blob) { this.enviando = false; return; }
+                const arquivo = new File([blob], 'foto-perfil.png', { type: 'image/png' });
+                // Upload do Livewire (mesmo endpoint/disco temp já corrigidos para tenancy).
+                this.$wire.upload('foto', arquivo,
+                    () => { this.$wire.salvar(); },   // concluído → persiste + recarrega
+                    () => { this.enviando = false; }, // erro → reabilita o botão
+                );
+            }, 'image/png');
+        },
+
+        destruir() {
+            if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
+        },
+
+        // Chamado ao fechar o modal: descarta o palco para reabrir limpo.
+        resetCropper() {
+            this.destruir();
+            this.temImagem = false;
+            this.enviando = false;
+            if (this.$refs.imagem) this.$refs.imagem.removeAttribute('src');
         },
     }));
 

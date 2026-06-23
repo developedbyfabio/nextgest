@@ -31,6 +31,7 @@ class User extends Authenticatable
         'deve_trocar_senha',
         'e_profissional',
         'ativo',
+        'foto_perfil',
     ];
 
     protected $hidden = [

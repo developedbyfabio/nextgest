@@ -7,6 +7,10 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Esconde elementos Alpine (x-cloak) até o Alpine inicializar — evita flash do
+   palco de recorte da foto de perfil antes de o componente montar. */
+[x-cloak] { display: none !important; }
+
 /*
 | Design System Nextgest (D27)
 | Tokens centralizados. Para trocar a cor da marca, ajuste --color-accent*
