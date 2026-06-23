@@ -71,9 +71,15 @@
         {{-- ÚNICA área que rola (header/rodapé ficam fixos). `min-h-0` deixa o flex encolher
              e o overflow acontecer AQUI, não no container (evita rolagem dupla). --}}
         <flux:navlist variant="outline" class="min-h-0 flex-1 overflow-y-auto">
-            <flux:navlist.item icon="home" :href="route('painel.dashboard', ['tenant' => $tenantId])" :current="request()->routeIs('painel.dashboard')" wire:navigate>
+            {{-- "Início" é item de TOPO da sidebar: usa flux:sidebar.item (não navlist.item).
+                 Só o sidebar.item traz as classes de estado RECOLHIDO (w-10 + justify-center +
+                 oculta-texto + tooltip); o navlist.item não tem nenhuma, então no modo faixa
+                 de ícones ele ficava com largura cheia e texto visível — "espremido". Assim o
+                 Início acompanha os cabeçalhos de grupo (os outros itens de topo) e recolhe
+                 igual a eles. --}}
+            <flux:sidebar.item icon="home" :href="route('painel.dashboard', ['tenant' => $tenantId])" :current="request()->routeIs('painel.dashboard')" wire:navigate>
                 Início
-            </flux:navlist.item>
+            </flux:sidebar.item>
 
             <flux:sidebar.group heading="Operação" icon="squares-2x2" expandable :expanded="true">
                 @canany(['ver_agenda', 'ver_agenda_propria'])
