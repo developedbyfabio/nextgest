@@ -272,3 +272,19 @@ tenant no banco entre os dois requests **não é visto** (ex.: ligar uma flag e 
 novo continuava "desligado"). **Lição/efeito:** teste de toggle por HTTP deve usar **um
 request por teste** (cada teste = ciclo isolado, fiel à produção), não ligar/desligar no
 mesmo teste. (Sintoma diagnosticado na Fase 0a do middleware `recurso:{slug}`.)
+
+## flux:sidebar: `collapsible` já faz tudo; `min-h-0` p/ scroll só na lista; `persist`=localStorage
+Ao mexer no shell do painel (D45), três coisas a lembrar do `flux:sidebar`:
+- **Não reinvente o colapso.** A prop **`collapsible`** (não o `stashable` antigo) já entrega
+  desktop=faixa de ícones (`w-14`) **e** mobile=drawer com backdrop. Um único `flux:sidebar.toggle`
+  serve aos dois: o evento `flux-sidebar-toggle` decide pelo viewport. O conteúdo ao lado alarga
+  sozinho (grid `min-content`). Construir isso à mão em Alpine é trabalho jogado fora.
+- **Scroll só nos itens = `min-h-0` no filho que rola.** Sidebar flex-col de altura cheia, header e
+  rodapé `shrink-0`, e a navlist `flex-1 min-h-0 overflow-y-auto`. **Sem `min-h-0`** o flex child não
+  encolhe abaixo do conteúdo e o overflow vaza pro container → **rolagem dupla**. Erro clássico.
+- **Estado recolhido só vai pro `localStorage` se a prop `persist` estiver ligada** (o stub do
+  componente nem expõe `persist`). Logo, sem `persist`, **nada de localStorage** (cumpre a regra do
+  projeto) e o estado é por sessão de navegação. Persistir entre páginas sem localStorage não é
+  trivial aqui (`wire:navigate` reseta; `@persist` congelaria o realce do item ativo). Aceitável.
+- **Cor de acento sem cor nova:** `style="color: var(--cor-principal)"` no toggle (D36). O estado
+  ativo dos itens já segue `--color-accent`, que `Aparencia::cssVarsAcento` aponta p/ a cor da marca.

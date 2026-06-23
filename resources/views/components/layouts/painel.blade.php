@@ -36,22 +36,41 @@
         </div>
     @endif
 
-    <flux:sidebar sticky stashable class="ng-surface border-e" style="background-color: color-mix(in srgb, var(--cor-texto) 3%, var(--cor-superficie)); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
-        <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
+    {{-- Sidebar do painel (D36). Colapsável (reaproveita o Flux nativo): no DESKTOP recolhe
+         para uma faixa só com ícones e o conteúdo ao lado se alarga (grid `min-content`);
+         no MOBILE vira um drawer sobreposto com overlay. Cabeçalho e rodapé FIXOS — só a
+         navlist do meio rola (flex + `min-h-0`). Cantos arredondados SÓ à direita (o lado
+         esquerdo encosta na borda da tela). NÃO usa `persist` de propósito: o Flux só grava
+         o estado recolhido em localStorage quando `persist` está ligado; aqui o estado fica
+         por sessão de navegação (regra do projeto: sem localStorage/sessionStorage). --}}
+    <flux:sidebar collapsible
+        class="flex flex-col overflow-hidden rounded-e-2xl border-e lg:sticky lg:top-0 lg:h-dvh"
+        style="background-color: color-mix(in srgb, var(--cor-texto) 3%, var(--cor-superficie)); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
 
-        {{-- Marca do estabelecimento (logo enviado ou ícone na cor da marca). --}}
-        <a href="{{ route('painel.dashboard', ['tenant' => $tenantId]) }}" class="flex items-center gap-2 px-2 py-1" wire:navigate>
-            @if ($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ tenant('nome') }}" class="size-8 rounded-lg object-contain" />
-            @else
-                <span class="flex size-8 items-center justify-center rounded-lg" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">
-                    <flux:icon name="calendar-days" class="size-5" />
-                </span>
-            @endif
-            <span class="truncate font-semibold" style="color: var(--cor-texto);">{{ tenant('nome') }}</span>
-        </a>
+        {{-- Cabeçalho FIXO: marca + hambúrguer na MESMA linha (à direita), na cor de acento.
+             Recolhido (desktop), some a marca e o hambúrguer centraliza para reexpandir. --}}
+        <flux:sidebar.header class="shrink-0">
+            <a href="{{ route('painel.dashboard', ['tenant' => $tenantId]) }}" class="flex min-w-0 items-center gap-2 in-data-flux-sidebar-collapsed-desktop:hidden" wire:navigate>
+                @if ($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ tenant('nome') }}" class="size-8 shrink-0 rounded-lg object-contain" />
+                @else
+                    <span class="flex size-8 shrink-0 items-center justify-center rounded-lg" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">
+                        <flux:icon name="calendar-days" class="size-5" />
+                    </span>
+                @endif
+                <span class="truncate font-semibold" style="color: var(--cor-texto);">{{ tenant('nome') }}</span>
+            </a>
 
-        <flux:navlist variant="outline">
+            {{-- Hambúrguer: recolhe/expande (desktop) ou abre/fecha o drawer (mobile) — o mesmo
+                 evento `flux-sidebar-toggle` decide pelo viewport. Cor = acento da aparência. --}}
+            <flux:sidebar.toggle icon="bars-3"
+                class="shrink-0 in-data-flux-sidebar-collapsed-desktop:mx-auto"
+                style="color: var(--cor-principal);" />
+        </flux:sidebar.header>
+
+        {{-- ÚNICA área que rola (header/rodapé ficam fixos). `min-h-0` deixa o flex encolher
+             e o overflow acontecer AQUI, não no container (evita rolagem dupla). --}}
+        <flux:navlist variant="outline" class="min-h-0 flex-1 overflow-y-auto">
             <flux:navlist.item icon="home" :href="route('painel.dashboard', ['tenant' => $tenantId])" :current="request()->routeIs('painel.dashboard')" wire:navigate>
                 Início
             </flux:navlist.item>
@@ -114,10 +133,10 @@
             @endcan
         </flux:navlist>
 
-        <flux:spacer />
-
-        <flux:dropdown position="top" align="start" class="max-lg:hidden">
-            <flux:profile :name="auth('web')->user()?->name" :initials="\Illuminate\Support\Str::of(auth('web')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
+        {{-- Rodapé FIXO: usuário + ações (perfil/senha/2FA/tema/sair). Aparece também no
+             drawer mobile; recolhido no desktop mostra só o avatar (flux:sidebar.profile). --}}
+        <flux:dropdown position="top" align="start" class="shrink-0">
+            <flux:sidebar.profile :name="auth('web')->user()?->name" :initials="\Illuminate\Support\Str::of(auth('web')->user()?->name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('')" />
 
             <flux:menu>
                 <flux:menu.item icon="user">{{ auth('web')->user()?->email }}</flux:menu.item>
@@ -154,7 +173,14 @@
     </flux:sidebar>
 
     <flux:header sticky class="lg:hidden border-b" style="background-color: color-mix(in srgb, var(--cor-texto) 3%, var(--cor-superficie)); border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent);">
-        <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
+        {{-- Abre o drawer (mesmo evento do hambúrguer do cabeçalho). Cor = acento. --}}
+        <flux:sidebar.toggle class="lg:hidden" icon="bars-3" inset="left" style="color: var(--cor-principal);" />
+        <a href="{{ route('painel.dashboard', ['tenant' => $tenantId]) }}" class="flex min-w-0 items-center gap-2" wire:navigate>
+            @if ($logoUrl)
+                <img src="{{ $logoUrl }}" alt="{{ tenant('nome') }}" class="size-7 shrink-0 rounded-lg object-contain" />
+            @endif
+            <span class="truncate font-semibold" style="color: var(--cor-texto);">{{ tenant('nome') }}</span>
+        </a>
         <flux:spacer />
         <form method="POST" action="{{ route('painel.logout', ['tenant' => $tenantId]) }}">
             @csrf

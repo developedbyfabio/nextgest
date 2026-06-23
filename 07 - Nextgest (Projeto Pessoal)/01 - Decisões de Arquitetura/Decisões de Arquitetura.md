@@ -460,3 +460,30 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Gate `gerenciar_clube`** (Dono+Gerente) reusado; flag `recurso:clube`. Indicadores set-based
   seguem **constantes** (não regrediu). Migração só aditiva; sem destrutivo.
 - **Cobrança recorrente** continua **costura manual** (`GatewayRecorrente`) — sem gateway/webhook.
+
+---
+
+## D45 — Shell do painel: sidebar colapsável (reuso do Flux), cabeçalho/rodapé fixos, radius só à direita
+> Só **layout/visual** do painel (`resources/views/components/layouts/painel.blade.php`). NÃO toca
+> rotas, gates, lógica de negócio. Reaproveita o `flux:sidebar` nativo — não reinventa em Alpine.
+- **Colapsável reusando o Flux:** trocado `stashable` → **`collapsible`**. Um único
+  `flux:sidebar.toggle` (o hambúrguer) resolve os dois modos: o evento `flux-sidebar-toggle` recolhe
+  para faixa de **ícones** (`w-14`) no **desktop** e abre/fecha o **drawer** sobreposto (com backdrop)
+  no **mobile**, decidindo pelo viewport. O conteúdo ao lado **alarga sozinho** (o grid do Flux usa
+  coluna `min-content`). Grupos `navlist.group` recolhidos viram menu suspenso no hover (nativo).
+- **Hambúrguer na linha do nome:** dentro de `flux:sidebar.header`, à direita da marca, **na cor de
+  acento** (`style="color: var(--cor-principal)"` — a mesma var de D36, sem cor nova). O topbar mobile
+  (`flux:header lg:hidden`) abre o mesmo drawer, também no acento. `aria-label` traduzido (`Toggle
+  sidebar` em `lang/pt_BR.json`).
+- **Cabeçalho/rodapé fixos, scroll só nos itens:** a sidebar é flex-col de altura cheia
+  (`lg:sticky lg:top-0 lg:h-dvh`, `overflow-hidden`); header e rodapé são `shrink-0`; **só a
+  `flux:navlist`** rola (`flex-1 min-h-0 overflow-y-auto`). O `min-h-0` é o pulo do gato — sem ele o
+  overflow vazaria pro container (rolagem dupla). Rodapé usa `flux:sidebar.profile` (recolhe p/ avatar).
+- **Radius só à direita:** removido o `ng-surface` (arredondava os 4 cantos = "cartão solto"); agora
+  `rounded-e-2xl` + `border-e` + a mesma cor de fundo/borda. O lado esquerdo encosta na borda da tela.
+- **Persistência:** **sem `localStorage`** (regra do projeto). O Flux só grava o recolhido em
+  localStorage com a prop `persist` (que o componente nem expõe aqui), então o estado fica **por
+  sessão de navegação**. Não inventamos cookie novo. Verificado por Playwright (desktop recolhe/alarga
+  e gruda no scroll; mobile vira drawer; gates Clube/Financeiro intactos) e suíte 416/416 verde.
+- **Isolamento:** portal (`portal.blade.php`) e a **prévia da Aparência** (`x-ng.previa-portal`) não
+  usam `flux:sidebar` → inalterados.
