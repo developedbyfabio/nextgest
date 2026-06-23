@@ -460,6 +460,11 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Gate `gerenciar_clube`** (Dono+Gerente) reusado; flag `recurso:clube`. Indicadores set-based
   seguem **constantes** (não regrediu). Migração só aditiva; sem destrutivo.
 - **Cobrança recorrente** continua **costura manual** (`GatewayRecorrente`) — sem gateway/webhook.
+- **Hardening (pós-D44, 3 correções isoladas):** plano exige **1+ serviço** (`required|min:1`); modo
+  **teto exige `limite_usos > 0`** (fim do "ilimitado silencioso"); **cancelar comanda / remover item
+  coberto DEVOLVE a cota** (estorna `uso_clube` em `Comanda`, idempotente, sem tocar estoque/
+  pagamento/comissão). Penalidade de **no-show < 1h** (que mantém o uso) fica para o passo da agenda.
+  Detalhe em [[Regra de Negócio — Clube de Assinatura]].
 
 ---
 

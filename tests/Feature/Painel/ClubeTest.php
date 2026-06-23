@@ -317,3 +317,106 @@ it('plano: modo teto exige limite > 0 (sem ilimitado silencioso); ilimitado salv
     $ilim = PlanoClube::where('nome', 'Ilimitado')->first();
     expect($ilim?->ilimitado)->toBeTrue()->and($ilim?->limite_usos)->toBeNull();
 });
+
+// ---- Estorno de cota: cancelar / remover item coberto (hardening) ---------
+
+/** Plano de teto N cobrindo "corte" hoje + assinante ativo. Devolve [corte, cliente, assinatura]. */
+function cenarioTeto(int $limite = 1): array
+{
+    $uni = Unidade::create(['nome' => 'M', 'ativo' => true]);
+    $corte = Servico::create(['nome' => 'Corte', 'duracao_minutos' => 30, 'preco' => 50, 'ativo' => true]);
+    $hoje = Carbon::today()->dayOfWeek;
+    $plano = planoClube(['ilimitado' => false, 'limite_usos' => $limite, 'dias_semana' => [$hoje]], [$corte->id]);
+    $cli = Cliente::create(['nome' => 'C', 'telefone' => '1']);
+    $a = app(Assinaturas::class)->criar($cli->id, $plano, AssinaturaClube::STATUS_ATIVA);
+
+    return [$uni, $corte, $cli, $a];
+}
+
+it('cancelar comanda coberta DEVOLVE a cota; nova comanda cobre de novo', function () {
+    [$uni, $corte, $cli, $a] = cenarioTeto(1);
+    $ben = app(BeneficioClube::class);
+    $comanda = app(Comanda::class);
+
+    $v1 = $comanda->abrir($uni->id, $cli->id);
+    $comanda->adicionarServico($v1, $corte);
+    expect($ben->aplicarCobertura($v1->fresh()))->toBe(1)
+        ->and($ben->usosNoPeriodo($a, '2026-06'))->toBe(1)
+        ->and($ben->saldoRestante($a, '2026-06'))->toBe(0);
+
+    // Cancela a comanda coberta → a cota volta.
+    $comanda->cancelar($v1->fresh());
+    expect($ben->usosNoPeriodo($a, '2026-06'))->toBe(0)
+        ->and($ben->saldoRestante($a, '2026-06'))->toBe(1);
+
+    // Nova comanda no mesmo mês → cobre de novo (a cota voltou).
+    $v2 = $comanda->abrir($uni->id, $cli->id);
+    $comanda->adicionarServico($v2, $corte);
+    expect($ben->aplicarCobertura($v2->fresh()))->toBe(1)
+        ->and((float) $v2->fresh()->valor_total)->toBe(0.0);
+});
+
+it('remover item coberto DEVOLVE a cota', function () {
+    [$uni, $corte, $cli, $a] = cenarioTeto(2);
+    $ben = app(BeneficioClube::class);
+    $comanda = app(Comanda::class);
+
+    $v = $comanda->abrir($uni->id, $cli->id);
+    $comanda->adicionarServico($v, $corte);
+    $ben->aplicarCobertura($v->fresh());
+    expect($ben->usosNoPeriodo($a, '2026-06'))->toBe(1);
+
+    $item = $v->fresh()->itens()->where('coberto_por_assinatura', true)->first();
+    $comanda->removerItem($item);
+    expect($ben->usosNoPeriodo($a, '2026-06'))->toBe(0)
+        ->and($ben->saldoRestante($a, '2026-06'))->toBe(2);
+});
+
+it('estorno é idempotente: cancelar duas vezes não devolve em dobro', function () {
+    [$uni, $corte, $cli, $a] = cenarioTeto(1);
+    $ben = app(BeneficioClube::class);
+    $comanda = app(Comanda::class);
+
+    $v = $comanda->abrir($uni->id, $cli->id);
+    $comanda->adicionarServico($v, $corte);
+    $ben->aplicarCobertura($v->fresh());
+
+    $comanda->cancelar($v->fresh());
+    $comanda->cancelar($v->fresh()); // 2ª vez = no-op (já cancelada)
+    expect($ben->usosNoPeriodo($a, '2026-06'))->toBe(0)
+        ->and($ben->saldoRestante($a, '2026-06'))->toBe(1); // não estourou o teto
+});
+
+it('ilimitado: cancelar não quebra (sem cota a devolver)', function () {
+    $uni = Unidade::create(['nome' => 'M', 'ativo' => true]);
+    $corte = Servico::create(['nome' => 'Corte', 'duracao_minutos' => 30, 'preco' => 50, 'ativo' => true]);
+    $hoje = Carbon::today()->dayOfWeek;
+    $plano = planoClube(['ilimitado' => true, 'dias_semana' => [$hoje]], [$corte->id]);
+    $cli = Cliente::create(['nome' => 'C', 'telefone' => '1']);
+    $a = app(Assinaturas::class)->criar($cli->id, $plano, AssinaturaClube::STATUS_ATIVA);
+    $ben = app(BeneficioClube::class);
+    $comanda = app(Comanda::class);
+
+    $v = $comanda->abrir($uni->id, $cli->id);
+    $comanda->adicionarServico($v, $corte);
+    $ben->aplicarCobertura($v->fresh());
+    $comanda->cancelar($v->fresh());
+    expect($ben->saldoRestante($a, '2026-06'))->toBeNull(); // ilimitado: sem cota
+});
+
+it('não-regressão: comanda PAGA (não cancelada) mantém o uso', function () {
+    [$uni, $corte, $cli, $a] = cenarioTeto(1);
+    $produto = Produto::create(['nome' => 'Pomada', 'preco_venda' => 40, 'preco_custo' => 10, 'controla_estoque' => false, 'ativo' => true]);
+    $ben = app(BeneficioClube::class);
+    $comanda = app(Comanda::class);
+
+    $v = $comanda->abrir($uni->id, $cli->id);
+    $comanda->adicionarServico($v, $corte);   // coberto → 0
+    $comanda->adicionarProduto($v, $produto); // 40 → cobrado (dá total > 0 p/ pagar)
+    $ben->aplicarCobertura($v->fresh());
+    expect($ben->usosNoPeriodo($a, '2026-06'))->toBe(1);
+
+    $comanda->pagar($v->fresh()); // paga o total (R$ 40 do produto)
+    expect($v->fresh()->status)->toBe('paga')
+        ->and($ben->usosNoPeriodo($a, '2026-06'))->toBe(1); // consumo real permanece
+});

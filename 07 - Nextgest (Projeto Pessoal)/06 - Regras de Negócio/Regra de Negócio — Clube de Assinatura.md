@@ -53,6 +53,24 @@ tags: [nextgest, clube, assinatura, cobertura, beneficiarios, regra-de-negocio]
 - **Cobrança recorrente:** ainda **costura manual** (`GatewayRecorrente`); o MP Preapproval entra
   pós-VPS sem mudar a aba.
 
+## Hardening (3 correções isoladas — pós-D44)
+
+- **Plano cobre 1+ serviço:** `salvarPlano` valida `planoServicos` como `required|array|min:1`
+  (mensagem pt-BR). Não dá mais para salvar plano de cobertura sem cobrir nada.
+- **Teto exige número:** se o plano **não** é ilimitado, `limite_usos` é `required|integer|min:1`.
+  Antes, marcar "teto" e deixar o número em branco gravava `null` e o plano virava **ilimitado
+  silenciosamente**. Ilimitado segue sem número.
+- **Devolução de cota (o uso volta):** **cancelar** a comanda **ou remover** um item coberto
+  **estorna o `uso_clube`** vinculado (`Comanda::estornarUsoClubeDosItens` →
+  `UsoClube::whereIn('venda_item_id', …)->delete()`), em `Comanda::cancelar` e `Comanda::removerItem`.
+  A pessoa **mantém o direito** (saldo restaurado). **Idempotente** (cancelar 2x não devolve em
+  dobro — early-return de "já cancelada"; remover apaga o item). Vale para planos **limitados** (no
+  ilimitado não há cota). Escopo restrito ao **uso do clube**: NÃO mexe em estoque/pagamento/comissão.
+  Não-regressão: comanda **paga** (não cancelada) **mantém** o uso (consumo real conta).
+
 ## Fora deste escopo (próximo prompt)
-**Agendar para beneficiário** (toca a agenda/`MotorDisponibilidade`) — isolado de propósito. Esta
-regra é a base para aquele prompt.
+- **Agendar para beneficiário** (toca a agenda/`MotorDisponibilidade`) — isolado de propósito. Esta
+  regra é a base para aquele prompt.
+- **Penalidade de no-show < 1h:** falta sem cancelar a tempo deveria **manter o uso cobrado** (não
+  devolver a cota). Como depende de **horário agendado**, fica para o passo da agenda — hoje a
+  devolução base (acima) vale para todo cancelamento/remoção.

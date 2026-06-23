@@ -9,6 +9,7 @@ use App\Models\ComissaoProfissional;
 use App\Models\Pagamento;
 use App\Models\Produto;
 use App\Models\Servico;
+use App\Models\UsoClube;
 use App\Models\Venda;
 use App\Models\VendaItem;
 use App\Services\Estoque\MovimentadorEstoque;
@@ -156,6 +157,8 @@ class Comanda
     {
         $venda = $item->venda;
         $this->garantirAberta($venda);
+        // Clube: se o item era coberto, devolve a cota (remove o uso) ANTES de apagá-lo.
+        $this->estornarUsoClubeDosItens([$item]);
         $item->delete();
         $this->recalcular($venda);
     }
@@ -323,8 +326,34 @@ class Comanda
                 $venda->pagamentos()->where('status', 'aprovado')->update(['status' => 'estornado']);
             }
 
+            // Clube: devolve a cota dos itens cobertos (o uso volta; idempotente pelo
+            // early-return acima). Vale para comanda aberta OU paga sendo cancelada.
+            $this->estornarUsoClubeDosItens($venda->itens()->where('coberto_por_assinatura', true)->get());
+
             $venda->update(['status' => 'cancelada']);
         });
+    }
+
+    /**
+     * Clube (hardening): DEVOLVE a cota dos itens COBERTOS por assinatura, removendo o
+     * `uso_clube` vinculado a cada item. Usado ao cancelar a comanda e ao remover um item
+     * coberto. Idempotente — sem uso vinculado, nada acontece (cancelar/remover de novo não
+     * devolve em dobro). Escopo: SÓ o uso do clube; não toca estoque/pagamento/comissão.
+     * (Penalidade de no-show < 1h — que MANTÉM o uso — depende de horário agendado e fica
+     * para o passo da agenda; não é tratada aqui.)
+     *
+     * @param  iterable<VendaItem>  $itens
+     */
+    private function estornarUsoClubeDosItens(iterable $itens): void
+    {
+        $ids = collect($itens)
+            ->filter(fn ($i) => (bool) $i->coberto_por_assinatura)
+            ->pluck('id')
+            ->all();
+
+        if ($ids !== []) {
+            UsoClube::whereIn('venda_item_id', $ids)->delete();
+        }
     }
 
     /**
