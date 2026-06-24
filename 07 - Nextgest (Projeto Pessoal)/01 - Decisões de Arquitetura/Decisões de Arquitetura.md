@@ -614,3 +614,29 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   duplicar a regra de "1 unidade + move de horários"). Gate `gerir_unidades` (mesmo da tela; Dono/Gerente).
 - **Pendência conhecida:** os **2 serviços órfãos** do `barbeariateste` (`Barba Cob`, `Corte Cob`)
   seguem sem unidade até o backfill (prompt à parte) — agora visíveis/corrigíveis no modal "Gerir".
+
+---
+
+## D50 — Backfill de órfãos de unidade: comando `nextgest:reconciliar-unidades` (idempotente, dry-run)
+> Continuação do D49: a UI nova faz cadastros nascerem vinculados; este comando reconcilia o
+> **legado** (órfãos antigos). **Não-destrutivo** (só liga, nunca desliga), **idempotente**, **não
+> inventa horário**, **não toca o motor**, **sem migration**. Suíte 443/443 verde.
+- **Comando:** `php artisan nextgest:reconciliar-unidades` (`app/Console/Commands/ReconciliarUnidades.php`).
+  **Dry-run é o padrão** (só relata, nada escreve); escreve **apenas com `--apply`** (opt-in
+  explícito = segurança). Itera todos os tenants via `Tenant::all()` + `$tenant->run()`.
+- **Regra (decisão do Fabio):**
+  - **Tenant com 1 unidade →** liga os órfãos àquela única unidade: serviço ativo sem
+    `servico_unidade` e profissional ativo sem `user_unidade` → `syncWithoutDetaching([unidade])`
+    (idempotente, só adiciona). Sem ambiguidade.
+  - **Tenant com 2+ unidades →** **NÃO adivinha**: só lista os órfãos (nominal) para decisão manual
+    no modal **"Gerir"** (serviços) / na **Equipe** (profissionais).
+  - **Horários (`horarios_trabalho`) →** **nunca inventa**: só **sinaliza** o profissional ativo que
+    tem unidade mas está sem janela nela (a jornada não dá para deduzir). O Fabio cadastra na tela Horários.
+- **Aplicado no DEV:** `barbeariateste` (1 unidade) tinha **4 serviços órfãos** (`Barba Cob`,
+  `Coloração`, `Corte + Barba`, `Corte Cob`) → ligados à Matriz Centro (`servico_unidade` 3→7,
+  0 órfãos); 2ª execução = **sem mudança** (idempotente); `Dona que Atende` segue **sem horário**
+  (apenas sinalizada). `salaoteste`/`volumeteste` sem órfãos.
+- **PRODUÇÃO (quando o Fabio publicar):** pelo [[Roteiro de Deploy Seguro]] — (1) **backup** central+tenants;
+  (2) **`--dry-run`** e conferir o relatório (os órfãos reais diferem do dev); (3) **`--apply`**;
+  (4) validar no portal que os serviços antes órfãos passaram a aparecer. **Não rodado em produção
+  por agente.**
