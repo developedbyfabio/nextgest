@@ -79,27 +79,90 @@
             </div>
         </section>
 
-        {{-- ===================== FAIXA DE DESTAQUES ===================== --}}
-        <section id="recursos" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6">
-            <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                    Tudo que o seu negócio precisa
-                </h2>
-                <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">
-                    Do agendamento do cliente à gestão da equipe — simples para quem usa, completo para quem administra.
-                </p>
-            </div>
+        {{-- ===================== COMO FUNCIONA ===================== --}}
+        <section id="como-funciona" class="scroll-mt-24 border-y border-slate-100 bg-slate-50 py-16 dark:border-slate-800/60 dark:bg-slate-900/40 sm:py-20">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">Do cadastro ao cliente agendando — em 5 passos</h2>
+                    <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">Você configura uma vez; depois é só compartilhar o link e acompanhar pelo painel.</p>
+                </div>
 
-            <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <x-landing.card-destaque icone="calendar-days" titulo="Agenda inteligente">
-                    Disponibilidade calculada por profissional, com bloqueios e horários de trabalho — sem choque de agenda.
-                </x-landing.card-destaque>
-                <x-landing.card-destaque icone="device-phone-mobile" titulo="Portal do cliente">
-                    Seu cliente agenda em poucos toques, direto do navegador do celular — escolhe serviço, profissional e horário.
-                </x-landing.card-destaque>
-                <x-landing.card-destaque icone="users" titulo="Equipe e permissões">
-                    Papéis por função (dono, gerente, recepção, profissional) e suporte a múltiplas unidades.
-                </x-landing.card-destaque>
+                <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <x-landing.passo numero="01" icone="scissors" titulo="Cadastre seus serviços">Defina serviços, duração e preço.</x-landing.passo>
+                    <x-landing.passo numero="02" icone="users" titulo="Configure equipe e horários">Profissionais, unidades e janelas de trabalho.</x-landing.passo>
+                    <x-landing.passo numero="03" icone="link" titulo="Compartilhe seu link">Um link público por estabelecimento — WhatsApp, Instagram, bio.</x-landing.passo>
+                    <x-landing.passo numero="04" icone="device-phone-mobile" titulo="O cliente agenda sozinho">Escolhe serviço, profissional e horário pelo celular.</x-landing.passo>
+                    <x-landing.passo numero="05" icone="chart-bar" titulo="Você acompanha pelo painel">Agenda, clientes, vendas e indicadores num só lugar.</x-landing.passo>
+                </div>
+            </div>
+        </section>
+
+        {{-- ===================== RECURSOS (BENTO) ===================== --}}
+        <section id="recursos" class="scroll-mt-24 py-16 sm:py-20">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">Tudo para organizar a agenda do seu negócio</h2>
+                    <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">Recursos pensados para o dia a dia de quem presta serviço por horário.</p>
+                </div>
+
+                <div class="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <x-landing.card-bento destaque icone="calendar-days" titulo="Agenda online">Disponibilidade calculada por profissional — sem choque de horário.</x-landing.card-bento>
+                    <x-landing.card-bento destaque icone="link" titulo="Link público de agendamento">Um link por estabelecimento para o cliente marcar pelo celular.</x-landing.card-bento>
+                    <x-landing.card-bento icone="users" titulo="Equipe e permissões" />
+                    <x-landing.card-bento icone="identification" titulo="Cadastro de clientes" />
+                    <x-landing.card-bento icone="scissors" titulo="Serviços e preços" />
+                    <x-landing.card-bento icone="shopping-cart" titulo="Controle de vendas (comanda)" />
+                    <x-landing.card-bento destaque icone="building-storefront" titulo="Multi-estabelecimento">Várias unidades, cada uma com sua agenda, equipe e serviços.</x-landing.card-bento>
+                    <x-landing.card-bento destaque icone="chart-bar" titulo="Relatórios e indicadores">Faturamento, comparecimento e retenção do seu negócio num relance.</x-landing.card-bento>
+                    <x-landing.card-bento icone="no-symbol" titulo="Bloqueio de horários" />
+                    <x-landing.card-bento icone="user-circle" titulo="Visão por profissional" />
+                    <x-landing.card-bento icone="ticket" titulo="Clube de assinatura" />
+                    <x-landing.card-bento icone="squares-2x2" titulo="Painel administrativo" />
+                </div>
+            </div>
+        </section>
+
+        {{-- ===================== TIPOS DE NEGÓCIO ===================== --}}
+        <section id="para-quem" class="scroll-mt-24 border-y border-slate-100 bg-slate-50 py-16 dark:border-slate-800/60 dark:bg-slate-900/40 sm:py-20">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">Feito para o seu tipo de negócio</h2>
+                    <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">Se você atende por horário, o Nextgest se encaixa na sua rotina.</p>
+                </div>
+
+                <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <x-landing.card-publico icone="scissors" titulo="Barbearias">Encaixe cortes e barbas sem buraco na agenda e sem dois clientes no mesmo horário.</x-landing.card-publico>
+                    <x-landing.card-publico icone="sparkles" titulo="Salões de beleza">Serviços combinados (corte + escova + coloração) com a duração certa reservada.</x-landing.card-publico>
+                    <x-landing.card-publico icone="heart" titulo="Clínicas de estética">Pacotes e retornos organizados por profissional, com o histórico de cada cliente.</x-landing.card-publico>
+                    <x-landing.card-publico icone="user" titulo="Profissionais autônomos">Sua agenda num link só — o cliente marca sem interromper o seu atendimento.</x-landing.card-publico>
+                    <x-landing.card-publico icone="user-group" titulo="Pequenas equipes">Papéis por função e visão por profissional: cada um enxerga o que é seu.</x-landing.card-publico>
+                    <x-landing.card-publico icone="building-office-2" titulo="Múltiplas unidades">Uma conta, várias filiais — agenda, equipe e serviços separados por unidade.</x-landing.card-publico>
+                </div>
+            </div>
+        </section>
+
+        {{-- ===================== PREVIEW DO PAINEL (AGENDA) ===================== --}}
+        <section id="painel" class="scroll-mt-24 overflow-hidden py-16 sm:py-20">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                {{-- flex-col no mobile (evita o track auto do CSS grid crescer até o
+                     max-content da grade de 7 colunas); grid só no desktop. --}}
+                <div class="flex flex-col gap-10 lg:grid lg:grid-cols-5 lg:items-center lg:gap-12">
+                    <div class="lg:col-span-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/70 bg-gradient-to-r from-violet-600/10 via-indigo-600/10 to-blue-600/10 px-3 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-500/30 dark:text-indigo-300">Painel da equipe</span>
+                        <h2 class="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">Sua semana inteira num relance</h2>
+                        <p class="mt-3 text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+                            Todos os agendamentos por dia e por profissional, sem planilha nem caderninho. O horário ocupado some na hora — nada de marcação dobrada.
+                        </p>
+                        <ul class="mt-6 flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center gap-2"><flux:icon name="check-circle" class="size-5 shrink-0 text-indigo-600 dark:text-indigo-400" /> Visões de semana e de dia</li>
+                            <li class="flex items-center gap-2"><flux:icon name="check-circle" class="size-5 shrink-0 text-indigo-600 dark:text-indigo-400" /> Filtros por profissional, unidade e status</li>
+                            <li class="flex items-center gap-2"><flux:icon name="check-circle" class="size-5 shrink-0 text-indigo-600 dark:text-indigo-400" /> Status de cada atendimento de relance</li>
+                        </ul>
+                    </div>
+                    <div class="w-full min-w-0 lg:col-span-3">
+                        <x-landing.mockup-painel />
+                    </div>
+                </div>
             </div>
         </section>
     </main>

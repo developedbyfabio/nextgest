@@ -56,10 +56,35 @@ Sans (local, @fontsource). Sem Livewire — só Blade + Alpine (vem do Flux) par
   usa cores de marca fixas). Suíte 443. Build (fontes locais) ok. Mobile sem scroll horizontal.
 - A **logo** `public/nextgest-logo.png` passou a ser **versionada** (a landing a referencia; produção puxa via git).
 
-## Pendente — Fases 2 e 3 (NÃO feitas)
-Seções com âncoras já prontas no header/footer (hoje sem alvo, no-op): **Como funciona**,
-**bento de recursos**, **tipos de negócio**, **preview do painel completo**, **Planos**, **FAQ**,
-**CTA final**. Construir reaproveitando os componentes da Fase 1.
+## Fase 2 (FEITA) — seções abaixo do hero
+Ordem no `<main>`: Hero → **Como funciona** → **Recursos (bento)** → **Tipos de negócio** →
+**Preview do painel**. A faixa de destaques da Fase 1 (3 pilares com `card-destaque`) foi
+**substituída** pelo bento (os 3 pilares viraram tiles em destaque) — `card-destaque.blade.php`
+fica no repo como componente reutilizável, sem uso na página.
+- **Como funciona** (`#como-funciona`, banda slate-50): 5 passos reais (`x-landing.passo` — número em
+  degradê + ícone Heroicons): cadastrar serviços → equipe/horários → compartilhar link → cliente
+  agenda → acompanhar no painel.
+- **Recursos** (`#recursos`): **bento** `grid-cols-2 lg:grid-cols-4` com `x-landing.card-bento`. 12
+  recursos; 4 em **destaque** (`destaque` = degradê + `col-span-2`): Agenda online, Link público,
+  Multi-estabelecimento, Relatórios. O link "Recursos" do header ancora aqui (id movido da antiga
+  faixa para o bento).
+- **Tipos de negócio** (`#para-quem`, banda slate-50): 6 `x-landing.card-publico` (Barbearias /
+  Salões / Estética / Autônomos / Pequenas equipes / Múltiplas unidades), cada um com 1 benefício específico.
+- **Preview do painel** (`#painel`): texto + `x-landing.mockup-painel` — janela de desktop
+  espelhando a **agenda semanal REAL** (`Painel\Agenda\Index`, visão "semana"): controles
+  (‹ Hoje › · data · [Dia][Semana]) + 7 colunas de dia (hoje destacado) com cartões de agendamento
+  (barra de status à esquerda nas **cores reais** STATUS_HEX + horário + cliente; "—" se vazio).
+  Estático/HTML-CSS; accent pelo degradê (não emite `--cor-*`). **Gotcha:** o wrapper desktop é CSS
+  grid (`lg:grid-cols-5`), mas no MOBILE virou `flex flex-col` — um grid de track `auto` no mobile
+  cresce até o `max-content` da grade de 7 colunas (overflow horizontal); flex-col + `min-w-0` na
+  coluna + `overflow-hidden` na seção resolvem.
+- Ritmo: seções alternam fundo branco / banda `slate-50` (dark: `slate-900/40`), `py-16 sm:py-20`,
+  `scroll-mt-24` nos alvos. Verificado por Playwright (desktop/mobile/dark; âncoras com offset;
+  mobile sem scroll horizontal; mockup == agenda real).
+
+## Pendente — Fase 3 (NÃO feita)
+**Planos** (R$49 / R$99 / R$199) + **FAQ** + **CTA final**. Âncoras `#planos`/`#faq` já no header/
+footer (hoje no-op gracioso). Construir reaproveitando os componentes das Fases 1/2.
 
 ## Personalização (Fabio pode ajustar depois)
 - **Textos:** headline/subheadline (landing.blade.php), textos dos 3 cards, tagline do footer.
