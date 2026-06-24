@@ -165,6 +165,82 @@
                 </div>
             </div>
         </section>
+
+        {{-- ===================== PLANOS ===================== --}}
+        @php
+            $wa = 'https://wa.me/5541991541757?text=';
+            $waBasico = $wa.rawurlencode('Olá! Vim pelo site do Nextgest e tenho interesse no plano Básico.');
+            $waProfissional = $wa.rawurlencode('Olá! Vim pelo site do Nextgest e tenho interesse no plano Profissional.');
+            $waNextgest = $wa.rawurlencode('Olá! Vim pelo site do Nextgest e tenho interesse no plano Nextgest (completo).');
+        @endphp
+        <section id="planos" class="scroll-mt-24 border-y border-slate-100 bg-slate-50 py-16 dark:border-slate-800/60 dark:bg-slate-900/40 sm:py-20">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">Planos para cada momento do seu negócio</h2>
+                    <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">Comece simples e evolua conforme você cresce.</p>
+                </div>
+
+                <div class="mt-12 grid items-stretch gap-6 lg:grid-cols-3 lg:gap-5">
+                    <x-landing.card-plano
+                        nome="Básico" precoDe="R$ 99,90" precoPor="R$ 49,90"
+                        etiqueta="Preço de lançamento · 1º ano"
+                        paraQuem="Para profissionais e negócios começando."
+                        :inclui="['Agenda online', 'Link público de agendamento', 'Gestão de equipe e horários', 'Cadastro de clientes', 'Controle de vendas (comanda)', 'Multi-estabelecimento (filiais)']"
+                        :naoInclui="['Clube de assinatura', 'Integração com WhatsApp e outras integrações']"
+                        ctaTexto="Começar agora" :ctaHref="$waBasico" />
+
+                    <x-landing.card-plano destaque badge="Mais escolhido"
+                        nome="Profissional" precoDe="R$ 199,90" precoPor="R$ 99,90"
+                        etiqueta="Preço de lançamento · 1º ano"
+                        paraQuem="Para barbearias e salões que querem crescer."
+                        :inclui="['Tudo do plano Básico', 'Clube de assinatura personalizado', 'Relatórios e indicadores']"
+                        :naoInclui="['Integração com WhatsApp e outras integrações']"
+                        ctaTexto="Começar agora" :ctaHref="$waProfissional" />
+
+                    <x-landing.card-plano
+                        nome="Nextgest" precoDe="R$ 299,90" precoPor="R$ 199,90"
+                        etiqueta="Preço de lançamento · 1º ano"
+                        paraQuem="Para operações completas e múltiplas unidades."
+                        :inclui="['Tudo do plano Profissional', 'Integração com WhatsApp', 'Demais integrações', 'Recursos avançados']"
+                        ctaTexto="Falar com a gente" :ctaHref="$waNextgest" />
+                </div>
+
+                <div class="mx-auto mt-10 max-w-2xl text-center">
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        <flux:icon name="wrench-screwdriver" class="mr-1 inline size-4 text-indigo-600 dark:text-indigo-400" />
+                        + valor único de <strong>instalação</strong>, a combinar conforme o tamanho da equipe, número de filiais e necessidades.
+                    </p>
+                    <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                        Preço de lançamento válido para o primeiro ano. Valores podem ser reajustados depois.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        {{-- ===================== FAQ ===================== --}}
+        <section id="faq" class="scroll-mt-24 py-16 sm:py-20">
+            <div class="mx-auto max-w-3xl px-4 sm:px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">Perguntas frequentes</h2>
+                    <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">O que os donos costumam perguntar antes de começar.</p>
+                </div>
+
+                <div class="mt-10 flex flex-col gap-3">
+                    <x-landing.item-faq pergunta="O cliente precisa baixar aplicativo?">Não. Ele agenda pelo navegador do celular — é só abrir o seu link.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Posso usar em mais de uma unidade?">Sim. O Nextgest é multi-estabelecimento, com agenda, equipe e serviços geridos por filial.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Funciona para barbearias e salões?">Sim — e também para clínicas de estética, profissionais autônomos e pequenas equipes.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Consigo controlar os horários de cada profissional?">Sim. Você define as janelas de trabalho por profissional e por unidade; a disponibilidade é calculada sozinha.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Tem painel administrativo?">Sim. Agenda, equipe, clientes, vendas (comanda) e indicadores num só lugar.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Posso compartilhar o link no WhatsApp e Instagram?">Sim. Cada estabelecimento tem um link público de agendamento para divulgar onde quiser.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="É responsivo no celular?">Sim. O portal do cliente é feito mobile-first; o painel funciona bem em qualquer tela.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Como funciona o clube de assinatura?">Disponível a partir do plano Profissional: você cria planos recorrentes, com os serviços cobertos definidos por você.</x-landing.item-faq>
+                    <x-landing.item-faq pergunta="Posso pedir uma demonstração?">Claro. Fale com a gente pelo WhatsApp ou e-mail e mostramos a plataforma funcionando.</x-landing.item-faq>
+                </div>
+            </div>
+        </section>
+
+        {{-- ===================== CTA FINAL ===================== --}}
+        <x-landing.cta-final />
     </main>
 
     <x-landing.footer />

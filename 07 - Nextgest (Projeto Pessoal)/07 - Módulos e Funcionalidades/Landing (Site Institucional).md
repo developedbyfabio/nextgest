@@ -82,16 +82,33 @@ fica no repo como componente reutilizável, sem uso na página.
   `scroll-mt-24` nos alvos. Verificado por Playwright (desktop/mobile/dark; âncoras com offset;
   mobile sem scroll horizontal; mockup == agenda real).
 
-## Pendente — Fase 3 (NÃO feita)
-**Planos** (R$49 / R$99 / R$199) + **FAQ** + **CTA final**. Âncoras `#planos`/`#faq` já no header/
-footer (hoje no-op gracioso). Construir reaproveitando os componentes das Fases 1/2.
+## Fase 3 (FEITA) — landing COMPLETA
+Ordem final do `<main>`: Hero → Como funciona → Recursos → Tipos de negócio → Preview do painel →
+**Planos** → **FAQ** → **CTA final** → footer. As âncoras `#planos`/`#faq` (antes no-op) agora
+ancoram nas seções reais (com `scroll-mt-24`).
+- **Planos** (`#planos`, banda slate-50): `x-landing.card-plano` × 3 (Básico / **Profissional**
+  destacado "Mais escolhido" / Nextgest). **Preço de lançamento (1º ano)** com ancoragem **de/por**:
+  "de" riscado + "por" em degradê + `/mês`, etiqueta "Preço de lançamento · 1º ano". Recursos com
+  check (incluídos) e x cinza + risco (não incluídos). CTA → **WhatsApp** (sem checkout). Rodapé da
+  seção: "+ instalação a combinar" + linha de transparência ("válido para o 1º ano, pode reajustar").
+  Preços: Básico R$49,90 (de 99,90) · Profissional R$99,90 (de 199,90) · Nextgest R$199,90 (de 299,90).
+- **FAQ** (`#faq`): `x-landing.item-faq` (accordion Alpine, `aria-expanded`, foco por teclado,
+  `x-show`+`x-transition` — **sem** depender do plugin `x-collapse`; abre/fecha independente). 9 perguntas.
+- **CTA final** (`x-landing.cta-final`, antes do footer): faixa em degradê de marca + grade de blocos;
+  botões WhatsApp / E-mail / Instagram (mesmos links/aria-label dos flutuantes; externos em nova aba).
+- Verificado por Playwright: todas as âncoras do header rolam ao alvo certo (com offset); accordion
+  abre; mobile sem scroll horizontal; desktop/mobile/dark ok. Suíte 443.
 
 ## Personalização (Fabio pode ajustar depois)
-- **Textos:** headline/subheadline (landing.blade.php), textos dos 3 cards, tagline do footer.
-- **Links de contato** (footer + `botoes-flutuantes.blade.php`): WhatsApp `5541991541757`,
-  Instagram `instagram.com/nextgest`, e-mail `fabio9384@gmail.com`.
+- **Preços/planos:** `landing.blade.php` (seção `#planos`) — `precoDe`/`precoPor`/`etiqueta`/`inclui`/
+  `naoInclui`/`ctaTexto` por `x-landing.card-plano`. Texto de instalação/transparência no rodapé da seção.
+- **FAQ:** perguntas/respostas em `landing.blade.php` (`x-landing.item-faq`).
+- **Textos:** headline/subheadline e copy das seções (landing.blade.php); tagline do footer.
+- **Links de contato** (footer + `botoes-flutuantes.blade.php` + `cta-final` + CTAs dos planos):
+  WhatsApp `5541991541757`, Instagram `instagram.com/nextgest`, e-mail `fabio9384@gmail.com`.
 - **Marca:** degradê `from-violet-600 via-indigo-600 to-blue-600` (trocar nos componentes se mudar a paleta).
 
 ## Deploy
-Só publicar em produção **quando a landing estiver mais completa** (Fases 2/3) — ver
-[[Roteiro de Deploy Seguro]]. Por ora, fica no dev/`main`.
+Landing **completa** (Fases 1–3). Publicar em produção num passo único pelo [[Roteiro de Deploy
+Seguro]] quando o Fabio decidir. Por ora, fica no dev/`main`. Falta apenas ligar o checkout real
+(hoje os CTAs de plano levam ao WhatsApp — proposital, sem fluxo de pagamento inventado).
