@@ -83,12 +83,15 @@
                 @endforeach
             </flux:checkbox.group>
 
-            @if ($todasUnidades->count() > 1)
-                <flux:checkbox.group wire:model="unidades" label="Atua nas unidades">
+            @if ($todasUnidades->isNotEmpty())
+                <flux:select wire:model="unidadeId" label="Unidade" placeholder="Selecione a unidade"
+                    :description="$e_profissional ? 'O profissional atende em uma unidade. Trocar a unidade move os horários de trabalho dele junto.' : 'Opcional para quem não atende na agenda.'">
                     @foreach ($todasUnidades as $unidade)
-                        <flux:checkbox value="{{ $unidade->id }}" label="{{ $unidade->nome }}" />
+                        <flux:select.option :value="$unidade->id">{{ $unidade->nome }}</flux:select.option>
                     @endforeach
-                </flux:checkbox.group>
+                </flux:select>
+            @else
+                <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Cadastre uma unidade primeiro.</flux:text>
             @endif
 
             <flux:switch wire:model.live="e_profissional" label="É profissional (aparece na agenda)" />

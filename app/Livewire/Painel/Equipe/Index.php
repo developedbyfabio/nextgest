@@ -44,8 +44,8 @@ class Index extends Component
 
     public string $password = '';
 
-    /** @var array<int> */
-    public array $unidades = [];
+    /** Unidade (ÚNICA) onde o membro atua. Profissional = uma unidade por vez. */
+    public ?int $unidadeId = null;
 
     /** @var array<int> */
     public array $servicos = [];
@@ -69,10 +69,17 @@ class Index extends Component
             'e_profissional' => ['boolean'],
             'ativo' => ['boolean'],
             'password' => [$this->editandoId ? 'nullable' : 'required', 'string', 'min:8'],
-            'unidades' => ['array'],
-            'unidades.*' => ['integer', 'exists:unidades,id'],
+            // Profissional atende em UMA unidade (obrigatória); demais papéis, opcional.
+            'unidadeId' => [$this->e_profissional ? 'required' : 'nullable', 'integer', 'exists:unidades,id'],
             'servicos' => ['array'],
             'servicos.*' => ['integer', 'exists:servicos,id'],
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'unidadeId.required' => 'Escolha a unidade em que o profissional atende.',
         ];
     }
 
@@ -81,9 +88,10 @@ class Index extends Component
         $this->authorize('criar_usuario');
         $this->resetForm();
 
+        // Com uma só filial, já vem selecionada (pra não nascer sem unidade).
         $ativas = Unidade::where('ativo', true)->pluck('id');
         if ($ativas->count() === 1) {
-            $this->unidades = [$ativas->first()];
+            $this->unidadeId = (int) $ativas->first();
         }
 
         $this->mostrarFormulario = true;
@@ -102,7 +110,7 @@ class Index extends Component
         $this->e_profissional = $user->e_profissional;
         $this->ativo = $user->ativo;
         $this->password = '';
-        $this->unidades = $user->unidades->pluck('id')->all();
+        $this->unidadeId = $user->unidades->first()?->id;
         $this->servicos = $user->servicos->pluck('id')->all();
         $this->resetValidation();
         $this->mostrarFormulario = true;
@@ -128,6 +136,10 @@ class Index extends Component
             }
         }
 
+        // Unidade ANTERIOR (antes do sync) — para detectar troca de filial e mover os
+        // horários junto. Em criação não há anterior.
+        $unidadeAntiga = $user->exists ? $user->unidades()->pluck('unidades.id')->first() : null;
+
         $user->name = $dados['name'];
         $user->email = $dados['email'];
         $user->e_profissional = $dados['e_profissional'];
@@ -139,7 +151,19 @@ class Index extends Component
 
         $user->save();
         $user->syncRoles($dados['papeis']);
-        $user->unidades()->sync($dados['unidades'] ?? []);
+
+        // Membro atende em UMA unidade: sync com 1 elemento substitui a anterior.
+        $novaUnidade = $dados['unidadeId'] ?? null;
+        $user->unidades()->sync($novaUnidade ? [$novaUnidade] : []);
+
+        // TROCA DE FILIAL: horarios_trabalho é POR unidade. Ao mudar a unidade do
+        // profissional, movemos as janelas DELE para a nova unidade (update simples,
+        // escopado ao próprio usuário, só quando a unidade muda) — senão ele ficaria
+        // sem disponibilidade na nova filial. Não toca o motor.
+        if ($novaUnidade !== null && $unidadeAntiga !== null && (int) $novaUnidade !== (int) $unidadeAntiga) {
+            $user->horariosTrabalho()->update(['unidade_id' => $novaUnidade]);
+        }
+
         $user->servicos()->sync($dados['e_profissional'] ? ($dados['servicos'] ?? []) : []);
 
         $this->mostrarFormulario = false;
@@ -196,7 +220,7 @@ class Index extends Component
 
     protected function resetForm(): void
     {
-        $this->reset(['editandoId', 'name', 'email', 'papeis', 'e_profissional', 'password', 'unidades', 'servicos']);
+        $this->reset(['editandoId', 'name', 'email', 'papeis', 'e_profissional', 'password', 'unidadeId', 'servicos']);
         $this->ativo = true;
         $this->resetValidation();
     }
