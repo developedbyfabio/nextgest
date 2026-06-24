@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Livewire\Painel\Unidades\Index;
+use App\Models\Servico;
 use App\Models\Unidade;
 use Livewire\Livewire;
 
@@ -49,6 +50,31 @@ it('inativa em vez de excluir', function () {
 
     expect(Unidade::find($unidade->id)->ativo)->toBeFalse();
     expect(Unidade::find($unidade->id))->not->toBeNull();
+});
+
+it('gerir serviços pela unidade sincroniza servico_unidade (passa a aparecer pro cliente)', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+    $unidade = Unidade::create(['nome' => 'Matriz', 'ativo' => true]);
+    $corte = Servico::create(['nome' => 'Corte', 'duracao_minutos' => 30, 'preco' => 40, 'ativo' => true]);
+    $barba = Servico::create(['nome' => 'Barba', 'duracao_minutos' => 20, 'preco' => 30, 'ativo' => true]);
+
+    Livewire::test(Index::class)
+        ->call('gerir', $unidade->id)
+        ->assertSet('servicosUnidade', [])
+        ->set('servicosUnidade', [$corte->id, $barba->id])
+        ->call('salvarServicos')
+        ->assertHasNoErrors();
+
+    expect($unidade->fresh()->servicos->pluck('id')->sort()->values()->all())
+        ->toBe(collect([$corte->id, $barba->id])->sort()->values()->all());
+
+    // Desmarcar um remove o vínculo (aditivo/multi, espelha o pivô).
+    Livewire::test(Index::class)
+        ->call('gerir', $unidade->id)
+        ->set('servicosUnidade', [$corte->id])
+        ->call('salvarServicos');
+
+    expect($unidade->fresh()->servicos->pluck('id')->all())->toBe([$corte->id]);
 });
 
 it('bloqueia Profissional (403) na página de unidades', function () {

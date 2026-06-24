@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Painel\Unidades;
 
+use App\Models\Servico;
 use App\Models\Unidade;
+use App\Models\User;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -14,6 +16,9 @@ use Livewire\Component;
 
 /**
  * CRUD de unidades (filiais). "Excluir" = inativar (nunca apaga fisicamente).
+ * Também gere, pela unidade, quais SERVIÇOS são oferecidos ali (servico_unidade)
+ * e LISTA os profissionais atribuídos (atribuição/troca fica na tela Equipe, que
+ * trata "uma unidade por profissional" + move de horários).
  * Permissão: gerir_unidades (Dono/Gerente).
  */
 #[Layout('components.layouts.painel')]
@@ -36,9 +41,47 @@ class Index extends Component
 
     public ?int $confirmarId = null;
 
+    // Painel "Gerir" da unidade: serviços oferecidos ali.
+    public bool $mostrarGerir = false;
+
+    public ?int $gerindoId = null;
+
+    /** @var array<int> ids dos serviços oferecidos na unidade sendo gerida */
+    public array $servicosUnidade = [];
+
     public function mount(): void
     {
         $this->authorize('gerir_unidades');
+    }
+
+    /** Abre o painel de gestão da unidade (serviços + profissionais). */
+    public function gerir(int $id): void
+    {
+        $this->authorize('gerir_unidades');
+
+        $unidade = Unidade::with('servicos')->findOrFail($id);
+
+        $this->gerindoId = $unidade->id;
+        $this->servicosUnidade = $unidade->servicos->pluck('id')->all();
+        $this->mostrarGerir = true;
+    }
+
+    /** Sincroniza os serviços oferecidos na unidade (servico_unidade, aditivo/multi). */
+    public function salvarServicos(): void
+    {
+        $this->authorize('gerir_unidades');
+
+        $this->validate([
+            'servicosUnidade' => ['array'],
+            'servicosUnidade.*' => ['integer', 'exists:servicos,id'],
+        ]);
+
+        Unidade::findOrFail($this->gerindoId)
+            ->servicos()
+            ->sync($this->servicosUnidade);
+
+        Flux::toast('Serviços da unidade atualizados.', variant: 'success');
+        $this->mostrarGerir = false;
     }
 
     protected function rules(): array
@@ -119,8 +162,22 @@ class Index extends Component
 
     public function render(): View
     {
+        // Profissionais da unidade sendo gerida + indicadores do que falta p/ agendar.
+        $profissionaisUnidade = $this->gerindoId
+            ? User::where('e_profissional', true)->where('ativo', true)
+                ->whereHas('unidades', fn ($q) => $q->where('unidades.id', $this->gerindoId))
+                ->withCount([
+                    'servicos',
+                    'horariosTrabalho as horarios_count' => fn ($q) => $q->where('unidade_id', $this->gerindoId),
+                ])
+                ->orderBy('name')->get()
+            : collect();
+
         return view('livewire.painel.unidades.index', [
             'unidades' => Unidade::orderBy('nome')->get(),
+            'todosServicos' => Servico::where('ativo', true)->orderBy('nome')->get(),
+            'gerindo' => $this->gerindoId ? Unidade::find($this->gerindoId) : null,
+            'profissionaisUnidade' => $profissionaisUnidade,
         ]);
     }
 }
