@@ -20,6 +20,15 @@
    palco de recorte da foto de perfil antes de o componente montar. */
 [x-cloak] { display: none !important; }
 
+/* Reveal suave do hero da landing (entra ao carregar). O bloco global de
+   prefers-reduced-motion (mais abaixo) já zera a animação para quem prefere. */
+@keyframes ng-suben {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+}
+.ng-suben   { animation: ng-suben 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ng-suben-2 { animation: ng-suben 0.6s 0.12s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
 /*
 | Design System Nextgest (D27)
 | Tokens centralizados. Para trocar a cor da marca, ajuste --color-accent*
