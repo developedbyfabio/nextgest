@@ -13,7 +13,7 @@ use Livewire\Component;
 /**
  * Login do cliente final (tenant, guard `cliente`). Mobile-first.
  */
-#[Layout('components.layouts.auth')]
+#[Layout('components.layouts.portal-auth')]
 #[Title('Entrar')]
 class ClienteLogin extends Component
 {

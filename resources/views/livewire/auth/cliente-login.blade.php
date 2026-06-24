@@ -1,9 +1,12 @@
-<div>
-    <div class="mb-6">
-        <flux:heading size="lg">Entrar</flux:heading>
-        <flux:subheading>Acesse para agendar em {{ tenant('nome') }}</flux:subheading>
-    </div>
-
+@php($aparencia = \App\Support\Aparencia::doTenant())
+<x-portal.auth
+    :nome="tenant('nome')"
+    :logo-url="\App\Support\Aparencia::urlArquivo($aparencia['logo'])"
+    :fundo-url="\App\Support\Aparencia::urlArquivo($aparencia['fundo_imagem'])"
+    titulo="Entrar"
+    :subtitulo="'Acesse para agendar em ' . tenant('nome')"
+    class="flex-1"
+>
     <form wire:submit="login" class="flex flex-col gap-4">
         <flux:input
             wire:model="email"
@@ -36,4 +39,4 @@
     <flux:button :href="route('cliente.registrar', ['tenant' => tenant('id')])" variant="ghost" class="w-full" wire:navigate>
         Criar uma conta
     </flux:button>
-</div>
+</x-portal.auth>

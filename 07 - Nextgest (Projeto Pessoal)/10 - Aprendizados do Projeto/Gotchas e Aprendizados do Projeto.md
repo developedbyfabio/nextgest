@@ -311,3 +311,28 @@ Alpine montar. O `$wire` dentro de `Alpine.data` funciona porque o `x-data` est�
 componente Livewire. Avatar do rodapé é renderizado **no layout** (fora do componente) → após salvar,
 **reload** (`navigate:false`, padrão da Aparência) para refletir; reativo exigiria mover o avatar pra
 um componente.
+
+## Prévia "fiel" que simula mobile/desktop → CONTAINER QUERY, não `lg:` (viewport)
+Para a prévia da Aparência renderizar **o mesmo** componente do login real (`x-portal.auth`) e ainda
+**simular** mobile vs desktop mudando só a **largura** da moldura, o componente reflui por
+**container query** (`@container` + `@3xl:`), não por breakpoint de viewport (`lg:`).
+- Por quê: `lg:` reage à **viewport** do navegador. Se o login (2-col) ficasse dentro da moldura
+  estreita da prévia, num navegador desktop (viewport ≥ lg) ele renderizaria 2-col **dentro** da
+  moldura de celular → quebrado. Com `@container`, o reflow segue a largura do **próprio shell**: no
+  login real o container é a viewport (funciona como `lg:` faria); na prévia o container é a moldura, e
+  o toggle celular/desktop só muda essa largura. Sem user-agent sniffing. Tailwind v4 tem `@container`
+  nativo (já havia uso no projeto).
+- **Altura cheia num grid responsivo:** `min-h-full`/`h-full` num filho de flex **não** resolve de
+  forma confiável (o pai flex não tem altura "explícita") → o fundo do root vaza embaixo. Solução:
+  root `flex flex-col` + grid `flex-1 grid-rows-1` (a única linha `1fr` preenche a altura → as colunas
+  ocupam 100% e nada vaza). O painel de marca é `hidden @3xl:flex`, então no estreito só existe a
+  coluna do formulário (1 item, 1 linha 1fr) — sem linha implícita sobrando.
+- **Desktop na prévia (coluna estreita do editor):** a moldura larga (50rem) é exibida com
+  `transform: scale()` para **caber** na coluna; o `transform` **não** altera a largura de layout, então
+  o container query continua lendo 50rem e o login realmente vira 2-col. A escala é medida em JS
+  (largura do palco ÷ 50rem) no `x-init`/`@resize`. As telas do portal (não-login) ficam `max-w-md`
+  centralizadas mesmo no desktop — fiel ao portal real (mobile-first sempre).
+- **Real vs maquete no mesmo componente:** o corpo do formulário entra por **slot** — `flux:input`
+  reais no login/registro; campos estáticos (`--cor-*`) na prévia (o dark da prévia é `.ng-previa.is-dark`,
+  não a classe `.dark` do Flux, então `flux:input` real não acompanharia o toggle). Mesmo padrão do
+  `x-portal.tela-inicio`.

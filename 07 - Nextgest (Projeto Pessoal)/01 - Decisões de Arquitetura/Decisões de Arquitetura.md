@@ -522,3 +522,42 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   do layout refletir (mesmo padrão da Aparência). `[x-cloak]` no `app.css` evita flash do palco.
 - **Gates intactos (guard-rail testado):** Recepção não vê Financeiro/Comissões; Dono vê. O ajuste do
   menu não afrouxou `@can`/`@recurso` (Clube `recurso:clube`, Financeiro `ver_financeiro`).
+
+---
+
+## D47 — Menu fechado no load + login do portal responsivo por CONTAINER QUERY (prévia = login real)
+> Três correções (commits por item). NÃO toca auth do guard `cliente`, rotas, agenda, comanda, Clube,
+> Financeiro nem 2FA. Sem `localStorage`/`sessionStorage`. Suíte 433/433 verde (sequencial).
+- **Menu — grupos fechados ao carregar (T1):** os três `flux:sidebar.group` (Operação/Gestão/
+  Financeiro) passaram de `:expanded="true"` para **`:expanded="false"`**. Estado **fixo** (sempre
+  fechado a cada load, sem persistir — coerente com D45, que não usa `localStorage`); expandem só ao
+  clique e voltam a fechar ao navegar (`wire:navigate` re-renderiza o layout). "Início" e o flyout do
+  modo recolhido **inalterados**. Verificado por Playwright (dashboard com os 3 grupos colapsados).
+- **Login do portal responsivo por CSS, não por aparelho (T2+3):** o login real do guard `cliente`
+  (`ClienteLogin`/`ClienteRegistrar`) **já** era responsivo por `lg:` (não havia user-agent sniffing),
+  **mas não mostrava o fundo (D36)** — o painel de marca pintava `--cor-principal`, nunca a
+  `fundo_imagem` (só o `portal.blade.php` aplicava o fundo). E a **prévia** da Aparência tinha uma
+  **maquete divergente** do login (mobile-portal estática), não o componente real.
+- **Fonte de verdade única `x-portal.auth`:** novo componente que monta o shell de autenticação do
+  portal — 2 colunas (painel de marca com `fundo_imagem` **cover** + tinta da marca / fallback
+  `--cor-principal`; coluna do formulário) no largo, **coluna única** no estreito (formulário sobre o
+  fundo translúcido `ng-com-fundo`). O **corpo** do formulário entra por **slot**: campos `flux:input`
+  reais no login/registro, maquete estática (`--cor-*`) na prévia — mesmo padrão do `x-portal.tela-inicio`.
+- **Responsividade por CONTAINER QUERY (`@container` + `@3xl:`), não viewport (`lg:`):** é o pulo do
+  gato que deixa **a prévia simular o breakpoint mudando só a largura**. No login real o container é a
+  viewport (reflui como antes); na prévia o container é a moldura → o toggle **celular/desktop** muda a
+  largura e o **mesmo** componente reflui (1↔2 colunas) sem detecção de aparelho. Altura cheia via
+  `flex flex-col` no root + `grid flex-1 grid-rows-1` (a linha 1fr preenche → o fundo do root não vaza).
+  Tailwind v4 tem container queries nativas (já usadas no projeto).
+- **Login real fora do `auth.blade.php` genérico:** `ClienteLogin`/`ClienteRegistrar` passam ao layout
+  fino **`components.layouts.portal-auth`** (corpo = tela cheia; o 2-col é do `x-portal.auth`).
+  Admin/Painel/Troca-de-senha/2FA seguem no `auth.blade.php` (intactos). **Auth logic e rotas
+  inalteradas.**
+- **Prévia fiel:** a tela "Login" do carrossel renderiza `x-portal.auth` (mesmo componente; slot
+  estático), com toggle **celular/desktop** além do claro/escuro. No desktop a moldura larga é
+  **escalada para caber na coluna** (transform: scale; a **largura de layout** e o breakpoint seguem
+  reais), e as demais telas do portal **centralizam em `max-w-md`** com o fundo nas laterais — fiel ao
+  portal real (mobile-first mesmo no desktop). Reutilizada também no onboarding.
+- **Verificado por Playwright (Chromium):** login real desktop (2-col + fundo) e mobile (1-col, **sem
+  scroll horizontal**), dark mode, e a prévia (login mobile/desktop + Início centralizado) — todos
+  batendo com o real. `laravel.log` vazio.

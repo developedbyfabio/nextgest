@@ -16,7 +16,7 @@ use Livewire\Component;
  * Registro do cliente final (tenant, guard `cliente`).
  * Telefone e e-mail obrigatórios; e-mail é o login.
  */
-#[Layout('components.layouts.auth')]
+#[Layout('components.layouts.portal-auth')]
 #[Title('Criar conta')]
 class ClienteRegistrar extends Component
 {
