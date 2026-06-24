@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
 
+/* Fonte da marca (Instrument Sans) EMPACOTADA localmente via @fontsource — pesos
+   400/500/600. Antes vinha do plugin bunny() no vite.config.js, que BAIXAVA de
+   fonts.bunny.net durante o build (causou ECONNRESET no deploy). Agora o build não
+   depende de rede. A família registrada é exatamente 'Instrument Sans' (estático),
+   então o --font-sans e a aparência (D28/D36) seguem idênticos. */
+@import '@fontsource/instrument-sans/400.css';
+@import '@fontsource/instrument-sans/500.css';
+@import '@fontsource/instrument-sans/600.css';
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';

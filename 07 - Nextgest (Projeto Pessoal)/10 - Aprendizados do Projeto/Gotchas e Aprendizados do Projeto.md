@@ -336,3 +336,23 @@ Para a prévia da Aparência renderizar **o mesmo** componente do login real (`x
   reais no login/registro; campos estáticos (`--cor-*`) na prévia (o dark da prévia é `.ng-previa.is-dark`,
   não a classe `.dark` do Flux, então `flux:input` real não acompanharia o toggle). Mesmo padrão do
   `x-portal.tela-inicio`.
+
+## Build NÃO pode depender de rede externa → fontes locais (@fontsource), não bunny()
+No deploy de produção (D48) o `npm run build` deu **`ECONNRESET`**: o `vite.config.js` usava
+`bunny('Instrument Sans', { weights: [400,500,600] })` (`laravel-vite-plugin/fonts`), que **baixa a
+fonte de `fonts.bunny.net` durante o build**. Build que depende de rede externa é frágil (firewall,
+rede instável, CI offline). Correção: **empacotar a fonte localmente** com `@fontsource`.
+- **Pacote ESTÁTICO, não o `-variable`:** usar `@fontsource/instrument-sans` (família registrada =
+  exatamente **`Instrument Sans`**), e **não** `@fontsource-variable/instrument-sans` (família
+  `Instrument Sans Variable`). Motivo: o nome `'Instrument Sans'` está embutido em **dados de tenant**
+  (`configuracoes.aparencia.fonte` + catálogo `Aparencia::FONTES/PADRAO/TEMPLATES`); o `-variable`
+  obrigaria a **renomear a família nos dados** (mexer em banco) para o visual não cair no fallback.
+  Com o estático, **nada de font-family muda** — `--font-sans` (app.css) e o `fonte` dos tenants
+  seguem batendo. Aparência **idêntica**.
+- **Como:** `npm install @fontsource/instrument-sans` + no topo do `app.css`
+  `@import '@fontsource/instrument-sans/{400,500,600}.css';` + **remover** o `import { bunny }` e o
+  bloco `fonts: [...]` do `vite.config.js`. O `@font-face` passa a servir woff2 **do próprio app**
+  (`/build/assets/...`), sem host externo.
+- **Prova:** `unshare -n npm run build` (namespace de rede **isolado** = "Network unreachable") →
+  build **conclui**. `document.fonts.check('400|500|600 16px "Instrument Sans"')` = true no portal e
+  no painel. Em produção, o `npm ci` instala o `@fontsource` pelo `package-lock.json` (sem rede no build).
