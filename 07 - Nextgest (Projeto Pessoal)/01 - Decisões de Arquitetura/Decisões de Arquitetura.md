@@ -561,3 +561,27 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Verificado por Playwright (Chromium):** login real desktop (2-col + fundo) e mobile (1-col, **sem
   scroll horizontal**), dark mode, e a prévia (login mobile/desktop + Início centralizado) — todos
   batendo com o real. `laravel.log` vazio.
+
+## D48 — Deploy de produção (Fase 1): nextgest.com.br no ar, stack completa, base limpa
+
+- **Servidor/stack:** KVM Ubuntu 24.04, `/srv/www/nextgest` (clone do `main`). Nginx 1.24 + **PHP
+  8.5-FPM** (PPA `ondrej/php` — repo Ubuntu só tem 8.3) + MySQL 8 + Redis 7 + Composer + Node 22.
+  Fila por **supervisor** (2× `queue:work redis`), **cron** do `schedule:run`, caches de produção
+  (`config/route/view/event`). Detalhe em [[Deploy de Produção (Fase 1) — D48]].
+- **Banco DB-per-tenant:** central `nextgest_central` + usuário dedicado `nextgest` (grants em
+  `nextgest_central.*` e ``tenant\_%``). Tuning p/ 8 GB (`buffer_pool=1536M`, `max_connections=100`,
+  `flush_log_at_trx_commit=1`, `open_files_limit=65535` via override systemd) + swap 2 GB.
+  Redis `maxmemory 512mb` / `volatile-lru` (protege jobs sem TTL).
+- **SSL wildcard por DNS-01 (Cloudflare):** cert `nextgest.com.br` + `*.nextgest.com.br` (cobre todos
+  os tenants), renovação automática + hook de reload. Nginx 443 + redirect 80→443 + **HSTS**.
+  HTTPS atrás do proxy via `fastcgi_param HTTPS on` + **TrustProxies escopado às faixas do Cloudflare**
+  (`bootstrap/app.php`) + real-IP (`CF-Connecting-IP`). Cloudflare **Proxied + Full (strict)**.
+- **Produção LIMPA:** só migrations centrais + **super-admin** único (`admins`, login
+  `fabio9384@gmail.com`, trocar senha no 1º acesso). **Zero tenants demo / zero seeders de volume.**
+  Único tenant é o **`teste`** (validação, mantido). Tenancy **path-based** (`/{slug}`), pipeline
+  síncrono CreateDatabase→Migrate→Seed.
+- **Correções necessárias ao deploy (commitadas):** criada a tabela **`failed_jobs`** (faltava no
+  repo; driver `database-uuids` quebrava ao registrar falha) e TrustProxies no `bootstrap/app.php`.
+- **Segredos:** só no servidor (`.env` 640, cofres `/root/*.cred` 600). Nada documentado.
+- **Fora do escopo (próximas fases):** e-mail transacional real (hoje `log`), Gateway/webhook (Fase 2),
+  clube recorrente (Fase 3), WhatsApp (Fase 4), hardening de firewall (restringir origem às faixas CF).
