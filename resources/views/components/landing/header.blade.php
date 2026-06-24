@@ -21,10 +21,13 @@
             <span class="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Nextgest</span>
         </a>
 
-        {{-- Navegação (desktop) --}}
+        {{-- Navegação (desktop). O guard só rola se a seção-alvo existir: âncoras de
+             seções futuras (Fases 2/3) viram no-op gracioso, sem hash morto nem
+             scroll para o lugar errado; alvos existentes usam o scroll suave nativo. --}}
         <nav class="hidden items-center gap-7 lg:flex" aria-label="Navegação principal">
             @foreach ($navItens as $href => $rotulo)
-                <a href="{{ $href }}" class="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">{{ $rotulo }}</a>
+                <a href="{{ $href }}" x-on:click="document.querySelector($el.getAttribute('href')) || $event.preventDefault()"
+                    class="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">{{ $rotulo }}</a>
             @endforeach
         </nav>
 
@@ -56,7 +59,7 @@
         class="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-[#0B1120] lg:hidden">
         <nav class="flex flex-col gap-1" aria-label="Navegação móvel">
             @foreach ($navItens as $href => $rotulo)
-                <a href="{{ $href }}" @click="aberto = false"
+                <a href="{{ $href }}" @click="(document.querySelector($el.getAttribute('href')) || $event.preventDefault()); aberto = false"
                     class="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{{ $rotulo }}</a>
             @endforeach
         </nav>

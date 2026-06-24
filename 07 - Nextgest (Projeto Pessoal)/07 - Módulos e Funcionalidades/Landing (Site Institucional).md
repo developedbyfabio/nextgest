@@ -23,9 +23,13 @@ Sans (local, @fontsource). Sem Livewire — só Blade + Alpine (vem do Flux) par
   - `tema-toggle.blade.php` — alterna claro/escuro pela **abordagem padrão do projeto**
     (`$flux.appearance`, igual painel/portal), lendo/invertendo a classe `.dark`. **Sem
     localStorage nosso.**
-  - `mockup-celular.blade.php` — smartphone em **HTML/CSS** (sem imagem) com a tela de
-    agendamento do cliente (cabeçalho do salão, serviço, grade de horários com um selecionado,
-    "Confirmar"). Visual/estático.
+  - `mockup-celular.blade.php` — smartphone em **HTML/CSS** (sem imagem, estático) que **espelha
+    fielmente a tela REAL** do portal — passo **Data e horário** (`Portal\Agendar`, passo 4 /
+    "Passo 3 de 3"). Mesmas seções e rótulos do app: cabeçalho do salão → "Novo agendamento" +
+    "Passo 3 de 3 · Data e horário" → barra de progresso (3 cheios) → "Quando?" → campo "Dia" →
+    "Horários disponíveis" (grade, um selecionado) → card do slot → Voltar/Confirmar. O accent
+    "principal" do portal é representado pelo **degradê de marca** (a landing não emite `--cor-*`).
+    Só espelha o visual — NÃO importa o Livewire real nem toca o motor.
   - `card-destaque.blade.php` — card de recurso (ícone Heroicons em bloco de marca, bloco
     geométrico no canto, hover com elevação). Props: `icone`, `titulo` + slot.
   - `footer.blade.php` — `<footer id="contato">` com marca/tagline, colunas de links, contato,
@@ -40,6 +44,11 @@ Sans (local, @fontsource). Sem Livewire — só Blade + Alpine (vem do Flux) par
 - **Faixa de destaques** (`id="recursos"`): os 3 cards atuais repaginados (Agenda inteligente /
   Portal do cliente / Equipe e permissões).
 - **Dark mode** premium (fundo `#0B1120`, superfícies `slate-800`), via classe `.dark` do Flux.
+- **Âncoras/scroll:** `scroll-smooth` no `<html>` + **`scroll-mt-24`** nos alvos (`#recursos`,
+  `#contato`) para o título não ficar atrás do header sticky. Os links de seções que **ainda não
+  existem** (`#como-funciona`, `#planos`, `#faq`, Fases 2/3) têm um **guard** leve
+  (`document.querySelector(href) || preventDefault()`) → no-op gracioso: não rolam para o lugar
+  errado nem deixam hash morto. Hero: "Quero conhecer" → `#contato`, "Ver demonstração" → `#recursos`.
 
 ## Guarda-corpo respeitado
 - Rotas de **admin/portal/painel** intactas (a landing é só a raiz). Sem migration, sem banco,

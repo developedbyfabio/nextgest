@@ -52,12 +52,12 @@
                     </p>
 
                     <div class="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center lg:justify-start">
-                        <a href="#contato"
+                        <a href="#contato" onclick="document.querySelector(this.getAttribute('href')) || event.preventDefault()"
                             class="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-500/30 active:translate-y-0 active:scale-[0.98]">
                             Quero conhecer
                             <flux:icon name="arrow-right" class="size-4 transition group-hover:translate-x-0.5" />
                         </a>
-                        <a href="#recursos"
+                        <a href="#recursos" onclick="document.querySelector(this.getAttribute('href')) || event.preventDefault()"
                             class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600">
                             <flux:icon name="play-circle" class="size-4" />
                             Ver demonstração
@@ -80,7 +80,7 @@
         </section>
 
         {{-- ===================== FAIXA DE DESTAQUES ===================== --}}
-        <section id="recursos" class="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+        <section id="recursos" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                     Tudo que o seu negócio precisa

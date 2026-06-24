@@ -3,7 +3,7 @@
     chegam nas Fases 2/3), contato e copyright. Semântico (<footer>).
     O id="contato" é o alvo dos CTAs "Começar agora"/"Contato".
 --}}
-<footer id="contato" class="relative border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-[#0B1120]">
+<footer id="contato" class="relative scroll-mt-24 border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-[#0B1120]">
     <div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr] md:py-16">
         {{-- Marca --}}
         <div>
@@ -22,7 +22,7 @@
             <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Navegação</h2>
             <ul class="mt-4 space-y-2.5 text-sm">
                 @foreach (['#recursos' => 'Recursos', '#como-funciona' => 'Como funciona', '#planos' => 'Planos', '#faq' => 'FAQ'] as $href => $rotulo)
-                    <li><a href="{{ $href }}" class="text-slate-600 transition hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-300">{{ $rotulo }}</a></li>
+                    <li><a href="{{ $href }}" onclick="document.querySelector(this.getAttribute('href')) || event.preventDefault()" class="text-slate-600 transition hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-300">{{ $rotulo }}</a></li>
                 @endforeach
             </ul>
         </div>
