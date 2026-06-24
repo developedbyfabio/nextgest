@@ -60,8 +60,18 @@ class Index extends Component
             'preco' => ['required', 'numeric', 'min:0'],
             'percentual_comissao' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'ativo' => ['boolean'],
-            'unidades' => ['array'],
+            // ≥1 unidade: serviço sem unidade fica invisível ao cliente (era a causa
+            // do "Nenhum serviço disponível nesta unidade"). Serviço é MULTI-unidade.
+            'unidades' => ['required', 'array', 'min:1'],
             'unidades.*' => ['integer', 'exists:unidades,id'],
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'unidades.required' => 'Selecione ao menos uma unidade onde o serviço é oferecido.',
+            'unidades.min' => 'Selecione ao menos uma unidade onde o serviço é oferecido.',
         ];
     }
 

@@ -30,6 +30,38 @@ it('cria um serviço vinculado a unidades', function () {
     expect($servico->unidades->pluck('id')->all())->toBe([$unidade->id]);
 });
 
+it('bloqueia salvar serviço sem nenhuma unidade (não nasce órfão/invisível)', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+    Unidade::create(['nome' => 'Matriz', 'ativo' => true]);
+
+    Livewire::test(Index::class)
+        ->call('novo')
+        ->set('nome', 'Sobrancelha')
+        ->set('duracao_minutos', 15)
+        ->set('preco', '20.00')
+        ->set('unidades', [])
+        ->call('salvar')
+        ->assertHasErrors('unidades');
+
+    expect(Servico::where('nome', 'Sobrancelha')->exists())->toBeFalse();
+});
+
+it('editar um serviço mantém o vínculo de unidades ao salvar', function () {
+    $this->actingAs(usuarioComPapel('Dono'), 'web');
+    $unidade = Unidade::create(['nome' => 'Matriz', 'ativo' => true]);
+    $servico = Servico::create(['nome' => 'Corte', 'duracao_minutos' => 30, 'preco' => 40, 'ativo' => true]);
+    $servico->unidades()->sync([$unidade->id]);
+
+    Livewire::test(Index::class)
+        ->call('editar', $servico->id)
+        ->assertSet('unidades', [$unidade->id])
+        ->set('nome', 'Corte na Régua')
+        ->call('salvar')
+        ->assertHasNoErrors();
+
+    expect($servico->fresh()->unidades->pluck('id')->all())->toBe([$unidade->id]);
+});
+
 it('valida campos obrigatórios do serviço', function () {
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 
