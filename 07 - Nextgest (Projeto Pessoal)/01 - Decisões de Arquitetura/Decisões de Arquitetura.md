@@ -585,3 +585,32 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Segredos:** só no servidor (`.env` 640, cofres `/root/*.cred` 600). Nada documentado.
 - **Fora do escopo (próximas fases):** e-mail transacional real (hoje `log`), Gateway/webhook (Fase 2),
   clube recorrente (Fase 3), WhatsApp (Fase 4), hardening de firewall (restringir origem às faixas CF).
+
+---
+
+## D49 — Atribuição serviço/profissional ↔ unidade: UI sempre utilizável + 1 unidade por profissional
+> Corrige o sintoma "Nenhum serviço disponível nesta unidade" (cliente). Causa era **UI**, não
+> modelo: os pivôs (`servico_unidade`, `user_unidade`, `servico_user`, `horarios_trabalho`) já
+> existiam e a query do portal (`Portal\Agendar`) estava certa — voltava vazia porque o pivô estava
+> vazio. **Sem migration, sem backfill** (órfãos = tarefa à parte), **`MotorDisponibilidade` intocado**.
+> Suíte 438/438 verde.
+- **Serviço = MULTI-unidade (Serviços):** removido o `@if count()>1` que escondia o seletor com 1
+  filial (dependia de auto-select frágil). O checkbox.group "Oferecido nas unidades" aparece **sempre**;
+  salvar **exige ≥1 unidade** (`required|array|min:1`) → não nasce serviço órfão/invisível. `editar()`
+  já re-seleciona; `novo()` auto-seleciona a filial única.
+- **Profissional = UMA unidade (Equipe):** seletor virou **`flux:select` único** (não checkboxes);
+  `user_unidade` recebe **sync de 1 elemento** (substitui a anterior). Unidade **obrigatória** quando
+  `e_profissional`; opcional para os demais papéis. `editar()` carrega a unidade atual; `novo()`
+  auto-seleciona a única.
+- **Troca de filial move os horários (CRÍTICO):** `horarios_trabalho` é **por unidade**. Ao mudar a
+  unidade do profissional, as janelas DELE são movidas para a nova filial (`horariosTrabalho()->update(['unidade_id'=>nova])`),
+  **escopado ao próprio usuário, idempotente, só quando a unidade muda** — senão ele ficaria sem
+  disponibilidade. Não é backfill em massa; não toca o motor. O "não em dois lugares ao mesmo tempo"
+  segue garantido por `horarios_trabalho` + conflito de agendamento (motor).
+- **Gestão pelo lado da Unidade (a descoberta que faltava):** modal **"Gerir"** na tela de Unidades
+  edita os **serviços oferecidos ali** (sync `servico_unidade`, multi — espelha o pivô de Serviços) e
+  **lista os profissionais** da unidade com indicadores (nº de serviços; **com/sem horários** na
+  unidade) + link para a Equipe. **Atribuição/troca de profissional fica só na Equipe** (evita
+  duplicar a regra de "1 unidade + move de horários"). Gate `gerir_unidades` (mesmo da tela; Dono/Gerente).
+- **Pendência conhecida:** os **2 serviços órfãos** do `barbeariateste` (`Barba Cob`, `Corte Cob`)
+  seguem sem unidade até o backfill (prompt à parte) — agora visíveis/corrigíveis no modal "Gerir".
