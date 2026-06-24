@@ -82,7 +82,7 @@
                 Início
             </flux:sidebar.item>
 
-            <flux:sidebar.group heading="Operação" icon="squares-2x2" expandable :expanded="true">
+            <flux:sidebar.group heading="Operação" icon="squares-2x2" expandable :expanded="false">
                 @canany(['ver_agenda', 'ver_agenda_propria'])
                     <flux:navlist.item icon="calendar-days" :href="route('painel.agenda', ['tenant' => $tenantId])" :current="request()->routeIs('painel.agenda')" wire:navigate>Agendamentos</flux:navlist.item>
                 @endcanany
@@ -104,7 +104,7 @@
                 @endcan
             </flux:sidebar.group>
 
-            <flux:sidebar.group heading="Gestão" icon="cog-6-tooth" expandable :expanded="true">
+            <flux:sidebar.group heading="Gestão" icon="cog-6-tooth" expandable :expanded="false">
                 @can('gerir_unidades')
                     <flux:navlist.item icon="building-storefront" :href="route('painel.unidades', ['tenant' => $tenantId])" :current="request()->routeIs('painel.unidades')" wire:navigate>Unidades</flux:navlist.item>
                 @endcan
@@ -134,7 +134,7 @@
             </flux:sidebar.group>
 
             @can('ver_financeiro')
-                <flux:sidebar.group heading="Financeiro" icon="banknotes" expandable :expanded="true">
+                <flux:sidebar.group heading="Financeiro" icon="banknotes" expandable :expanded="false">
                     <flux:navlist.item icon="currency-dollar" :href="route('painel.financeiro', ['tenant' => $tenantId])" :current="request()->routeIs('painel.financeiro')" wire:navigate>Visão financeira</flux:navlist.item>
                 </flux:sidebar.group>
             @endcan
