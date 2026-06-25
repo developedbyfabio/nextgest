@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\EstabelecimentoDados;
 use App\Livewire\Admin\OnboardingEstabelecimento;
 use App\Livewire\Admin\TenantDetalhe as AdminTenantDetalhe;
 use App\Livewire\Admin\Tenants as AdminTenants;
@@ -50,6 +51,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('estabelecimentos/{tenantId}', AdminTenantDetalhe::class)
         ->middleware('auth:admin')
         ->name('tenant.detalhe');
+
+    // Dados cadastrais (cadastro central do estabelecimento — D57). Caminho mais
+    // específico que {tenantId}, então não conflita com o detalhe.
+    Route::get('estabelecimentos/{tenantId}/dados', EstabelecimentoDados::class)
+        ->middleware('auth:admin')
+        ->name('tenant.dados');
 
     Route::post('sair', [LogoutController::class, 'admin'])
         ->middleware('auth:admin')

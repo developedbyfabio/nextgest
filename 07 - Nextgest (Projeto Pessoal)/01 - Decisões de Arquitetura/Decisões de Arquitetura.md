@@ -831,3 +831,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   Validado ponta-a-ponta no dev (tenant `fase3ademo` criado pelas 7 etapas; registro central gravado com
   dígitos normalizados). **Sem deploy** — em produção a migration roda com **backup antes** e o tenant
   real ganha o registro pela tela Dados (3b).
+
+---
+
+## D57 — Tela "Dados": ler/editar o cadastro central do estabelecimento (Fase 3b)
+> Fecha a 3a. Componente admin que lê/edita `estabelecimentos` (D56). **Sem migration/tabela/seeder.**
+> Reusa model + validadores BR da 3a. Edita o contato **CADASTRAL** do dono — NÃO o login (que vive no
+> tenant). Ver [[Cadastro Central do Estabelecimento]] e [[Painel Super-Admin (Central)]].
+- **Componente** `App\Livewire\Admin\EstabelecimentoDados` (view `estabelecimento-dados.blade.php`),
+  rota **`admin.tenant.dados`** (`/admin/estabelecimentos/{tenantId}/dados`, `auth:admin`; caminho mais
+  específico que `{tenantId}` → não conflita com o detalhe).
+- **`firstOrNew(['tenant_id' => $id])`** no `mount` (formulário) e de novo no `salvar`: tenant antigo
+  **sem** registro abre vazio e a linha é **criada sob demanda** no 1º save (com `tenant_id` setado);
+  reabrir e salvar **atualiza a mesma linha** (não duplica — `tenant_id` é unique).
+- **Form:** estabelecimento (nome fantasia obrigatório; endereço/faturamento/documento opcionais,
+  documento validado se preenchido) + contato do dono (nome/sobrenome/email/celular/CPF obrigatórios,
+  validados). Salva **normalizado** (`soDigitos`). Máscaras formatam os dígitos guardados na exibição.
+- **UI:** nota explícita na seção do dono — "contato cadastral/cobrança; e-mail e senha de **login** são
+  gerenciados à parte (no tenant), editar aqui não altera o acesso". Botão **"Dados"** em cada linha da
+  lista (`Tenants`) + atalho no `TenantDetalhe`.
+- **Testes:** `tests/Feature/Admin/EstabelecimentoDadosTest.php` (guard; carrega existente; edita e
+  persiste normalizado; **cria sob demanda** p/ tenant antigo sem duplicar; barra CPF/celular inválidos;
+  valida documento; botão na lista). Suíte **497/497**. Verificado no dev: `fase3ademo` (com registro)
+  carrega com máscaras; `barbeariateste` (antigo) abre vazio e ganha o registro ao salvar. **Sem deploy.**

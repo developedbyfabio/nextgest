@@ -20,6 +20,9 @@
   Responsável → **Estabelecimento** → Funcionamento → Aparência → Plano → Revisão; D55/D56). Grava o
   cadastro central (`estabelecimentos`). Ver [[Onboarding Guiado de Estabelecimento]] e
   [[Cadastro Central do Estabelecimento]].
+- **Dados** (`App\Livewire\Admin\EstabelecimentoDados` → `admin.tenant.dados`; D57): lê/edita o cadastro
+  central (estabelecimento + contato cadastral do dono); cria a linha sob demanda para tenants antigos
+  (`firstOrNew`). Botão **"Dados"** na lista e atalho no Detalhe. Não altera o login do dono.
 
 ## Identidade visual (Fase 0 — D54)
 Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucional)]]):

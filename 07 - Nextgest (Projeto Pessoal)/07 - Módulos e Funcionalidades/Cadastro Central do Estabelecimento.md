@@ -1,7 +1,7 @@
 ---
 projeto: Nextgest
 tipo: módulo
-status: implementado (3a — fundação/captura)
+status: implementado (3a captura + 3b tela Dados)
 criado: 2026-06-25
 tags: [nextgest, central, estabelecimento, cobranca, onboarding, validadores]
 ---
@@ -51,12 +51,22 @@ Sem pacote novo (rede de build restrita). Implementam `ValidationRule`, aceitam 
 O e-mail de login mora em 2 lugares: `users.email` (tenant) e `dono_email` (central). Se o login mudar
 depois, pode divergir — reconciliação fica para uma fase futura.
 
-## Pendente (3b)
-Tela **"Dados"** no detalhe do tenant: ler/editar o registro e **criar sob demanda** para tenants
-antigos (que hoje têm `estabelecimento` = null). Reusa os mesmos validadores.
+## Tela "Dados" (3b — D57, implementada)
+`App\Livewire\Admin\EstabelecimentoDados` (rota **`admin.tenant.dados`** =
+`/admin/estabelecimentos/{tenantId}/dados`, `auth:admin`). Lê/edita o registro central; usa
+**`firstOrNew(['tenant_id' => $id])`** no `mount` e no `salvar`, então:
+- tenant **com** registro → abre preenchido (máscaras formatam os dígitos guardados);
+- tenant **antigo sem** registro → abre vazio e a linha é **criada sob demanda** no 1º save (não
+  duplica — `tenant_id` é unique); reabrir e salvar atualiza a mesma linha.
+Salva **normalizado** (`soDigitos`). Botão **"Dados"** em cada linha da lista (`Tenants`) + atalho no
+`TenantDetalhe`. **Nota na UI:** edita o contato CADASTRAL — o e-mail/senha de **login** do dono são
+gerenciados à parte (no tenant); editar aqui não altera o acesso.
 
 ## Testes
-`tests/Feature/Admin/EstabelecimentoTest.php` (validadores; captura central no onboarding; etapa
-Estabelecimento exige nome fantasia + valida documento; criação rápida; backfill; relação/normalização).
-Validado ponta-a-ponta no dev (tenant `fase3ademo` pelas 7 etapas → registro central com dígitos
-normalizados). Suíte 490/490. **Dev apenas — sem deploy.**
+- `tests/Feature/Admin/EstabelecimentoTest.php` (validadores; captura central no onboarding; etapa
+  Estabelecimento exige nome fantasia + valida documento; criação rápida; backfill; relação/normalização).
+- `tests/Feature/Admin/EstabelecimentoDadosTest.php` (guard; carrega existente; edita/persiste
+  normalizado; **cria sob demanda** sem duplicar; barra CPF/celular inválidos; valida documento; botão
+  na lista).
+Validado no dev: `fase3ademo` (com registro) e `barbeariateste` (antigo, criado pela tela). Suíte
+**497/497**. **Dev apenas — sem deploy.**
