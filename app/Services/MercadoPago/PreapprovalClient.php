@@ -98,6 +98,47 @@ class PreapprovalClient
         return $resposta->json();
     }
 
+    /**
+     * Consulta uma cobrança recorrente (authorized_payment) pelo id. Traz
+     * `preapproval_id`, `transaction_amount`, `debit_date` e `payment{ id, status }`.
+     *
+     * @throws MercadoPagoException
+     */
+    public function consultarPagamentoAutorizado(string $authorizedPaymentId): array
+    {
+        $resposta = $this->http()->get("/authorized_payments/{$authorizedPaymentId}");
+
+        if ($resposta->failed()) {
+            Log::warning('Mercado Pago: falha ao consultar authorized_payment.', [
+                'http_status' => $resposta->status(),
+            ]);
+
+            throw new MercadoPagoException('Não foi possível consultar o pagamento no Mercado Pago.');
+        }
+
+        return $resposta->json();
+    }
+
+    /**
+     * Busca as cobranças de uma assinatura (reconciliação). Devolve a lista `results`.
+     *
+     * @throws MercadoPagoException
+     */
+    public function pagamentosDaAssinatura(string $preapprovalId): array
+    {
+        $resposta = $this->http()->get('/authorized_payments/search', ['preapproval_id' => $preapprovalId]);
+
+        if ($resposta->failed()) {
+            Log::warning('Mercado Pago: falha ao buscar authorized_payments.', [
+                'http_status' => $resposta->status(),
+            ]);
+
+            throw new MercadoPagoException('Não foi possível buscar os pagamentos no Mercado Pago.');
+        }
+
+        return $resposta->json('results') ?? [];
+    }
+
     /** Cliente HTTP autenticado (token via config; nunca logado). */
     private function http(): PendingRequest
     {

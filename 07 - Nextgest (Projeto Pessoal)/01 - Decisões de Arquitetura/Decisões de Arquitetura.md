@@ -978,3 +978,44 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   buyer ausente), **não** ao nosso payload. A autorização via `init_point` (test buyer + cartão de teste)
   é o passo **manual** do Fabio no painel do MP. **`faturas`/webhook/motor/portal/produção intactos.
   Sem deploy.**
+
+---
+
+## D62 — Webhook do Mercado Pago: confirmação das cobranças + reconciliação (Fase 5b)
+> Fatia **mais sensível de segurança** (endpoint público). **Passo 0 confirmado** (doc oficial):
+> assinatura `x-signature` validável por HMAC — sem divergência → segui. Ver
+> [[Cobrança da Assinatura SaaS]] (algoritmo registrado).
+- **Validação de assinatura (item nº 1):** `App\Services\MercadoPago\ValidadorWebhook`.
+  `x-signature = "ts=<ts>,v1=<hash>"`; manifest **`id:{data.id};request-id:{x-request-id};ts:{ts};`**
+  (`data.id` em lowercase; o PHP troca o ponto por `_` no query → leio `data_id`/corpo); HMAC-SHA256 hex
+  com `config('mercadopago.webhook_secret')`; `hash_equals` (timing-safe). **Sem assinatura válida →
+  401, sem processar.** Sem segredo configurado → 401 (seguro).
+- **Não confia no corpo:** sempre **consulta o recurso na API** (`PreapprovalClient::consultar` /
+  `consultarPagamentoAutorizado`) e espelha o estado real.
+- **Idempotência:** tabela central `webhook_eventos` (unique `gateway`+`evento_id`). Chave por
+  recurso/estado: `authorized_payment:<id>` (pagamento) e `preapproval:<id>:<status>` (recorrência) —
+  reenvio do MP é ignorado; status novo processa. Soma-se a idempotência de dado (`updateOrCreate` da
+  fatura por competência).
+- **Efeitos** (`ProcessadorWebhook`): `subscription_authorized_payment` **approved** → fatura **paga**
+  (espelho: `forma_pagamento=mercadopago`, `gateway_referencia`=payment.id) + assinatura `ativa`;
+  **rejected** → fatura **vencida na DATA DA FALHA** (não paga) → `situacaoAcesso()` conta os 20 dias
+  dali (4c suspende após o prazo). `subscription_preapproval` → `mp_status`; `cancelled` →
+  assinatura `cancelada`.
+- **Resposta:** evento válido (mesmo duplicado) → **200**; assinatura inválida → **401**; falha ao
+  consultar a API → **500** (o MP reenvia).
+- **Reconciliação** (rede de segurança): comando `nextgest:reconciliar-assinaturas` (agendado em
+  `console.php`, `dailyAt 03:10`, `withoutOverlapping`) — para cada assinatura com `cobranca_automatica`,
+  consulta o MP e reaplica via o MESMO `ProcessadorWebhook` (mesmo dedupe → idempotente). Não depende
+  só do webhook chegar.
+- **Segredos:** `MERCADOPAGO_ACCESS_TOKEN` e `MERCADOPAGO_WEBHOOK_SECRET` só via `config()`; nunca
+  logados/expostos; só sandbox.
+- **Rota:** `POST /webhooks/pagamentos/{gateway}` → `WebhookPagamentoController` (mercadopago; outros
+  gateways = stub 200). Central, CSRF já dispensado em `webhooks/*`.
+- **Testes:** `tests/Feature/Cobranca/WebhookMercadoPagoTest.php` (10, API mockada + HMAC real):
+  rejeição 401 (assinatura inválida/sem segredo); aprovado→paga/ativa; **idempotência** (reenvio →
+  1 fatura/1 registro); recusado→vencida na falha→atrasada/suspensa; preapproval authorized/cancelled;
+  preapproval desconhecido (ack); falha de API→500 sem registrar; reconciliação. Suíte **542/542**.
+- **Validação ao vivo (dev):** POST sem assinatura → **401**; com assinatura forjada → **401**; gateway
+  desconhecido → 200. O teste de transporte real (túnel HTTPS + "simular notificação" no painel MP +
+  segredo no `.env`) é **manual do Fabio**. **Sem deploy** — produção: credenciais/URL de produção + HTTPS
+  público + backup.

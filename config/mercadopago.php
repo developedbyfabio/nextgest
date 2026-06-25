@@ -24,6 +24,10 @@ declare(strict_types=1);
 return [
     'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
 
+    // Segredo do webhook (painel MP → Webhooks). Usado p/ validar a assinatura
+    // x-signature de cada notificação. Só via env; nunca cravado/logado/exposto.
+    'webhook_secret' => env('MERCADOPAGO_WEBHOOK_SECRET'),
+
     'base_url' => env('MERCADOPAGO_BASE_URL', 'https://api.mercadopago.com'),
 
     'back_url' => env('MERCADOPAGO_BACK_URL', 'https://nextgest.com.br'),

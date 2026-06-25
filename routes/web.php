@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Webhooks\WebhookPagamentoController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\EstabelecimentoDados;
 use App\Livewire\Admin\Faturamento as AdminFaturamento;
@@ -70,11 +71,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ->name('logout');
 });
 
-// Webhooks dos gateways de pagamento (central, sem tenant na URL; o tenant é
-// resolvido pelo conteúdo/assinatura do webhook na fase de Pagamentos).
+// Webhooks dos gateways de pagamento (central, sem tenant na URL). Público; a
+// validação de assinatura é no controller (D62). CSRF já é dispensado em webhooks/*.
 Route::prefix('webhooks')->name('webhooks.')->group(function () {
-    Route::post('/pagamentos/{gateway}', function (string $gateway) {
-        // Stub: a fase de Pagamentos trata e despacha o webhook.
-        return response()->json(['received' => true, 'gateway' => $gateway]);
-    })->name('pagamentos');
+    Route::post('/pagamentos/{gateway}', [WebhookPagamentoController::class, 'handle'])
+        ->name('pagamentos');
 });

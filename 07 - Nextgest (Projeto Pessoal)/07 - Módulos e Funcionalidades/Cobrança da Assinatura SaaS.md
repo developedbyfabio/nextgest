@@ -1,7 +1,7 @@
 ---
 projeto: Nextgest
 tipo: módulo
-status: em construção (4a/4b/4c + 5a adesão MP)
+status: ciclo completo (4a–4c + 5a adesão + 5b webhook/reconciliação)
 criado: 2026-06-25
 tags: [nextgest, central, cobranca, assinatura, faturamento, saas]
 ---
@@ -25,7 +25,24 @@ do tenant. Aqui é tudo **central** (tabelas `assinaturas`/`faturas`).
   [[Mapeamento Central x Tenant (auditoria pré-planos)]]).
 - **5a (D61 — feita):** adesão recorrente via Mercado Pago (Preapproval, sandbox) — cria a recorrência
   e expõe o link de adesão. **Sem webhook ainda.**
-- **5b (futura):** webhook do MP (confirma cobranças mensais → gera/marca `faturas`; falha → carência).
+- **5b (D62 — feita):** webhook do MP (valida assinatura, confirma cobranças → espelha `faturas`; falha
+  → carência) + reconciliação agendada. **Ciclo de cobrança completo.**
+
+## Webhook + reconciliação (5b — D62)
+- **Rota pública** `POST /webhooks/pagamentos/{gateway}` → `WebhookPagamentoController` (central; CSRF
+  dispensado em `webhooks/*`). Outros gateways = stub 200.
+- **Segurança (nº 1):** `ValidadorWebhook` valida `x-signature` — manifest
+  `id:{data.id};request-id:{x-request-id};ts:{ts};`, HMAC-SHA256 hex com `webhook_secret`, `hash_equals`.
+  Inválida/sem segredo → **401, sem processar**.
+- **Não confia no corpo:** consulta o recurso na API (`PreapprovalClient`) e espelha.
+- **Idempotência:** `webhook_eventos` (unique `gateway`+`evento_id`; chave `authorized_payment:<id>` /
+  `preapproval:<id>:<status>`) + `updateOrCreate` da fatura por competência.
+- **Efeitos:** pagamento **approved** → fatura **paga** (`mercadopago`, `gateway_referencia`) + `ativa`;
+  **rejected** → fatura **vencida na data da falha** → carência 20 dias (4c). `preapproval` →
+  `mp_status`; `cancelled` → `cancelada`.
+- **Respostas:** válido (mesmo duplicado) → 200; inválido → 401; falha de API → 500 (MP reenvia).
+- **Reconciliação:** `nextgest:reconciliar-assinaturas` (agendado `dailyAt 03:10`) — reaplica via o
+  mesmo processador (idempotente); rede de segurança caso um webhook não chegue.
 
 ## Mercado Pago — mapeamento da API (Preapproval, confirmado no Passo 0 / D61)
 - **Endpoint:** `POST https://api.mercadopago.com/preapproval`. Auth: `Bearer <access_token>` (TEST no
@@ -128,11 +145,14 @@ tenants (`em_teste`); 2ª execução criou 0.
   portal 200; inativo 404; reversível ao pagar.
 - `tests/Feature/Cobranca/PreapprovalTest.php` (7): API **mockada** — payload do fluxo pending (sem
   card_token_id), persistência, idempotência, erro tratado, guardas (valor 0 / sem e-mail).
-Suíte **532/532**.
+- `tests/Feature/Cobranca/WebhookMercadoPagoTest.php` (10): rejeição 401 (assinatura inválida/sem
+  segredo); aprovado→paga/ativa; idempotência (reenvio); recusado→vencida na falha→atrasada/suspensa;
+  preapproval authorized/cancelled; desconhecido (ack); falha de API→500; reconciliação.
+Suíte **542/542**. Validação ao vivo no dev: POST sem/forjada assinatura → 401.
 
-## Limites (até aqui)
-A adesão recorrente (5a) cria a recorrência no MP, mas a **confirmação das cobranças é o webhook (5b)** —
-até lá, `faturas` continuam manuais (4b) e o `link_pagamento` da fatura segue nulo (a tela de suspensão
-usa `link_adesao` quando existir). Token **só sandbox**, nunca exposto. Portal/Clube/spatie/motor
-intactos. **Dev apenas — sem deploy.** Produção: credenciais de produção do MP + HTTPS público p/ o
-webhook (5b) + backup; cuidado redobrado na 4c (login de clientes reais).
+## Limites / produção
+Ciclo de cobrança completo no **dev/sandbox**. Para produção: trocar para **credenciais de produção**
+do MP (token + webhook secret), cadastrar a **URL real** do webhook (`nextgest.com.br`, HTTPS público —
+nada de túnel), rodar as migrations centrais com **backup antes**, e manter o **scheduler** rodando
+(`php artisan schedule:run` no cron) para a reconciliação. Token/segredo **só via env**, nunca expostos.
+Cuidado redobrado (mexe em dinheiro e no login de clientes reais). Portal/Clube/spatie/motor intactos.

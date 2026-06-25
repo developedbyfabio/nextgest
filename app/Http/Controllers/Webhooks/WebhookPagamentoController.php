@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Webhooks;
+
+use App\Services\MercadoPago\MercadoPagoException;
+use App\Services\MercadoPago\ProcessadorWebhook;
+use App\Services\MercadoPago\ValidadorWebhook;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * Webhook de pagamentos (D62). Rota PÚBLICA `POST /webhooks/pagamentos/{gateway}`.
+ *
+ * mercadopago: valida a assinatura (x-signature) ANTES de tudo; inválida → 401 (não
+ * processa). Válida → consulta o recurso na API e espelha o estado (dedupe no
+ * ProcessadorWebhook). Evento válido (mesmo duplicado) → 200. Falha transitória ao
+ * consultar a API → 500 para o MP REENVIAR (a reconciliação agendada é a rede de
+ * segurança). Outros gateways: stub 200 (compat).
+ */
+class WebhookPagamentoController
+{
+    public function __construct(
+        private ValidadorWebhook $validador,
+        private ProcessadorWebhook $processador,
+    ) {}
+
+    public function handle(Request $request, string $gateway): JsonResponse
+    {
+        if ($gateway !== 'mercadopago') {
+            return response()->json(['received' => true]); // stub p/ outros gateways
+        }
+
+        // SEGURANÇA: assinatura inválida/ausente → rejeita sem processar.
+        if (! $this->validador->valido($request)) {
+            return response()->json(['error' => 'assinatura inválida'], 401);
+        }
+
+        $tipo = (string) ($request->input('type') ?? $request->query('type') ?? '');
+        $dataId = $this->validador->dataId($request);
+
+        if ($dataId === '') {
+            return response()->json(['ignored' => true]); // nada a fazer (ack)
+        }
+
+        try {
+            $this->processador->processar($tipo, $dataId);
+        } catch (MercadoPagoException) {
+            // Falha ao consultar a API → não confirma; deixa o MP reenviar.
+            return response()->json(['retry' => true], 500);
+        }
+
+        return response()->json(['received' => true]);
+    }
+}

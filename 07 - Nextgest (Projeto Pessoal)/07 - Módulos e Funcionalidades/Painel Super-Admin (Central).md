@@ -40,8 +40,8 @@ Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucion
 
 ## Limites (o que NÃO é deste painel)
 - Não mexe em `MotorDisponibilidade`, agenda, portal nem no painel do tenant (guard `web`/`cliente`).
-- **Plano nomeado** (recursos liberados) existe (D55). A **cobrança** SaaS tem modelo (4a/D58), **tela
-  de Faturamento** (4b/D59), **suspensão por pagamento** (4c/D60) e **adesão recorrente Mercado Pago**
-  (5a/D61 — botão "Ativar cobrança automática" na tela Faturamento; cria a recorrência e expõe o link de
-  adesão) — ver [[Cobrança da Assinatura SaaS]]. Pendente: **webhook do MP** (5b — confirma cobranças /
-  gera faturas).
+- **Plano nomeado** (recursos liberados) existe (D55). A **cobrança** SaaS está **completa** no
+  dev/sandbox: modelo (4a/D58), **Faturamento** (4b/D59), **suspensão** (4c/D60), **adesão recorrente MP**
+  (5a/D61) e **webhook + reconciliação** (5b/D62 — confirma cobranças → espelha faturas; assinatura
+  validada; idempotente) — ver [[Cobrança da Assinatura SaaS]]. Pendente: **ir a produção** (credenciais
+  reais do MP, URL pública do webhook, scheduler no cron, backup).
