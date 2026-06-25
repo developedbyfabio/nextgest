@@ -6,6 +6,7 @@ namespace App\Livewire\Painel\Avaliacoes;
 
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
+use App\Models\Unidade;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -29,9 +30,31 @@ class Index extends Component
 {
     use WithPagination;
 
+    /** Filtro por cliente (busca por nome) — SÓ para quem vê tudo (Dono). */
+    public string $filtroCliente = '';
+
+    /** '', 'dia', 'semana', 'mes' — sobre a data do atendimento. */
+    public string $filtroPeriodo = '';
+
+    /** '', '1'..'5' — nota da avaliação (afeta só a lista). */
+    public string $filtroNota = '';
+
+    /** '', 'com', 'sem' — avaliação com/sem comentário (afeta só a lista). */
+    public string $filtroComentario = '';
+
+    public ?int $filtroUnidade = null;
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()->canAny(['ver_avaliacoes', 'ver_avaliacoes_proprias']), 403);
+    }
+
+    /** Qualquer filtro alterado volta para a 1ª página. */
+    public function updated(string $name): void
+    {
+        if (str_starts_with($name, 'filtro')) {
+            $this->resetPage();
+        }
     }
 
     /** Dono/Gerente: vê tudo (e o nome do cliente). Profissional puro: não. */
@@ -55,7 +78,27 @@ class Index extends Component
         return Agendamento::query()
             ->where('status', 'concluido')
             ->when(! $this->podeVerTudo(), fn ($q) => $q->where('profissional_id', auth('web')->id()))
+            // Filtro por cliente: só faz sentido (e só é permitido) para quem vê tudo.
+            ->when($this->podeVerTudo() && $this->filtroCliente !== '', fn ($q) => $q->whereHas('cliente', fn ($c) => $c->where('nome', 'like', '%'.$this->filtroCliente.'%')))
+            ->when($this->filtroUnidade, fn ($q) => $q->where('unidade_id', $this->filtroUnidade))
+            ->when($this->filtroPeriodo !== '', fn ($q) => $q->where('data_hora_inicio', '>=', match ($this->filtroPeriodo) {
+                'semana' => now()->startOfWeek(),
+                'mes' => now()->startOfMonth(),
+                default => now()->startOfDay(),
+            }))
             ->with($with);
+    }
+
+    /**
+     * Filtros que afetam SÓ a lista (não o resumo): nota e com/sem comentário —
+     * para a média/taxa do termômetro seguirem significativas no período.
+     */
+    protected function escopoLista()
+    {
+        return $this->escopo()
+            ->when($this->filtroNota !== '', fn ($q) => $q->whereHas('avaliacao', fn ($a) => $a->where('nota', (int) $this->filtroNota)))
+            ->when($this->filtroComentario === 'com', fn ($q) => $q->whereHas('avaliacao', fn ($a) => $a->whereNotNull('comentario')->where('comentario', '!=', '')))
+            ->when($this->filtroComentario === 'sem', fn ($q) => $q->whereHas('avaliacao', fn ($a) => $a->where(fn ($x) => $x->whereNull('comentario')->orWhere('comentario', ''))));
     }
 
     /**
@@ -82,7 +125,7 @@ class Index extends Component
 
     public function render(): View
     {
-        $atendimentos = $this->escopo()
+        $atendimentos = $this->escopoLista()
             ->orderByDesc('data_hora_inicio')
             ->paginate(15);
 
@@ -90,6 +133,7 @@ class Index extends Component
             'atendimentos' => $atendimentos,
             'podeVerTudo' => $this->podeVerTudo(),
             'resumo' => $this->resumo(),
+            'unidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
         ]);
     }
 }

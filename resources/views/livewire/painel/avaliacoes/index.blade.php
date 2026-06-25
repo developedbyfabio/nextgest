@@ -27,7 +27,43 @@
         </div>
     </div>
 
-    {{-- (filtros entram aqui — T3) --}}
+    {{-- Filtros (aplicados no servidor) --}}
+    <div class="flex flex-wrap items-end gap-3">
+        @if ($podeVerTudo)
+            <flux:input wire:model.live.debounce.300ms="filtroCliente" icon="magnifying-glass" placeholder="Buscar cliente" class="w-48" label="Cliente" size="sm" />
+        @endif
+
+        <flux:select wire:model.live="filtroPeriodo" label="Período" size="sm" class="w-36">
+            <flux:select.option value="">Qualquer data</flux:select.option>
+            <flux:select.option value="dia">Hoje</flux:select.option>
+            <flux:select.option value="semana">Esta semana</flux:select.option>
+            <flux:select.option value="mes">Este mês</flux:select.option>
+        </flux:select>
+
+        <flux:select wire:model.live="filtroNota" label="Estrelas" size="sm" class="w-32">
+            <flux:select.option value="">Todas</flux:select.option>
+            @for ($n = 5; $n >= 1; $n--)
+                <flux:select.option value="{{ $n }}">{{ $n }} estrela{{ $n > 1 ? 's' : '' }}</flux:select.option>
+            @endfor
+        </flux:select>
+
+        <flux:select wire:model.live="filtroComentario" label="Comentário" size="sm" class="w-40">
+            <flux:select.option value="">Com ou sem</flux:select.option>
+            <flux:select.option value="com">Com comentário</flux:select.option>
+            <flux:select.option value="sem">Sem comentário</flux:select.option>
+        </flux:select>
+
+        @if ($unidades->count() > 1)
+            <flux:select wire:model.live="filtroUnidade" label="Unidade" size="sm" class="w-44">
+                <flux:select.option value="">Todas as unidades</flux:select.option>
+                @foreach ($unidades as $u)
+                    <flux:select.option value="{{ $u->id }}">{{ $u->nome }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        @endif
+
+        <flux:icon name="arrow-path" wire:loading.delay wire:target="filtroCliente,filtroPeriodo,filtroNota,filtroComentario,filtroUnidade" class="mb-2 size-5 animate-spin" style="color: var(--cor-principal);" />
+    </div>
 
     @if ($atendimentos->isEmpty())
         <x-ng.empty themed icon="star" title="Nenhum atendimento concluído"

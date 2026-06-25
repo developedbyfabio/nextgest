@@ -668,6 +668,24 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   pela `unique`. Verificado por Playwright (popup → avaliar → 2º popup → ignorar → não reaparece →
   avaliar pelo histórico) e 7 testes (criar; nota obrigatória; ignorar não cria; histórico; unique;
   não avalia alheio; não avalia não-concluído). `SemearDemo` cria avaliações de exemplo (idempotente).
-- **Prompt 2 (pendente):** aba unificada no painel (atendimentos + avaliações), **RBAC por permissão**
-  (dono tudo / profissional só o dele, **anônimo** — sem nome do cliente), filtros (cliente → só dono;
-  período dia/semana/mês; estrelas; com/sem comentário).
+- **Prompt 2 (FEITO) — visualização no painel:** aba **"Últimos serviços"** (Operação,
+  `Painel\Avaliacoes\Index`, rota `painel.avaliacoes`) lista os atendimentos **concluídos** + a
+  avaliação de cada um (estrelas + comentário) ou "sem avaliação".
+  - **RBAC por permissão (nunca papel):** `ver_avaliacoes` (Dono/Gerente) vê **tudo** + **nome do
+    cliente** + filtro por cliente; `ver_avaliacoes_proprias` (Profissional) vê **só os dele** e
+    **ANÔNIMO** — a query **nem carrega o cliente** (`with('cliente')` só quando `podeVerTudo`), então
+    o nome não sai do banco. Sem nenhuma das duas permissões → **403** (nem aparece no menu). Escopo
+    no **servidor** (`where profissional_id` p/ o profissional). Permissões adicionadas ao seeder e
+    aplicadas por re-seed (`tenants:seed`).
+  - **Resumo (termômetro)** no topo, mesmo escopo: média de estrelas, nº de avaliações, atendimentos
+    concluídos e **taxa de avaliação**. Reflete os filtros de **escopo** (período/cliente/unidade);
+    os filtros **nota** e **com/sem comentário** afetam **só a lista** (para a média/taxa seguirem
+    significativas) — decisão reportada.
+  - **Filtros (no servidor):** cliente (**só Dono**), período (hoje/semana/mês), estrelas (1–5),
+    com/sem comentário, unidade (multiunidade). Usam os índices denormalizados da `avaliacoes`.
+  - Verificado por Playwright (Dono: coluna+filtro Cliente, 200 concluídos; Profissional: sem
+    coluna/filtro Cliente, 76 só dele, nenhum nome vaza) e 8 testes (RBAC, anonimato real pela rota,
+    403, filtros). Reusa `x-portal.estrelas`. Coleta (popup/histórico) intacta.
+  - **Feature completa no dev.** Publicar em produção pelo [[Roteiro de Deploy Seguro]] — o deploy
+    inclui a **migration de tenant** do Prompt 1 (`tenants:migrate`) **e** o re-seed das permissões
+    (`tenants:seed`) para a aba aparecer aos papéis certos. **Não rodado em produção.**

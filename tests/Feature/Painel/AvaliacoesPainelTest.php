@@ -26,12 +26,13 @@ beforeEach(function () {
     $this->cliente = Cliente::create(['nome' => 'Cliente Secreto', 'telefone' => '11', 'email' => 'secreto@ult.test']);
 });
 
-function concluido($self, $prof, ?int $nota = null, ?string $comentario = null, ?Carbon $quando = null): Agendamento
+function concluido($self, $prof, ?int $nota = null, ?string $comentario = null, ?Carbon $quando = null, ?Cliente $cliente = null): Agendamento
 {
     $quando ??= Carbon::now()->subDays(2)->setTime(10, 0);
+    $cli = $cliente ?? $self->cliente;
     $ag = Agendamento::create([
         'unidade_id' => $self->unidade->id,
-        'cliente_id' => $self->cliente->id,
+        'cliente_id' => $cli->id,
         'profissional_id' => $prof->id,
         'data_hora_inicio' => $quando,
         'data_hora_fim' => $quando->copy()->addMinutes(30),
@@ -43,7 +44,7 @@ function concluido($self, $prof, ?int $nota = null, ?string $comentario = null, 
 
     if ($nota !== null) {
         Avaliacao::create([
-            'agendamento_id' => $ag->id, 'cliente_id' => $self->cliente->id,
+            'agendamento_id' => $ag->id, 'cliente_id' => $cli->id,
             'profissional_id' => $prof->id, 'unidade_id' => $self->unidade->id,
             'nota' => $nota, 'comentario' => $comentario,
         ]);
@@ -91,4 +92,50 @@ it('quem não tem permissão (Recepção) recebe 403', function () {
     $this->actingAs(usuarioComPapel('Recepção', ['email' => 'recep@ult.test']), 'web')
         ->get('/lojaultimos/painel/avaliacoes')
         ->assertForbidden();
+});
+
+it('filtra por número de estrelas (afeta a lista)', function () {
+    concluido($this, $this->jorge, 5, 'CincoEstrelas');
+    concluido($this, $this->jorge, 3, 'TresEstrelas');
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@ult.test']), 'web');
+
+    Livewire::test(Index::class)
+        ->assertSee('CincoEstrelas')->assertSee('TresEstrelas')
+        ->set('filtroNota', '5')
+        ->assertSee('CincoEstrelas')->assertDontSee('TresEstrelas');
+});
+
+it('filtra por com/sem comentário', function () {
+    concluido($this, $this->jorge, 5, 'TemComentario');
+    concluido($this, $this->jorge, 4, null);
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@ult.test']), 'web');
+
+    Livewire::test(Index::class)
+        ->set('filtroComentario', 'com')
+        ->assertSee('TemComentario')
+        ->set('filtroComentario', 'sem')
+        ->assertDontSee('TemComentario');
+});
+
+it('filtra por cliente (só Dono) e o resumo reflete o período', function () {
+    $outro = Cliente::create(['nome' => 'Joana Distinta', 'telefone' => '99', 'email' => 'joana@ult.test']);
+    concluido($this, $this->jorge, 5, 'DoSecreto');
+    concluido($this, $this->jorge, 4, 'DaJoana', null, $outro);
+
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@ult.test']), 'web');
+
+    Livewire::test(Index::class)
+        ->assertSee('Joana Distinta')
+        ->set('filtroCliente', 'Joana')
+        ->assertSee('DaJoana')->assertDontSee('DoSecreto');
+});
+
+it('filtra por período (data do atendimento)', function () {
+    concluido($this, $this->jorge, 5, 'HojeMarcador', Carbon::now()->setTime(9, 0));
+    concluido($this, $this->jorge, 4, 'AntigoMarcador', Carbon::now()->subMonths(2)->setTime(9, 0));
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@ult.test']), 'web');
+
+    Livewire::test(Index::class)
+        ->set('filtroPeriodo', 'dia')
+        ->assertSee('HojeMarcador')->assertDontSee('AntigoMarcador');
 });
