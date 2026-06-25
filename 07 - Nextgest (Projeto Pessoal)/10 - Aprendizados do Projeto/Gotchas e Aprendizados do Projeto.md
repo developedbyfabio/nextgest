@@ -369,14 +369,16 @@ central de dev estava VAZIO** (`tenants`/`admins`/`estabelecimentos`/`assinatura
 - **O que sobrevive:** os bancos `tenant_*` (ex.: `tenant_barbeariateste`) **não** são tocados pelo
   `migrate:fresh` do central — os dados internos de cada tenant (users/clientes/agendamentos) ficam
   intactos. Perde-se só o **registro central** (lista de tenants + admin + cobrança).
-- **Prevenção (regra dura):**
-  1. **NUNCA** manter `config:cache`/`optimize` em DEV. Se for testar build de prod, rodar
-     `php artisan optimize:clear` **antes** de qualquer `php artisan test`.
-  2. Antes de `php artisan test`, garantir que **não** há `bootstrap/cache/config.php`
-     (`php artisan config:clear`).
-  3. Idealmente, um **guard** no `tests/TestCase`/`Pest.php` que **aborta** a suíte se a conexão
-     central não for sqlite (`config('database.default') !== 'sqlite'` → `throw`), para o teste
-     **nunca** tocar MySQL mesmo com config cacheado.
+- **Prevenção (DUAS travas, JÁ IMPLEMENTADAS):**
+  1. **`tests/bootstrap.php`** (apontado pelo `phpunit.xml`): ANTES de qualquer app bootar, **remove**
+     `bootstrap/cache/{config,routes-v7,events}.php`. Assim, mesmo com cache sujo, os testes leem
+     `config/*` + env do phpunit (sqlite). Provado: com `config:cache` (mysql) ativo, a suíte rodou em
+     sqlite e o central **não** foi zerado (4 tenants antes e depois).
+  2. **Guard em `tests/TestCase::beforeRefreshingDatabase()`** (roda ANTES do `migrate:fresh`): se
+     `config('database.default') !== 'sqlite'`, **lança e aborta** a suíte — rede de segurança caso a
+     trava 1 falhe. Os testes **nunca** tocam um banco real.
+  - Regra de bolso: **NUNCA** manter `config:cache`/`optimize` em DEV; se testar build de prod, rodar
+    `php artisan optimize:clear`.
 - **Recuperação:** como os `tenant_*` sobrevivem, dá pra **re-registrar** os tenants no central
   (INSERT em `tenants` — sem `Tenant::create`, que tentaria recriar o banco já existente), recriar o
   super-admin (`php artisan` de criação) e re-provisionar assinaturas (comando idempotente). O `data`
