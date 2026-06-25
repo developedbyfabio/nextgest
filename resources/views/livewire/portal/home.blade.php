@@ -76,16 +76,38 @@
 
                 @foreach ($historico as $agendamento)
                     @php([$rotulo, $cor] = $statusInfo[$agendamento->status] ?? ['—', 'zinc'])
-                    <div class="flex items-center justify-between gap-2 rounded-xl border px-4 py-3" style="{{ $cardStyle }} opacity: 0.9;" wire:key="hist-{{ $agendamento->id }}">
-                        <div class="min-w-0">
-                            <flux:text class="text-sm font-medium capitalize">
-                                {{ $agendamento->data_hora_inicio->translatedFormat('d/m/Y · H:i') }}
-                            </flux:text>
-                            <flux:text class="truncate text-xs" style="color: var(--cor-texto-suave);">
-                                {{ $agendamento->itens->map(fn ($i) => $i->servico?->nome)->filter()->join(', ') ?: 'Serviço' }}
-                            </flux:text>
+                    <div class="flex flex-col gap-2 rounded-xl border px-4 py-3" style="{{ $cardStyle }} opacity: 0.95;" wire:key="hist-{{ $agendamento->id }}">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <flux:text class="text-sm font-medium capitalize">
+                                    {{ $agendamento->data_hora_inicio->translatedFormat('d/m/Y · H:i') }}
+                                </flux:text>
+                                <flux:text class="truncate text-xs" style="color: var(--cor-texto-suave);">
+                                    {{ $agendamento->itens->map(fn ($i) => $i->servico?->nome)->filter()->join(', ') ?: 'Serviço' }}
+                                </flux:text>
+                            </div>
+                            <flux:badge :color="$cor" size="sm">{{ $rotulo }}</flux:badge>
                         </div>
-                        <flux:badge :color="$cor" size="sm">{{ $rotulo }}</flux:badge>
+
+                        {{-- Avaliação (D51): só para atendimento concluído. Avaliado →
+                             mostra a nota (read-only); não avaliado → botão "Avaliar"
+                             (abre o MESMO modal do popup). --}}
+                        @if ($agendamento->status === 'concluido')
+                            <div class="border-t pt-2" style="border-color: color-mix(in srgb, var(--cor-texto) 8%, transparent);">
+                                @if ($agendamento->avaliacao)
+                                    <div class="flex flex-col gap-1">
+                                        <x-portal.estrelas :nota="$agendamento->avaliacao->nota" />
+                                        @if ($agendamento->avaliacao->comentario)
+                                            <flux:text class="text-xs italic" style="color: var(--cor-texto-suave);">“{{ $agendamento->avaliacao->comentario }}”</flux:text>
+                                        @endif
+                                    </div>
+                                @else
+                                    <flux:button wire:click="abrirAvaliacao({{ $agendamento->id }})" size="sm" variant="subtle" icon="star" class="self-start">
+                                        Avaliar atendimento
+                                    </flux:button>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </section>
