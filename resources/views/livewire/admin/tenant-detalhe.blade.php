@@ -3,6 +3,7 @@
         <x-slot:actions>
             <flux:button :href="route('admin.tenants')" variant="ghost" icon="arrow-left" wire:navigate>Voltar</flux:button>
             <flux:button :href="route('admin.tenant.dados', ['tenantId' => $tenant->id])" variant="ghost" icon="clipboard-document-list" wire:navigate>Dados</flux:button>
+            <flux:button :href="route('admin.tenant.faturamento', ['tenantId' => $tenant->id])" variant="ghost" icon="banknotes" wire:navigate>Faturamento</flux:button>
             <flux:button :href="route('tenant.home', ['tenant' => $tenant->id])" target="_blank" variant="ghost" icon="arrow-top-right-on-square">Abrir portal</flux:button>
             <flux:button wire:click="impersonatar" variant="primary" icon="lifebuoy">Entrar no painel (suporte)</flux:button>
         </x-slot:actions>

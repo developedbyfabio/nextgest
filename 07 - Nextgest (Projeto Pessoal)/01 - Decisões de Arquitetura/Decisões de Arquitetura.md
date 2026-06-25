@@ -887,3 +887,30 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   fatura paga não conta, cancelada, override de 1ª cobrança, backfill dry-run/apply/idempotência.
   Suíte **507/507**. No dev, backfill provisionou os 4 tenants (`em_teste`); 2ª execução criou 0.
   **Nada de painel/login/portal/Clube tocado. Sem deploy** (em produção: migrations com backup antes).
+
+---
+
+## D59 — Tela "Faturamento" no admin: configurar assinatura + gerar/marcar faturas (Fase 4b)
+> Consome o modelo da 4a (D58). **Operação manual + visualização**: NENHUM bloqueio de login (4c) e
+> NENHUM gateway (Fase 5). Cobrança salão → Nextgest (≠ Clube). Ver [[Cobrança da Assinatura SaaS]].
+- **Componente** `App\Livewire\Admin\Faturamento` (view `faturamento.blade.php`), rota
+  **`admin.tenant.faturamento`** (`/admin/estabelecimentos/{tenantId}/faturamento`, `auth:admin`).
+  Botão **"Faturamento"** na lista (`Tenants`) + atalho no `TenantDetalhe`.
+- **firstOrNew + save no 1º uso:** abre a assinatura do tenant (cria com defaults se não existir —
+  plano atual, `preco_mes`, `data_inicio=created_at`, `trial` padrão, `em_teste`).
+- **Situação no topo** via `Assinatura::situacaoAcesso()` (badge) + "vencida há N dias / carência até
+  DD/MM" quando atrasada/suspensa. **Só informativo — não bloqueia nada** (confirmado: login do tenant
+  com assinatura `suspensa` continua 200).
+- **Config:** `valor_mensal` (editável — lançamento/acordo), `data_inicio`, `trial_dias` **ou**
+  `data_primeira_cobranca` (sobrescreve), `dia_vencimento` (1–28), `status` e `observacoes`. **Status
+  manual só `em_teste/ativa/cancelada`** — `atrasada/suspensa` são derivadas (Rule::in barra setar à
+  mão). **Não** mexe em plano/recursos (isso é a tela Editar).
+- **Faturas:** "Gerar fatura" (competência mês + valor default `valor_mensal` + vencimento default
+  derivado, editável); respeita o unique (competência duplicada → erro amigável, **sem 500**). Por
+  fatura: **marcar paga** (data + forma, default `manual`), **reverter** (paga→aberta, correção) e
+  **cancelar**. `link_pagamento` continua **nulo** (gateway é a Fase 5). Dinheiro em **decimal**.
+- **Sem trilha de auditoria** de quem marcou/reverteu (melhoria futura).
+- **Testes:** `tests/Feature/Admin/FaturamentoTest.php` (8) — guard; cria no 1º uso; salva config;
+  barra status derivado; gera + barra duplicada; marca paga→ativa→reverte→cancela; suspensa informativo
+  **sem** bloquear login; botão na lista. Suíte **515/515**. Verificado no dev (fase3ademo:
+  em_teste → fatura aberta/Suspensa → paga/Ativa). **Sem deploy.**

@@ -23,6 +23,10 @@
 - **Dados** (`App\Livewire\Admin\EstabelecimentoDados` → `admin.tenant.dados`; D57): lê/edita o cadastro
   central (estabelecimento + contato cadastral do dono); cria a linha sob demanda para tenants antigos
   (`firstOrNew`). Botão **"Dados"** na lista e atalho no Detalhe. Não altera o login do dono.
+- **Faturamento** (`App\Livewire\Admin\Faturamento` → `admin.tenant.faturamento`; D59): configura a
+  assinatura SaaS, gera faturas e marca pago/reverte/cancela (manual), com a situação via
+  `situacaoAcesso()` (só informativa — sem bloqueio). Botão **"Faturamento"** na lista e atalho no
+  Detalhe. Ver [[Cobrança da Assinatura SaaS]].
 
 ## Identidade visual (Fase 0 — D54)
 Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucional)]]):
@@ -36,7 +40,7 @@ Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucion
 
 ## Limites (o que NÃO é deste painel)
 - Não mexe em `MotorDisponibilidade`, agenda, portal nem no painel do tenant (guard `web`/`cliente`).
-- **Plano nomeado** (recursos liberados) já existe (D55). O **modelo de cobrança** SaaS (assinatura +
-  faturas + situação) existe na 4a (D58 — ver [[Cobrança da Assinatura SaaS]]). Pendente: **tela de
-  Faturamento** (4b) e **suspensão por pagamento** (4c — bloqueio no login, estado distinto do
-  "inativo" atual) — ver [[Mapeamento Central x Tenant (auditoria pré-planos)]].
+- **Plano nomeado** (recursos liberados) já existe (D55). A **cobrança** SaaS tem o modelo (4a/D58) e a
+  **tela de Faturamento** (4b/D59) — ver [[Cobrança da Assinatura SaaS]]. Pendente: **suspensão por
+  pagamento** (4c — bloqueio no login, estado distinto do "inativo" atual) e **gateway** (Fase 5) — ver
+  [[Mapeamento Central x Tenant (auditoria pré-planos)]].

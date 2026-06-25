@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\LogoutController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\EstabelecimentoDados;
+use App\Livewire\Admin\Faturamento as AdminFaturamento;
 use App\Livewire\Admin\OnboardingEstabelecimento;
 use App\Livewire\Admin\TenantDetalhe as AdminTenantDetalhe;
 use App\Livewire\Admin\Tenants as AdminTenants;
@@ -57,6 +58,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('estabelecimentos/{tenantId}/dados', EstabelecimentoDados::class)
         ->middleware('auth:admin')
         ->name('tenant.dados');
+
+    // Faturamento (cobrança SaaS salão → Nextgest — D59). Caminho mais específico
+    // que {tenantId}, sem conflito com o detalhe.
+    Route::get('estabelecimentos/{tenantId}/faturamento', AdminFaturamento::class)
+        ->middleware('auth:admin')
+        ->name('tenant.faturamento');
 
     Route::post('sair', [LogoutController::class, 'admin'])
         ->middleware('auth:admin')

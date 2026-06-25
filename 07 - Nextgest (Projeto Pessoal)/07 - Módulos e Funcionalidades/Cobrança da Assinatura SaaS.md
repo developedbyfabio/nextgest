@@ -1,7 +1,7 @@
 ---
 projeto: Nextgest
 tipo: módulo
-status: em construção (4a — modelo/situação/backfill)
+status: em construção (4a modelo + 4b tela Faturamento)
 criado: 2026-06-25
 tags: [nextgest, central, cobranca, assinatura, faturamento, saas]
 ---
@@ -17,11 +17,25 @@ Esta é a mensalidade do **estabelecimento → Nextgest** (o salão paga o SaaS)
 do tenant. Aqui é tudo **central** (tabelas `assinaturas`/`faturas`).
 
 ## Fases
-- **4a (esta — D58):** modelo de dados + cálculo de situação + backfill. **Sem** UI de operação, **sem**
-  geração de faturas, **sem** gateway, **sem** bloqueio de login.
-- **4b (futura):** tela de Faturamento no admin (gerar/marcar faturas, ver situação, link de pagamento).
+- **4a (D58):** modelo de dados + cálculo de situação + backfill. **Sem** UI, geração, gateway, bloqueio.
+- **4b (D59 — feita):** tela de Faturamento no admin (configurar assinatura, gerar/marcar faturas, ver
+  situação). Ainda **sem** gateway e **sem** bloqueio.
 - **4c (futura):** suspensão/bloqueio efetivo no login do tenant para assinatura `suspensa`/`cancelada`
   (estado distinto do "inativo" administrativo — ver [[Mapeamento Central x Tenant (auditoria pré-planos)]]).
+- **5 (futura):** gateway (link de pagamento / webhook).
+
+## Tela "Faturamento" (4b — D59)
+`App\Livewire\Admin\Faturamento` (rota `admin.tenant.faturamento` =
+`/admin/estabelecimentos/{tenantId}/faturamento`, `auth:admin`). Botão **"Faturamento"** na lista +
+atalho no Detalhe. **firstOrNew + save no 1º uso** (cria a assinatura com defaults se faltar).
+- **Topo:** badge da situação (`situacaoAcesso()`) + "vencida há N dias / carência até DD/MM" —
+  **informativo, não bloqueia** (login do tenant `suspenso` continua 200; bloqueio é a 4c).
+- **Config:** valor mensal (editável), início, trial **ou** 1ª cobrança (sobrescreve), dia de
+  vencimento (1–28), status e observações. **Status manual só `em_teste/ativa/cancelada`** —
+  `atrasada/suspensa` são derivadas. Plano/recursos ficam na tela Editar.
+- **Faturas:** gerar (competência/valor/vencimento; unique → erro amigável, sem 500), marcar paga
+  (data + forma, default `manual`), reverter (paga→aberta), cancelar. `link_pagamento` nulo (gateway é
+  a Fase 5). Dinheiro em **decimal**. **Sem trilha de auditoria** de quem marcou/reverteu (melhoria futura).
 
 ## Modelo de dados (central)
 - **`assinaturas`** (1:1 com `tenants`): `tenant_id` (unique, FK), `plano` (snapshot), `valor_mensal`
@@ -61,11 +75,15 @@ do catálogo quando conhecido, senão 0; `data_inicio` = `created_at`; `trial_di
 tenants (`em_teste`); 2ª execução criou 0.
 
 ## Testes
-`tests/Feature/Cobranca/ModeloCobrancaTest.php` (10): fronteiras de situação (em_teste/ativa/atrasada
-dia 10/dia 20/suspensa dia 21), carência lida da config, fatura paga não conta, cancelada, override de
-1ª cobrança, snapshot de valor, e backfill (dry-run/apply/idempotência). Suíte **507/507**.
+- `tests/Feature/Cobranca/ModeloCobrancaTest.php` (10): fronteiras de situação (em_teste/ativa/atrasada
+  dia 10/dia 20/suspensa dia 21), carência da config, fatura paga não conta, cancelada, override de 1ª
+  cobrança, snapshot de valor, backfill (dry-run/apply/idempotência).
+- `tests/Feature/Admin/FaturamentoTest.php` (8): guard; cria no 1º uso; salva config; barra status
+  derivado; gera + barra duplicada; marca paga→ativa→reverte→cancela; suspensa informativo **sem**
+  bloquear login; botão na lista.
+Suíte **515/515**.
 
-## Limites desta fase
-Sem UI de operação, sem geração de faturas, sem gateway, sem bloqueio de login; nada de
-painel/portal/Clube/spatie/motor tocado. **Dev apenas — sem deploy.** Em produção, migrations centrais
-com **backup antes** e backfill provisiona o tenant real.
+## Limites (até aqui)
+**Sem gateway** (`link_pagamento` nulo) e **sem bloqueio de login** (situação só informativa) — isso é
+5/4c. Nada de painel do dono/portal/Clube/spatie/motor tocado. **Dev apenas — sem deploy.** Em produção,
+migrations centrais com **backup antes**; o tenant real é configurado pela tela Faturamento.
