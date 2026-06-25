@@ -19,6 +19,12 @@ use Spatie\Permission\PermissionRegistrar;
  * Semeia os papéis e permissões padrão (Apêndice D) e a configuração inicial
  * `confirmacao_automatica = true`. ver_financeiro é permissão separada, padrão
  * só do Dono.
+ *
+ * ADITIVO/IDEMPOTENTE (seguro para re-seed em tenant real customizado): GARANTE o
+ * piso (papéis + permissões base + configs default) SEM impor o teto — concede
+ * permissões aditivamente (`givePermissionTo`, nunca `syncPermissions` que revoga) e
+ * cria configs só se não existirem (`insertOrIgnore`, nunca sobrescreve). Rodar 2×
+ * não muda nada; customização do Dono (permissão extra / config ajustada) é preservada.
  */
 class TenantDatabaseSeeder extends Seeder
 {
@@ -66,15 +72,17 @@ class TenantDatabaseSeeder extends Seeder
             Permission::findOrCreate($nome, 'web');
         }
 
+        // Concessão ADITIVA por papel (givePermissionTo = syncWithoutDetaching):
+        // GARANTE as permissões base, NUNCA revoga extras que o Dono tenha concedido.
         // Dono: todas.
         $dono = Role::findOrCreate('Dono', 'web');
-        $dono->syncPermissions(self::PERMISSOES);
+        $dono->givePermissionTo(self::PERMISSOES);
 
         // Gerente: tudo menos financeiro, edição de permissões e credenciais de
         // PAGAMENTO (config sensível). `gerenciar_pagamentos` é exclusivo do Dono;
         // `gerenciar_whatsapp` o Gerente mantém. (Decisão do Fabio — ver Dxx.)
         $gerente = Role::findOrCreate('Gerente', 'web');
-        $gerente->syncPermissions(array_diff(self::PERMISSOES, [
+        $gerente->givePermissionTo(array_diff(self::PERMISSOES, [
             'ver_financeiro',
             'editar_permissoes',
             'gerenciar_pagamentos',
@@ -83,7 +91,7 @@ class TenantDatabaseSeeder extends Seeder
 
         // Recepção: agenda, clientes, vendas, estoque e kanban de atendimento (balcão).
         $recepcao = Role::findOrCreate('Recepção', 'web');
-        $recepcao->syncPermissions([
+        $recepcao->givePermissionTo([
             'ver_agenda',
             'criar_agendamento',
             'editar_agendamento',
@@ -98,7 +106,7 @@ class TenantDatabaseSeeder extends Seeder
         // Profissional: vê a própria agenda e finaliza os próprios atendimentos
         // (gera/gere a comanda daquele atendimento — cliente e profissional travados).
         $profissional = Role::findOrCreate('Profissional', 'web');
-        $profissional->syncPermissions([
+        $profissional->givePermissionTo([
             'ver_agenda_propria',
             'finalizar_atendimento_proprio',
             'ver_avaliacoes_proprias',
@@ -106,7 +114,9 @@ class TenantDatabaseSeeder extends Seeder
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Configurações iniciais do estabelecimento.
+        // Configurações iniciais do estabelecimento — criar SÓ se não existir
+        // (insertOrIgnore pela chave única): tenant novo recebe os defaults; tenant
+        // existente MANTÉM o valor que o Dono ajustou (nunca reseta).
         $configs = [
             'confirmacao_automatica' => '1',
             'intervalo_slots_minutos' => '15',
@@ -114,10 +124,12 @@ class TenantDatabaseSeeder extends Seeder
         ];
 
         foreach ($configs as $chave => $valor) {
-            DB::table('configuracoes')->updateOrInsert(
-                ['chave' => $chave],
-                ['valor' => $valor, 'created_at' => now(), 'updated_at' => now()]
-            );
+            DB::table('configuracoes')->insertOrIgnore([
+                'chave' => $chave,
+                'valor' => $valor,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
         $this->semearKanban();

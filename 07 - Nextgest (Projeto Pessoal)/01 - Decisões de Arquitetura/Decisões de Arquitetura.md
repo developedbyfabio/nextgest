@@ -721,3 +721,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - Verificado por Playwright (Operação abre em "Últimos serviços" e **persiste no reload**; navegar p/
   Gestão fecha Operação; abrir manualmente fecha o anterior; fechar o ativo é permitido) + 4 testes
   (Início 0 grupos abertos; Operação/Gestão/Financeiro 1 cada). Sidebar colapsável/flyout/drawer/perfil intactos.
+
+---
+
+## D53 — TenantDatabaseSeeder aditivo/idempotente (seguro para re-seed em tenant real)
+> Encerra a pendência aberta no deploy de avaliações (D51): o re-seed (`tenants:seed`) era
+> **inseguro** em tenant customizado. Agora **garante o piso sem impor o teto**. Sem migration;
+> motor/avaliações intocados. Suíte 472/472.
+- **Problema:** o seeder usava **`syncPermissions`** por papel (substitui o conjunto inteiro →
+  **apagaria** permissões que o Dono adicionou) e **`updateOrInsert`** nas 3 configs sensíveis
+  (`confirmacao_automatica`, `intervalo_slots_minutos`, `cancelamento_antecedencia_horas` →
+  **resetaria** valores ajustados pelo Dono). Inofensivo hoje (produção só tem o tenant `teste`,
+  sem customização), mas perigoso num tenant real.
+- **Permissões → concessão ADITIVA:** `Permission::findOrCreate` para cada base + `$role->givePermissionTo(...)`
+  (spatie = `syncWithoutDetaching`): **garante** as base, **nunca revoga** extras. Papéis seguem
+  `Role::findOrCreate`. Avaliações já no base (Dono/Gerente = `ver_avaliacoes`; Profissional =
+  `ver_avaliacoes_proprias`).
+- **Configs → criar só se faltar:** `DB::table('configuracoes')->insertOrIgnore([...])` (pela `chave`
+  única). Tenant novo recebe os defaults; tenant existente **mantém** o valor do Dono (nunca sobrescreve).
+- **Kanban** (`semearKanban`) já era idempotente (`firstOrCreate`) — inalterado.
+- **Garantias (testadas):** provisionamento de tenant novo intacto (papéis + permissões base + configs);
+  **idempotência total** (2ª execução não muda nada); **preserva customização** (permissão extra do
+  Dono permanece; config alterada não reseta); **regarante** uma permissão base removida (piso).
+  5 testes em `SeederAditivoTest`. `tenants:seed` rodado no dev (limpo, idempotente). **Sem deploy.**
