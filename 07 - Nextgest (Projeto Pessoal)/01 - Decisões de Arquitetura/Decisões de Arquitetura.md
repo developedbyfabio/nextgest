@@ -640,3 +640,34 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   (2) **`--dry-run`** e conferir o relatório (os órfãos reais diferem do dev); (3) **`--apply`**;
   (4) validar no portal que os serviços antes órfãos passaram a aparecer. **Não rodado em produção
   por agente.**
+
+---
+
+## D51 — Avaliações de atendimento (Prompt 1: COLETA no portal)
+> Após um atendimento **concluído**, o cliente avalia (1–5 estrelas + comentário opcional). Coleta
+> pelo portal; a visualização no painel (RBAC, filtros) é o **Prompt 2**. Migration de tenant
+> **aditiva**; motor/agenda **intocados**. Suíte 450/450.
+- **Âncora = `Agendamento` concluído** (`status = 'concluido'`). Não inventou conceito novo: o
+  atendimento já é o agendamento. Tabela **`avaliacoes`** (tenant): `agendamento_id` **UNIQUE**
+  (1 atendimento = 1 avaliação) + `cliente_id` + `profissional_id` + `unidade_id` (denormalizados do
+  agendamento p/ os filtros do Prompt 2) + `nota` (1–5) + `comentario` (nullable). O(s) **serviço(s)**
+  são **derivados** do agendamento (`itens.servico`) — atendimento pode ter vários serviços, então
+  não há `servico_id` único. Model `Avaliacao` (`$table='avaliacoes'`, plural irregular) +
+  `Agendamento::avaliacao()` hasOne.
+- **Elegibilidade / popup uma vez:** "avaliável" = concluído **sem** linha em `avaliacoes`. Coluna
+  **`agendamentos.avaliacao_popup_exibido_em`** (timestamp nullable) marca que o popup já apareceu.
+  No load do portal (`Portal\Home::mount`), se há um avaliável com popup ainda não exibido → marca a
+  coluna e abre o modal (**uma vez**). **Ignorar** só fecha (não cria avaliação); o atendimento
+  segue avaliável pelo **histórico**.
+- **Mesmo modal** para popup e histórico (sem duplicar): `abrirAvaliacao(id)` / `salvarAvaliacao` /
+  `ignorarAvaliacao` no `Portal\Home`. Estrelas clicáveis (Alpine hover/seleção, `role=radio`,
+  acessível) + comentário. Histórico: avaliado → `x-portal.estrelas` (read-only) + comentário; não
+  avaliado → botão "Avaliar". Componente `x-portal.estrelas` reutilizável (Prompt 2).
+- **Segurança:** cliente só avalia o **próprio** atendimento (escopo `cliente_id` + `findOrFail`),
+  **concluído** e **não avaliado** (`avaliacaoAvaliavel()` aborta 404 caso contrário). 1-por-atendimento
+  pela `unique`. Verificado por Playwright (popup → avaliar → 2º popup → ignorar → não reaparece →
+  avaliar pelo histórico) e 7 testes (criar; nota obrigatória; ignorar não cria; histórico; unique;
+  não avalia alheio; não avalia não-concluído). `SemearDemo` cria avaliações de exemplo (idempotente).
+- **Prompt 2 (pendente):** aba unificada no painel (atendimentos + avaliações), **RBAC por permissão**
+  (dono tudo / profissional só o dele, **anônimo** — sem nome do cliente), filtros (cliente → só dono;
+  período dia/semana/mês; estrelas; com/sem comentário).
