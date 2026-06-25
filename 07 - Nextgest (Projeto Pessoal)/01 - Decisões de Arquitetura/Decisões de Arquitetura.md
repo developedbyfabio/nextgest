@@ -744,3 +744,24 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   **idempotência total** (2ª execução não muda nada); **preserva customização** (permissão extra do
   Dono permanece; config alterada não reseta); **regarante** uma permissão base removida (piso).
   5 testes em `SeederAditivoTest`. `tenants:seed` rodado no dev (limpo, idempotente). **Sem deploy.**
+
+---
+
+## D54 — Identidade visual do painel super-admin alinhada à landing (Fase 0)
+> Só apresentação (guard `admin`, `/admin/*`). NÃO toca banco/RBAC/modelo/rotas de negócio nem o
+> painel do tenant/portal/motor. Reusa a fonte de verdade da landing. Suíte 472/472.
+- **Layout `components/layouts/admin.blade.php`:** header **glassmorphism** igual à landing
+  (`bg-white/80 backdrop-blur-md dark:bg-[#0B1120]/80`); `flux:brand "Nextgest Admin"` → **logo**
+  (`asset('nextgest-logo.png')`) + wordmark "Nextgest" + **pill "ADMIN"** em degradê de marca; fundo
+  `bg-white text-slate-900 dark:bg-[#0B1120] dark:text-slate-100`.
+- **Dark/light:** **mesmo mecanismo da landing** — `@fluxAppearance` + `$flux.appearance` (persistido
+  pelo Flux). Adicionado o **`x-landing.tema-toggle`** (sol/lua) no header, reusando o componente; o
+  radio Claro/Escuro/Sistema do dropdown segue (mesmo estado).
+- **Telas:** `livewire/admin/dashboard.blade.php` — card "Estabelecimentos" com ícone em degradê +
+  bloco geométrico no canto e banner "Em construção" em degradê sutil (conteúdo/lógica intactos);
+  `livewire/admin/tenants.blade.php` — botão **"Detalhes" → "Editar"** (ícone `pencil-square`, **mesma
+  rota/destino** `admin.tenant.detalhe`); demais ações (Abrir/Criar dono/Inativar/Ativar) intactas.
+- **Paleta = classes Tailwind da landing** (`from-violet-600 via-indigo-600 to-blue-600` + slate +
+  `#0B1120`); não emite `--cor-*` (central, sem tema de tenant). Verificado por Playwright (login
+  admin: logo ok; dashboard/estabelecimentos legíveis em claro e escuro; toggle persiste; "Editar"×3,
+  "Detalhes"=0). Tenant/portal inalterados (200). **Sem deploy.**

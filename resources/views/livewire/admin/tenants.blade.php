@@ -30,7 +30,7 @@
                     </flux:table.cell>
                     <flux:table.cell>{{ $tenant->created_at?->format('d/m/Y') }}</flux:table.cell>
                     <flux:table.cell class="text-right">
-                        <flux:button :href="route('admin.tenant.detalhe', ['tenantId' => $tenant->id])" size="sm" variant="ghost" icon="eye" wire:navigate>Detalhes</flux:button>
+                        <flux:button :href="route('admin.tenant.detalhe', ['tenantId' => $tenant->id])" size="sm" variant="ghost" icon="pencil-square" wire:navigate>Editar</flux:button>
                         <flux:button :href="route('tenant.home', ['tenant' => $tenant->id])" target="_blank" size="sm" variant="ghost" icon="arrow-top-right-on-square">Abrir</flux:button>
                         <flux:button wire:click="abrirDono('{{ $tenant->id }}')" size="sm" variant="ghost" icon="user-plus">Criar dono</flux:button>
                         @if ($tenant->ativo)
