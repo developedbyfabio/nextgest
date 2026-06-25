@@ -28,6 +28,8 @@ class TenantDatabaseSeeder extends Seeder
     private const PERMISSOES = [
         'ver_agenda',
         'ver_agenda_propria',
+        'ver_avaliacoes',          // aba "Últimos serviços": TODOS os atendimentos+avaliações, com nome do cliente (Dono/Gerente)
+        'ver_avaliacoes_proprias', // Profissional: só os próprios atendimentos, cliente ANÔNIMO
         'criar_agendamento',
         'editar_agendamento',
         'gerir_agenda',
@@ -99,6 +101,7 @@ class TenantDatabaseSeeder extends Seeder
         $profissional->syncPermissions([
             'ver_agenda_propria',
             'finalizar_atendimento_proprio',
+            'ver_avaliacoes_proprias',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

@@ -86,6 +86,9 @@
                 @canany(['ver_agenda', 'ver_agenda_propria'])
                     <flux:navlist.item icon="calendar-days" :href="route('painel.agenda', ['tenant' => $tenantId])" :current="request()->routeIs('painel.agenda')" wire:navigate>Agendamentos</flux:navlist.item>
                 @endcanany
+                @canany(['ver_avaliacoes', 'ver_avaliacoes_proprias'])
+                    <flux:navlist.item icon="star" :href="route('painel.avaliacoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.avaliacoes')" wire:navigate>Últimos serviços</flux:navlist.item>
+                @endcanany
                 @can('editar_servico')
                     <flux:navlist.item icon="scissors" :href="route('painel.servicos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.servicos')" wire:navigate>Serviços</flux:navlist.item>
                 @endcan

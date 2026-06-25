@@ -12,6 +12,7 @@ use App\Livewire\Auth\DesafioDoisFatores;
 use App\Livewire\Auth\PainelLogin;
 use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
+use App\Livewire\Painel\Avaliacoes\Index as AvaliacoesIndex;
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
 use App\Livewire\Painel\Clube\Index as ClubeIndex;
@@ -121,6 +122,10 @@ Route::middleware(['tenant'])
 
                 // Agenda: acesso por ver_agenda OU ver_agenda_propria (checado no componente).
                 Route::get('agenda', AgendaIndex::class)->name('agenda');
+
+                // "Últimos serviços": atendimentos concluídos + avaliações. Acesso por
+                // ver_avaliacoes OU ver_avaliacoes_proprias (checado no componente).
+                Route::get('avaliacoes', AvaliacoesIndex::class)->name('avaliacoes');
 
                 // Cadastros (1B). Cada página exige a permissão de gestão correspondente;
                 // ações de criar/editar são reconferidas dentro dos componentes.
