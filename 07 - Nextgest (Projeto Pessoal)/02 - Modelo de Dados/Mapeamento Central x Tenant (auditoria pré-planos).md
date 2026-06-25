@@ -6,6 +6,12 @@
 > (nenhuma migration/seeder; só `SHOW`/`SELECT`). Sem Dxx novo — decisões virão nas fases de
 > implementação. Ambiente: dev (`192.168.11.210`).
 
+> **Atualização (D56 — Fase 3a):** o central deixou de ter só `tenants`. Foi criada a tabela
+> **`estabelecimentos`** (1:1 com `tenants`) como fonte de verdade do admin/cobrança (dados do negócio
+> + contato do dono), e o onboarding virou 7 etapas. Plano nomeado já existia (D55). Veja
+> [[Cadastro Central do Estabelecimento]]. O que segue era o retrato ANTES dessas fases — mantido como
+> histórico; faturamento da assinatura e suspensão por pagamento continuam pendentes.
+
 ## TL;DR (o que decide as próximas fases)
 - **Central é mínimo:** só `tenants` (+ `domains`, `tenant_user_impersonation_tokens`, `admins`,
   `failed_jobs`, `migrations`). **Não há tabela de plano, assinatura SaaS, cobrança ou

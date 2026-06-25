@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Livewire\Admin\OnboardingEstabelecimento as Onboarding;
 use App\Models\Configuracao;
+use App\Models\Estabelecimento;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Aparencia;
@@ -73,21 +74,21 @@ it('valida o horário de funcionamento', function () {
         ->all();
 
     Livewire::test(Onboarding::class)
-        ->set('etapa', 3)
+        ->set('etapa', 4) // funcionamento virou a etapa 4 (D56)
         ->set('funcionamento', $todosFechados)
         ->call('proximo')
         ->assertHasErrors('funcionamento')
-        ->assertSet('etapa', 3);
+        ->assertSet('etapa', 4);
 
     // Fim antes do início num dia aberto.
     Livewire::test(Onboarding::class)
-        ->set('etapa', 3)
+        ->set('etapa', 4)
         ->set('funcionamento.0.aberto', true)
         ->set('funcionamento.0.inicio', '18:00')
         ->set('funcionamento.0.fim', '09:00')
         ->call('proximo')
         ->assertHasErrors('funcionamento.0.fim')
-        ->assertSet('etapa', 3);
+        ->assertSet('etapa', 4);
 });
 
 it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', function () {
@@ -98,9 +99,14 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
         ->set('slug', 'studiolumiere')
         ->set('segmento', 'estetica')
         ->set('descricao', 'Estética avançada com hora marcada.')
-        ->set('donoNome', 'Ana Lumiere')
+        ->set('donoNome', 'Ana')
+        ->set('donoSobrenome', 'Lumiere')
         ->set('donoEmail', 'ana@studiolumiere.com')
+        ->set('donoCelular', '(41) 99154-1757')
+        ->set('donoCpf', '529.982.247-25')
         ->set('donoSenha', 'senha-inicial-123')
+        ->set('nomeFantasia', 'Studio Lumiere Estética')
+        ->set('faturamentoMensal', '25000.50')
         ->set('plano', 'profissional')
         ->call('confirmar')
         ->assertHasNoErrors()
@@ -112,6 +118,22 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
         ->and($tenant->segmento)->toBe('estetica')
         ->and($tenant->planoAtual())->toBe('profissional')               // plano aplicado (D55)
         ->and($tenant->recursosAtivos())->toBe(['clube', 'gateway']);    // recursos do plano, segmento preservado
+
+    // Cadastro CENTRAL (1:1) gravado com dono + estabelecimento (D56); digitos normalizados.
+    $est = Estabelecimento::where('tenant_id', 'studiolumiere')->first();
+    expect($est)->not->toBeNull()
+        ->and($est->nome_fantasia)->toBe('Studio Lumiere Estética')
+        ->and($est->dono_nome)->toBe('Ana')
+        ->and($est->dono_sobrenome)->toBe('Lumiere')
+        ->and($est->dono_celular)->toBe('41991541757')   // só dígitos
+        ->and($est->dono_cpf)->toBe('52998224725')        // só dígitos
+        ->and((float) $est->faturamento_mensal)->toBe(25000.50);
+
+    // O LOGIN do dono continua no tenant (só o nome), inalterado.
+    $dono = $tenant->run(fn () => User::where('email', 'ana@studiolumiere.com')->first());
+    expect($dono)->not->toBeNull()
+        ->and($dono->name)->toBe('Ana')
+        ->and($dono->deve_trocar_senha)->toBeTrue();
 
     $dados = $tenant->run(function () {
         $dono = User::where('email', 'ana@studiolumiere.com')->first();
@@ -145,9 +167,13 @@ it('faz upload de logo, cabeçalho e fundo no disco do tenant ao confirmar', fun
         ->set('nome', 'Barbearia X')
         ->set('slug', 'barbeariax')
         ->set('segmento', 'barbearia')
-        ->set('donoNome', 'Dono X')
+        ->set('donoNome', 'Dono')
+        ->set('donoSobrenome', 'X')
         ->set('donoEmail', 'dono@barbeariax.com')
+        ->set('donoCelular', '(41) 99154-1757')
+        ->set('donoCpf', '529.982.247-25')
         ->set('donoSenha', 'senha-inicial-123')
+        ->set('nomeFantasia', 'Barbearia X')
         ->set('plano', 'basico')
         ->set('logoUpload', UploadedFile::fake()->image('logo.png', 64, 64))
         ->set('headerUpload', UploadedFile::fake()->image('capa.jpg', 800, 300))

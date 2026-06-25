@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Models\Estabelecimento;
 use App\Models\Tenant;
 use App\Models\User;
 use Flux\Flux;
@@ -97,6 +98,12 @@ class Tenants extends Component
             'ativo' => true,
         ]);
 
+        // Cadastro CENTRAL mínimo (1:1; D56) — o resto fica nulo e é completado na tela "Dados".
+        Estabelecimento::create([
+            'tenant_id' => $dados['slug'],
+            'nome_fantasia' => $dados['nome'],
+        ]);
+
         $this->mostrarFormulario = false;
         $this->reset(['nome', 'slug']);
 
@@ -159,6 +166,15 @@ class Tenants extends Component
             $this->addError('donoEmail', $erro);
 
             return;
+        }
+
+        // Backfill leve do contato do dono no cadastro central, só nos campos ainda vazios
+        // (não sobrescreve dados já preenchidos). O contato completo vem pela tela "Dados".
+        $est = Estabelecimento::where('tenant_id', $this->tenantDono)->first();
+        if ($est) {
+            $est->dono_nome ??= $dados['donoNome'];
+            $est->dono_email ??= $dados['donoEmail'];
+            $est->save();
         }
 
         $this->mostrarDono = false;

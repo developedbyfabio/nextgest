@@ -6,7 +6,7 @@
     </x-ng.page-header>
 
     {{-- Stepper --}}
-    @php($passos = [1 => 'Identidade', 2 => 'Responsável', 3 => 'Funcionamento', 4 => 'Aparência', 5 => 'Plano', 6 => 'Revisão'])
+    @php($passos = [1 => 'Identidade', 2 => 'Responsável', 3 => 'Estabelecimento', 4 => 'Funcionamento', 5 => 'Aparência', 6 => 'Plano', 7 => 'Revisão'])
     <div class="flex flex-wrap items-center gap-x-2 gap-y-3">
         @foreach ($passos as $num => $rotulo)
             <button type="button" wire:click="irPara({{ $num }})" @disabled($num >= $etapa)
@@ -52,17 +52,68 @@
     @if ($etapa === 2)
         <div class="flex max-w-xl flex-col gap-4">
             <flux:heading size="lg">Responsável (Dono)</flux:heading>
-            <flux:text class="text-sm text-zinc-500">Cria o usuário com papel Dono — acesso total ao painel do estabelecimento.</flux:text>
-            <flux:input wire:model="donoNome" label="Nome" required />
+            <flux:text class="text-sm text-zinc-500">Cria o usuário com papel Dono (login no painel) e guarda o contato dele no cadastro central.</flux:text>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <flux:input wire:model="donoNome" label="Nome" required />
+                <flux:input wire:model="donoSobrenome" label="Sobrenome" required />
+            </div>
             <flux:input wire:model="donoEmail" type="email" label="E-mail (login)" required />
+            <div class="grid gap-4 sm:grid-cols-2">
+                <flux:input wire:model="donoCelular" label="Celular" mask="(99) 99999-9999" placeholder="(41) 99999-9999" required />
+                <flux:input wire:model="donoCpf" label="CPF" mask="999.999.999-99" placeholder="000.000.000-00" required />
+            </div>
             <flux:input wire:model="donoSenha" type="password" label="Senha inicial" viewable required>
                 <x-slot:description>Mínimo de 8 caracteres. O Dono poderá trocar depois.</x-slot:description>
             </flux:input>
         </div>
     @endif
 
-    {{-- ETAPA 3 — Horário de funcionamento --}}
+    {{-- ETAPA 3 — Estabelecimento (cadastro central; D56) --}}
     @if ($etapa === 3)
+        <div class="flex max-w-2xl flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <flux:heading size="lg">Estabelecimento</flux:heading>
+                <flux:text class="text-sm text-zinc-500">Dados cadastrais (admin/cobrança). Só o nome fantasia é obrigatório; o resto pode ser completado depois.</flux:text>
+            </div>
+
+            <flux:input wire:model="nomeFantasia" label="Nome fantasia" required />
+
+            <div class="grid gap-4 sm:grid-cols-3">
+                <flux:input wire:model="cep" label="CEP" mask="99999-999" placeholder="00000-000" />
+                <div class="sm:col-span-2">
+                    <flux:input wire:model="logradouro" label="Logradouro" placeholder="Rua / Av." />
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-3">
+                <flux:input wire:model="numero" label="Número" />
+                <flux:input wire:model="complemento" label="Complemento" />
+                <flux:input wire:model="bairro" label="Bairro" />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-3">
+                <div class="sm:col-span-2">
+                    <flux:input wire:model="cidade" label="Cidade" />
+                </div>
+                <flux:input wire:model="uf" label="UF" maxlength="2" placeholder="PR" />
+            </div>
+
+            <flux:separator text="Opcional" />
+
+            <div class="grid gap-4 sm:grid-cols-3">
+                <flux:input wire:model="faturamentoMensal" type="number" step="0.01" min="0" label="Faturamento mensal (R$)" placeholder="0,00" />
+                <flux:select wire:model.live="documentoTipo" label="Documento">
+                    <flux:select.option value="">— nenhum —</flux:select.option>
+                    <flux:select.option value="cpf">CPF</flux:select.option>
+                    <flux:select.option value="cnpj">CNPJ</flux:select.option>
+                </flux:select>
+                <flux:input wire:model="documento" label="Número do documento"
+                    :mask="$documentoTipo === 'cnpj' ? '99.999.999/9999-99' : ($documentoTipo === 'cpf' ? '999.999.999-99' : null)"
+                    :disabled="$documentoTipo === ''" placeholder="{{ $documentoTipo === '' ? 'Escolha o tipo' : '' }}" />
+            </div>
+        </div>
+    @endif
+
+    {{-- ETAPA 4 — Horário de funcionamento --}}
+    @if ($etapa === 4)
         <div class="flex max-w-xl flex-col gap-4">
             <flux:heading size="lg">Horário de funcionamento</flux:heading>
             <flux:text class="text-sm text-zinc-500">Faixas padrão do estabelecimento. Servem de base ao cadastrar profissionais e à exibição no portal.</flux:text>
@@ -76,8 +127,8 @@
         </div>
     @endif
 
-    {{-- ETAPA 4 — Aparência (com prévia ao vivo) --}}
-    @if ($etapa === 4)
+    {{-- ETAPA 5 — Aparência (com prévia ao vivo) --}}
+    @if ($etapa === 5)
         <div class="grid gap-8 lg:grid-cols-3">
             <div class="flex flex-col gap-6 lg:col-span-2">
                 <div class="flex flex-col gap-1">
@@ -169,8 +220,8 @@
         </div>
     @endif
 
-    {{-- ETAPA 5 — Plano (define os recursos liberados; D55) --}}
-    @if ($etapa === 5)
+    {{-- ETAPA 6 — Plano (define os recursos liberados; D55) --}}
+    @if ($etapa === 6)
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-1">
                 <flux:heading size="lg">Plano</flux:heading>
@@ -215,8 +266,8 @@
         </div>
     @endif
 
-    {{-- ETAPA 6 — Revisão e confirmação --}}
-    @if ($etapa === 6)
+    {{-- ETAPA 7 — Revisão e confirmação --}}
+    @if ($etapa === 7)
         <div class="grid gap-8 lg:grid-cols-3">
             <div class="flex flex-col gap-5 lg:col-span-2">
                 <flux:heading size="lg">Revisão</flux:heading>
@@ -250,8 +301,25 @@
 
                 <div class="flex flex-col gap-1 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
                     <flux:heading size="sm">Responsável</flux:heading>
-                    <flux:text>{{ $donoNome }}</flux:text>
+                    <flux:text>{{ trim($donoNome.' '.$donoSobrenome) }}</flux:text>
                     <flux:text class="text-sm text-zinc-500">{{ $donoEmail }}</flux:text>
+                    <flux:text class="text-sm text-zinc-500">{{ $donoCelular }} · CPF {{ $donoCpf }}</flux:text>
+                </div>
+
+                {{-- Estabelecimento (cadastro central). --}}
+                <div class="flex flex-col gap-1 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                    <flux:heading size="sm">Estabelecimento</flux:heading>
+                    <flux:text>{{ $nomeFantasia ?: $nome }}</flux:text>
+                    @php($linhaEndereco = trim(collect([$logradouro, $numero, $bairro, $cidade, $uf])->filter()->implode(', ')))
+                    @if ($linhaEndereco !== '')
+                        <flux:text class="text-sm text-zinc-500">{{ $linhaEndereco }}{{ $cep ? ' · CEP '.$cep : '' }}</flux:text>
+                    @endif
+                    @if ($faturamentoMensal)
+                        <flux:text class="text-sm text-zinc-500">Faturamento: R$ {{ number_format((float) $faturamentoMensal, 2, ',', '.') }}/mês</flux:text>
+                    @endif
+                    @if ($documento !== '')
+                        <flux:text class="text-sm text-zinc-500">{{ strtoupper($documentoTipo) }}: {{ $documento }}</flux:text>
+                    @endif
                 </div>
 
                 <div class="flex flex-col gap-1 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">

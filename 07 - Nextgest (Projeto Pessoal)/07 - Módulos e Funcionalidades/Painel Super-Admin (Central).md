@@ -16,8 +16,10 @@
   impersonação de suporte, reset de 2FA do Dono, **Plano** (Básico/Profissional/Nextgest — D55) e
   **Ajuste fino de recursos** (switches). Ver [[Planos (catálogo e aplicação)]] e
   [[Recursos por Tenant (Feature Flags)]].
-- **Onboarding** (`App\Livewire\Admin\OnboardingEstabelecimento`): wizard de **6 etapas**
-  (inclui a etapa **Plano** — D55). Ver [[Onboarding Guiado de Estabelecimento]].
+- **Onboarding** (`App\Livewire\Admin\OnboardingEstabelecimento`): wizard de **7 etapas** (Identidade →
+  Responsável → **Estabelecimento** → Funcionamento → Aparência → Plano → Revisão; D55/D56). Grava o
+  cadastro central (`estabelecimentos`). Ver [[Onboarding Guiado de Estabelecimento]] e
+  [[Cadastro Central do Estabelecimento]].
 
 ## Identidade visual (Fase 0 — D54)
 Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucional)]]):

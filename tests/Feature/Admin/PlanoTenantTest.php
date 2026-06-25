@@ -66,10 +66,10 @@ it('não avança da etapa Plano sem selecionar um plano', function () {
     $this->actingAs(admin(), 'admin');
 
     Livewire::test(Onboarding::class)
-        ->set('etapa', 5)
+        ->set('etapa', 6) // Plano virou a etapa 6 (D56)
         ->call('proximo')
         ->assertHasErrors('plano')
-        ->assertSet('etapa', 5);
+        ->assertSet('etapa', 6);
 });
 
 it('a revisão mostra o plano escolhido e os recursos inclusos', function () {
@@ -77,7 +77,7 @@ it('a revisão mostra o plano escolhido e os recursos inclusos', function () {
 
     Livewire::test(Onboarding::class)
         ->set('plano', 'nextgest')
-        ->set('etapa', 6)
+        ->set('etapa', 7) // Revisão virou a etapa 7 (D56)
         ->assertSee('Nextgest')
         ->assertSee('WhatsApp / Lembretes'); // rótulo do recurso whatsapp
 });

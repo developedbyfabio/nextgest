@@ -6,8 +6,12 @@ namespace App\Livewire\Admin;
 
 use App\Livewire\Painel\Equipe\Horarios;
 use App\Models\Configuracao;
+use App\Models\Estabelecimento;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Rules\CelularBr;
+use App\Rules\Cnpj;
+use App\Rules\Cpf;
 use App\Support\Aparencia;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -38,7 +42,7 @@ class OnboardingEstabelecimento extends Component
 {
     use WithFileUploads;
 
-    public const TOTAL_ETAPAS = 6;
+    public const TOTAL_ETAPAS = 7;
 
     public int $etapa = 1;
 
@@ -71,18 +75,49 @@ class OnboardingEstabelecimento extends Component
 
     public bool $slugManual = false;
 
-    // Etapa 2 — responsável (Dono).
+    // Etapa 2 — responsável (Dono). O LOGIN (nome/email/senha) vai para o tenant; o
+    // contato completo do dono (sobrenome/celular/CPF) é fonte de verdade no central (D56).
     public string $donoNome = '';
+
+    public string $donoSobrenome = '';
 
     public string $donoEmail = '';
 
+    public string $donoCelular = '';
+
+    public string $donoCpf = '';
+
     public string $donoSenha = '';
 
-    // Etapa 3 — horário de funcionamento. Lista ordenada (seg..dom).
+    // Etapa 3 — estabelecimento (cadastro central; D56). Endereço/documento/faturamento
+    // são opcionais aqui (completáveis depois na tela "Dados"); nome fantasia é exigido.
+    public string $nomeFantasia = '';
+
+    public string $cep = '';
+
+    public string $logradouro = '';
+
+    public string $numero = '';
+
+    public string $complemento = '';
+
+    public string $bairro = '';
+
+    public string $cidade = '';
+
+    public string $uf = '';
+
+    public ?string $faturamentoMensal = null;
+
+    public string $documentoTipo = '';
+
+    public string $documento = '';
+
+    // Etapa 4 — horário de funcionamento. Lista ordenada (seg..dom).
     /** @var array<int, array{dia:int, rotulo:string, aberto:bool, inicio:string, fim:string}> */
     public array $funcionamento = [];
 
-    // Etapa 4 — aparência.
+    // Etapa 5 — aparência.
     public string $template = '';
 
     public string $cor_principal = '';
@@ -99,7 +134,7 @@ class OnboardingEstabelecimento extends Component
 
     public $fundoUpload = null;
 
-    // Etapa 5 — plano (slug do catálogo config/planos.php). Sem default: escolha obrigatória.
+    // Etapa 6 — plano (slug do catálogo config/planos.php). Sem default: escolha obrigatória.
     public string $plano = '';
 
     public function mount(): void
@@ -172,7 +207,10 @@ class OnboardingEstabelecimento extends Component
 
     public function proximo(): void
     {
-        if ($this->etapa === 3) {
+        $this->normalizarOpcionais();
+
+        if ($this->etapa === 4) {
+            // Funcionamento (validação própria — não é regra de form).
             if (! $this->validarFuncionamento()) {
                 return;
             }
@@ -182,6 +220,20 @@ class OnboardingEstabelecimento extends Component
 
         if ($this->etapa < self::TOTAL_ETAPAS) {
             $this->etapa++;
+        }
+
+        // Ao entrar na etapa Estabelecimento, pré-preenche o nome fantasia com o nome
+        // do negócio (Identidade), se ainda estiver vazio — o operador pode ajustar.
+        if ($this->etapa === 3 && $this->nomeFantasia === '') {
+            $this->nomeFantasia = $this->nome;
+        }
+    }
+
+    /** Campo de faturamento vazio ('') vira null (evita falhar a regra `numeric`). */
+    protected function normalizarOpcionais(): void
+    {
+        if ($this->faturamentoMensal === '') {
+            $this->faturamentoMensal = null;
         }
     }
 
@@ -219,10 +271,28 @@ class OnboardingEstabelecimento extends Component
             ],
             2 => [
                 'donoNome' => ['required', 'string', 'max:255'],
+                'donoSobrenome' => ['required', 'string', 'max:255'],
                 'donoEmail' => ['required', 'string', 'email', 'max:255'],
+                'donoCelular' => ['required', 'string', new CelularBr],
+                'donoCpf' => ['required', 'string', new Cpf],
                 'donoSenha' => ['required', 'string', 'min:8'],
             ],
-            4 => [
+            3 => [
+                // Estabelecimento (central). Nome fantasia exigido; endereço/documento/
+                // faturamento opcionais (completáveis depois na tela "Dados").
+                'nomeFantasia' => ['required', 'string', 'max:255'],
+                'cep' => ['nullable', 'string', 'max:9'],
+                'logradouro' => ['nullable', 'string', 'max:255'],
+                'numero' => ['nullable', 'string', 'max:20'],
+                'complemento' => ['nullable', 'string', 'max:255'],
+                'bairro' => ['nullable', 'string', 'max:255'],
+                'cidade' => ['nullable', 'string', 'max:255'],
+                'uf' => ['nullable', 'string', 'max:2'],
+                'faturamentoMensal' => ['nullable', 'numeric', 'min:0'],
+                'documentoTipo' => ['nullable', Rule::in(['cpf', 'cnpj']), 'required_with:documento'],
+                'documento' => $this->regraDocumento(),
+            ],
+            5 => [
                 'cor_principal' => $hex,
                 'cor_secundaria' => $hex,
                 'fonte' => ['required', 'string', Rule::in(array_keys(Aparencia::FONTES))],
@@ -231,11 +301,21 @@ class OnboardingEstabelecimento extends Component
                 'headerUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
                 'fundoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             ],
-            5 => [
+            6 => [
                 // Plano obrigatório, só chaves do catálogo (config/planos.php).
                 'plano' => ['required', 'string', Rule::in(array_keys(config('planos', [])))],
             ],
             default => [],
+        };
+    }
+
+    /** Regra do documento conforme o tipo escolhido (validado só se preenchido). */
+    protected function regraDocumento(): array
+    {
+        return match ($this->documentoTipo) {
+            'cpf' => ['nullable', 'string', new Cpf],
+            'cnpj' => ['nullable', 'string', new Cnpj],
+            default => ['nullable', 'string'],
         };
     }
 
@@ -247,6 +327,7 @@ class OnboardingEstabelecimento extends Component
             'slug.unique' => 'Já existe um estabelecimento com este slug.',
             'plano.required' => 'Selecione um plano.',
             'plano.in' => 'Selecione um plano.',
+            'documentoTipo.required_with' => 'Escolha o tipo (CPF ou CNPJ) do documento informado.',
         ];
     }
 
@@ -254,8 +335,16 @@ class OnboardingEstabelecimento extends Component
     {
         return [
             'donoNome' => 'nome',
+            'donoSobrenome' => 'sobrenome',
             'donoEmail' => 'e-mail',
+            'donoCelular' => 'celular',
+            'donoCpf' => 'CPF',
             'donoSenha' => 'senha',
+            'nomeFantasia' => 'nome fantasia',
+            'faturamentoMensal' => 'faturamento mensal',
+            'documento' => 'documento',
+            'documentoTipo' => 'tipo de documento',
+            'uf' => 'UF',
         ];
     }
 
@@ -334,15 +423,24 @@ class OnboardingEstabelecimento extends Component
     {
         abort_unless(auth('admin')->check(), 403);
 
-        // Revalida tudo (defesa: o cliente pode ter pulado etapas).
+        $this->normalizarOpcionais();
+
+        // Revalida tudo (defesa: o cliente pode ter pulado etapas) — identidade,
+        // responsável, estabelecimento, aparência e plano. Funcionamento é à parte.
         $this->validate(
-            array_merge($this->regrasEtapa(1), $this->regrasEtapa(2), $this->regrasEtapa(4), $this->regrasEtapa(5)),
+            array_merge(
+                $this->regrasEtapa(1),
+                $this->regrasEtapa(2),
+                $this->regrasEtapa(3),
+                $this->regrasEtapa(5),
+                $this->regrasEtapa(6),
+            ),
             $this->mensagens(),
             $this->atributos(),
         );
 
         if (! $this->validarFuncionamento()) {
-            $this->etapa = 3;
+            $this->etapa = 4;
 
             return null;
         }
@@ -390,6 +488,28 @@ class OnboardingEstabelecimento extends Component
                 ['valor' => json_encode($this->funcionamentoParaSalvar())],
             );
         });
+
+        // 3) Cadastro CENTRAL (1:1) — fonte de verdade do admin/cobrança (D56).
+        //    Documentos/celular/CPF/CEP gravados normalizados (só dígitos).
+        Estabelecimento::create([
+            'tenant_id' => $tenant->getKey(),
+            'nome_fantasia' => $this->nomeFantasia !== '' ? $this->nomeFantasia : $this->nome,
+            'cep' => Estabelecimento::soDigitos($this->cep),
+            'logradouro' => $this->logradouro ?: null,
+            'numero' => $this->numero ?: null,
+            'complemento' => $this->complemento ?: null,
+            'bairro' => $this->bairro ?: null,
+            'cidade' => $this->cidade ?: null,
+            'uf' => $this->uf !== '' ? mb_strtoupper($this->uf) : null,
+            'faturamento_mensal' => $this->faturamentoMensal !== null && $this->faturamentoMensal !== '' ? $this->faturamentoMensal : null,
+            'documento_tipo' => $this->documento !== '' ? ($this->documentoTipo ?: null) : null,
+            'documento' => $this->documento !== '' ? Estabelecimento::soDigitos($this->documento) : null,
+            'dono_nome' => $this->donoNome,
+            'dono_sobrenome' => $this->donoSobrenome,
+            'dono_email' => $this->donoEmail,
+            'dono_celular' => Estabelecimento::soDigitos($this->donoCelular),
+            'dono_cpf' => Estabelecimento::soDigitos($this->donoCpf),
+        ]);
 
         session()->flash('onboarding_sucesso', "Estabelecimento \"{$this->nome}\" criado com sucesso.");
 

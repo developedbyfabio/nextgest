@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\Recurso;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Log;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -174,5 +175,14 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'is_string',
         ));
         $this->save();
+    }
+
+    /**
+     * Cadastro central (1:1) do estabelecimento — fonte de verdade do admin/cobrança (D56).
+     * Pode não existir para tenants antigos (criados antes da camada `estabelecimentos`).
+     */
+    public function estabelecimento(): HasOne
+    {
+        return $this->hasOne(Estabelecimento::class, 'tenant_id');
     }
 }

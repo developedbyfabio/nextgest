@@ -797,3 +797,37 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   troca re-sincroniza; sem-plano não muta; **gating real por HTTP**: Nextgest libera `/painel/clube`,
   Básico → 404). Suíte verde. **Dev apenas — sem deploy.** Em produção, o tenant real precisará ter o
   `plano` definido manualmente (com backup), fora desta fatia.
+
+---
+
+## D56 — Camada central `estabelecimentos` (1:1 com tenants) + validadores BR + onboarding ampliado
+> Fase 3a (fundação + captura). Tabela CENTRAL aditiva (não é migration de tenant). O LOGIN do dono
+> continua no tenant (`users`); o cadastro completo (admin/cobrança) nasce no central. A tela "Dados"
+> (ler/editar + criar sob demanda p/ tenants antigos) é a 3b. Ver
+> [[Cadastro Central do Estabelecimento]] e [[Mapeamento Central x Tenant (auditoria pré-planos)]].
+- **Tabela `estabelecimentos`** (central, FK `tenant_id` string → `tenants.id`, **unique**; cascade
+  on delete). Quase tudo nullable (o onboarding exige na captura; a 3b completa depois). Campos:
+  estabelecimento (`nome_fantasia`, endereço `cep/logradouro/numero/complemento/bairro/cidade/uf`,
+  `faturamento_mensal` decimal, `documento_tipo` cpf|cnpj, `documento`) + contato do dono
+  (`dono_nome`, `dono_sobrenome`, `dono_email`, `dono_celular`, `dono_cpf`). Documentos/celular/CPF/CEP
+  guardados **normalizados (só dígitos)** via `Estabelecimento::soDigitos()`.
+- **Model `App\Models\Estabelecimento`** usa **`CentralConnection`** (stancl) — mora SEMPRE na central,
+  mesmo se consultado dentro de um tenant. `Tenant::estabelecimento()` (hasOne) — pode ser null em
+  tenants antigos.
+- **Validadores in-house** (sem pacote novo — rede de build restrita): `App\Rules\Cpf`, `App\Rules\Cnpj`,
+  `App\Rules\CelularBr` (conferem dígitos verificadores / DDD + 8–9 dígitos; aceitam máscara, normalizam
+  para dígitos). Reusáveis na 3b.
+- **Onboarding 6→7 etapas:** Identidade → Responsável → **Estabelecimento** → Funcionamento → Aparência
+  → Plano → Revisão. Responsável ganhou **sobrenome, celular, CPF** (obrigatórios, validados). Nova
+  etapa **Estabelecimento** (nome fantasia obrigatório, pré-preenchido pelo nome; endereço/faturamento/
+  documento opcionais, documento validado se preenchido). Ao confirmar, grava o registro central ligado
+  ao tenant (além de criar o Dono no tenant como antes, com `deve_trocar_senha`).
+- **Criação rápida** (`Tenants::criar`) grava o central mínimo (`tenant_id` + `nome_fantasia`); o resto
+  fica nulo (editável na 3b). `criarDono` faz **backfill** leve do contato (só campos vazios).
+- **Observação (fora de escopo):** o e-mail de login vive em 2 lugares (tenant `users.email` e central
+  `dono_email`); se o login mudar depois, pode divergir do central — reconciliação fica para fase futura.
+- **Testes:** `EstabelecimentoTest` (validadores; captura central no onboarding; criação rápida; backfill;
+  relação/normalização) + ajustes de renumeração em `OnboardingTest`/`PlanoTenantTest`. Suíte 490/490.
+  Validado ponta-a-ponta no dev (tenant `fase3ademo` criado pelas 7 etapas; registro central gravado com
+  dígitos normalizados). **Sem deploy** — em produção a migration roda com **backup antes** e o tenant
+  real ganha o registro pela tela Dados (3b).
