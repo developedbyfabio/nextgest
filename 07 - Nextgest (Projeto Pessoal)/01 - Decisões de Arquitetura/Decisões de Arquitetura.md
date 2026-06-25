@@ -659,6 +659,13 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   No load do portal (`Portal\Home::mount`), se há um avaliável com popup ainda não exibido → marca a
   coluna e abre o modal (**uma vez**). **Ignorar** só fecha (não cria avaliação); o atendimento
   segue avaliável pelo **histórico**.
+- **Refinamento (popup SÓ do mais recente — anti-bombardeio):** `mount` pega **o atendimento concluído
+  MAIS RECENTE** (`orderByDesc('data_hora_inicio')->first()`) e SÓ mostra o popup se ELE estiver não
+  avaliado e sem popup exibido. Se o mais recente já foi avaliado/ignorado → **nenhum popup** (não
+  "promove" os anteriores). Antes iterava pelos sem-popup e mostrava um a cada acesso (cansativo).
+  Os antigos pendentes ficam avaliáveis **apenas pelo histórico**; um atendimento concluído **mais
+  novo** vira o do popup (uma vez). Teste-chave: recente ignorado/avaliado + antigos pendentes →
+  `mostrarAvaliacao=false`.
 - **Mesmo modal** para popup e histórico (sem duplicar): `abrirAvaliacao(id)` / `salvarAvaliacao` /
   `ignorarAvaliacao` no `Portal\Home`. Estrelas clicáveis (Alpine hover/seleção, `role=radio`,
   acessível) + comentário. Histórico: avaliado → `x-portal.estrelas` (read-only) + comentário; não

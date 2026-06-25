@@ -27,14 +27,15 @@ beforeEach(function () {
     $this->cliente = Cliente::create(['nome' => 'Maria', 'telefone' => '11', 'email' => 'maria@aval.test']);
 });
 
-function atendimento(Cliente $cliente, $self, string $status = 'concluido', bool $popupVisto = false): Agendamento
+function atendimento(Cliente $cliente, $self, string $status = 'concluido', bool $popupVisto = false, ?Carbon $quando = null): Agendamento
 {
+    $quando ??= Carbon::now()->subDays(1)->setTime(10, 0);
     $ag = Agendamento::create([
         'unidade_id' => $self->unidade->id,
         'cliente_id' => $cliente->id,
         'profissional_id' => $self->prof->id,
-        'data_hora_inicio' => Carbon::now()->subDays(1)->setTime(10, 0),
-        'data_hora_fim' => Carbon::now()->subDays(1)->setTime(10, 30),
+        'data_hora_inicio' => $quando,
+        'data_hora_fim' => $quando->copy()->addMinutes(30),
         'status' => $status,
         'origem' => 'cliente',
         'valor_total' => 40,
@@ -150,4 +151,71 @@ it('não deixa avaliar atendimento NÃO concluído', function () {
 
     expect(fn () => Livewire::test(Home::class)->call('abrirAvaliacao', $ag->id))
         ->toThrow(ModelNotFoundException::class);
+});
+
+// --- D51 refinamento: popup SÓ do atendimento mais recente ---
+
+it('popup aparece só para o MAIS RECENTE (não para os antigos)', function () {
+    $antigo = atendimento($this->cliente, $this, quando: Carbon::now()->subDays(10)->setTime(9, 0));
+    $recente = atendimento($this->cliente, $this, quando: Carbon::now()->subDays(1)->setTime(9, 0));
+    $this->actingAs($this->cliente, 'cliente');
+
+    Livewire::test(Home::class)
+        ->assertSet('mostrarAvaliacao', true)
+        ->assertSet('avaliandoId', $recente->id); // o recente, nunca o antigo
+});
+
+it('TESTE-CHAVE (sem bombardeio): recente IGNORADO → nenhum popup, mesmo com antigos pendentes', function () {
+    // Antigo pendente (sem popup, não avaliado) — NÃO pode ser promovido.
+    atendimento($this->cliente, $this, quando: Carbon::now()->subDays(10)->setTime(9, 0));
+    // Mais recente já com popup exibido (ignorado).
+    atendimento($this->cliente, $this, popupVisto: true, quando: Carbon::now()->subDays(1)->setTime(9, 0));
+    $this->actingAs($this->cliente, 'cliente');
+
+    Livewire::test(Home::class)->assertSet('mostrarAvaliacao', false);
+});
+
+it('sem bombardeio: recente já AVALIADO → nenhum popup, mesmo com antigos pendentes', function () {
+    atendimento($this->cliente, $this, quando: Carbon::now()->subDays(10)->setTime(9, 0)); // antigo pendente
+    $recente = atendimento($this->cliente, $this, quando: Carbon::now()->subDays(1)->setTime(9, 0));
+    Avaliacao::create([
+        'agendamento_id' => $recente->id, 'cliente_id' => $this->cliente->id,
+        'profissional_id' => $this->prof->id, 'unidade_id' => $this->unidade->id, 'nota' => 5,
+    ]);
+    $this->actingAs($this->cliente, 'cliente');
+
+    Livewire::test(Home::class)->assertSet('mostrarAvaliacao', false);
+});
+
+it('surgindo um atendimento MAIS NOVO, ele vira o do popup (uma vez)', function () {
+    // Cenário: recente anterior já ignorado; antigo pendente; nada de popup...
+    atendimento($this->cliente, $this, quando: Carbon::now()->subDays(10)->setTime(9, 0));
+    atendimento($this->cliente, $this, popupVisto: true, quando: Carbon::now()->subDays(2)->setTime(9, 0));
+    $this->actingAs($this->cliente, 'cliente');
+    Livewire::test(Home::class)->assertSet('mostrarAvaliacao', false);
+
+    // ...até surgir um concluído MAIS NOVO → ele ganha o popup.
+    $novo = atendimento($this->cliente, $this, quando: Carbon::now()->subHours(1));
+    Livewire::test(Home::class)
+        ->assertSet('mostrarAvaliacao', true)
+        ->assertSet('avaliandoId', $novo->id);
+
+    // Marcado como exibido → não reaparece.
+    expect($novo->fresh()->avaliacao_popup_exibido_em)->not->toBeNull();
+    Livewire::test(Home::class)->assertSet('mostrarAvaliacao', false);
+});
+
+it('histórico continua avaliando ANTIGOS mesmo sem popup', function () {
+    $antigo = atendimento($this->cliente, $this, quando: Carbon::now()->subDays(10)->setTime(9, 0));
+    atendimento($this->cliente, $this, popupVisto: true, quando: Carbon::now()->subDays(1)->setTime(9, 0)); // recente tratado
+    $this->actingAs($this->cliente, 'cliente');
+
+    Livewire::test(Home::class)
+        ->assertSet('mostrarAvaliacao', false) // sem popup
+        ->call('abrirAvaliacao', $antigo->id)  // mas o antigo é avaliável pelo histórico
+        ->set('nota', 4)
+        ->call('salvarAvaliacao')
+        ->assertHasNoErrors();
+
+    expect(Avaliacao::where('agendamento_id', $antigo->id)->value('nota'))->toBe(4);
 });

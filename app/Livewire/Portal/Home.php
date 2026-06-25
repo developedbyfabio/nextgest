@@ -39,9 +39,11 @@ class Home extends Component
     public string $comentario = '';
 
     /**
-     * Ao carregar: se houver um atendimento concluído AVALIÁVEL cujo popup ainda
-     * não foi exibido, abre o modal (uma vez) e marca o popup como exibido. Ignorar
-     * não cria avaliação; o atendimento segue avaliável pelo histórico.
+     * Ao carregar: o popup aparece SÓ para o atendimento concluído MAIS RECENTE — e
+     * apenas se ele ainda não foi avaliado E o popup ainda não foi exibido. Se o mais
+     * recente já foi tratado (avaliado/ignorado), NENHUM popup aparece (não promove os
+     * anteriores — evita o bombardeio). Os atendimentos antigos ficam avaliáveis só
+     * pelo histórico. Marca `avaliacao_popup_exibido_em` ao exibir (uma vez).
      */
     public function mount(): void
     {
@@ -51,16 +53,18 @@ class Home extends Component
             return;
         }
 
-        $pendente = Agendamento::where('cliente_id', $cliente->id)
+        // SÓ o mais recente concluído é candidato a popup (sem filtrar por popup/avaliação).
+        $maisRecente = Agendamento::where('cliente_id', $cliente->id)
             ->where('status', 'concluido')
-            ->whereNull('avaliacao_popup_exibido_em')
-            ->whereDoesntHave('avaliacao')
             ->orderByDesc('data_hora_inicio')
             ->first();
 
-        if ($pendente) {
-            $pendente->forceFill(['avaliacao_popup_exibido_em' => now()])->save();
-            $this->avaliandoId = $pendente->id;
+        // Elegível = mais recente, não avaliado e sem popup exibido. Senão, sem popup.
+        if ($maisRecente
+            && $maisRecente->avaliacao_popup_exibido_em === null
+            && ! $maisRecente->avaliacao()->exists()) {
+            $maisRecente->forceFill(['avaliacao_popup_exibido_em' => now()])->save();
+            $this->avaliandoId = $maisRecente->id;
             $this->mostrarAvaliacao = true;
         }
     }
