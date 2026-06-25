@@ -13,6 +13,7 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -32,6 +33,9 @@ class TenantDetalhe extends Component
     /** Estado dos toggles de recurso: [slug => bool]. Pré-carregado do central no mount. */
     public array $recursos = [];
 
+    /** Plano selecionado (slug do catálogo). '' = não definido (tenant antigo/personalizado). */
+    public string $plano = '';
+
     public function mount(string $tenantId): void
     {
         abort_unless(auth('admin')->check(), 403);
@@ -43,6 +47,36 @@ class TenantDetalhe extends Component
         foreach (Recurso::cases() as $recurso) {
             $this->recursos[$recurso->value] = in_array($recurso->value, $ativos, true);
         }
+
+        // Plano atual NORMALIZADO ('' se não definido) — NÃO muta nada (D55).
+        $this->plano = (string) ($this->tenant->planoAtual() ?? '');
+    }
+
+    /**
+     * Troca o plano do estabelecimento: reaplica os recursos para o padrão do plano
+     * escolhido (D55). Recarrega o Tenant COMPLETO antes de salvar (regra de ouro do
+     * `data`: preserva `segmento`/outros). Rebaixar só esconde o acesso — não apaga dados.
+     */
+    public function trocarPlano(): void
+    {
+        abort_unless(auth('admin')->check(), 403);
+
+        $this->validate(
+            ['plano' => ['required', 'string', Rule::in(array_keys(config('planos', [])))]],
+            ['plano.required' => 'Selecione um plano.', 'plano.in' => 'Selecione um plano.'],
+        );
+
+        $tenant = Tenant::findOrFail($this->tenant->getKey());
+        $tenant->aplicarPlano($this->plano);
+        $this->tenant = $tenant;
+
+        // Re-sincroniza os toggles de "ajuste fino" com os recursos do plano aplicado.
+        $ativos = $tenant->recursosAtivos();
+        foreach (Recurso::cases() as $recurso) {
+            $this->recursos[$recurso->value] = in_array($recurso->value, $ativos, true);
+        }
+
+        Flux::toast('Plano aplicado. Recursos redefinidos para o padrão do plano.', variant: 'success');
     }
 
     /**
@@ -189,6 +223,7 @@ class TenantDetalhe extends Component
 
         return view('livewire.admin.tenant-detalhe', [
             'resumo' => $resumo,
+            'planos' => config('planos', []),
         ]);
     }
 }

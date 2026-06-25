@@ -19,7 +19,7 @@ no super-admin, com **prévia ao vivo** do portal do cliente ao lado.
 - Rota: `GET /admin/estabelecimentos/novo` (slug `novo` é reservado em
   `config/nextgest.php`).
 
-## Etapas do wizard (5)
+## Etapas do wizard (6)
 1. **Identidade do negócio** — nome, descrição, **segmento** e slug.
 2. **Responsável (Dono)** — nome, e-mail, senha (mín. 8).
 3. **Horário de funcionamento** — por dia da semana (aberto/fechado, início/fim). Usa o
@@ -28,7 +28,9 @@ no super-admin, com **prévia ao vivo** do portal do cliente ao lado.
    imagem de fundo** (PNG/JPG/WebP, até 5 MB), com prévia. As 3 imagens seguem o mesmo
    tratamento da aba de Aparência (store no disco do tenant, `urlArquivo`) e aparecem no
    portal (capa no hero, fundo no `<body>`). Ver [[Identidade Visual do Estabelecimento (Tema)]].
-5. **Revisão** — confirma e provisiona.
+5. **Plano** (D55) — escolhe Básico/Profissional/Nextgest (cards lendo `config/planos.php`);
+   **seleção obrigatória**. Define os **recursos** liberados. Ver [[Planos (catálogo e aplicação)]].
+6. **Revisão** — mostra plano + recursos inclusos; confirma e provisiona.
 
 ## Segmentos e sugestão de template
 `barbearia`, `salao_feminino`, `salao_masculino`, `estetica`, `outro`. O segmento
@@ -45,6 +47,8 @@ travar a escolha do operador:
 
 ## O que acontece ao confirmar
 - **Provisiona o tenant** (dispara CreateDatabase → MigrateDatabase → SeedDatabase).
+- **Aplica o plano** escolhido (`Tenant::aplicarPlano()`) → grava `plano` + `recursos` no `data`
+  central (preserva o `segmento`). Ver [[Planos (catálogo e aplicação)]].
 - **Cria o Dono** (guard `web`, papel Dono) com a **senha inicial** (hasheada) e
   **`deve_trocar_senha = true`** → no 1º login é forçado a definir uma senha própria. Ver
   [[Senhas (1o login e self-service)]].
@@ -52,8 +56,8 @@ travar a escolha do operador:
 - **Semeia o horário** de funcionamento.
 
 ## Onde cada dado é gravado
-- **Segmento** → coluna JSON `data` da tabela `tenants` (banco **central**) — metadado
-  consultável no `/admin` sem inicializar o tenant (D33).
+- **Segmento** e **plano**/`recursos` → coluna JSON `data` da tabela `tenants` (banco **central**) —
+  metadados consultáveis no `/admin` sem inicializar o tenant (D33, D55).
 - **Descrição** e **horário de funcionamento** → `configuracoes` do **tenant** (chaves
   `descricao` e `horario_funcionamento`, D34).
 - **Aparência** → `configuracoes.aparencia` do tenant (D28).

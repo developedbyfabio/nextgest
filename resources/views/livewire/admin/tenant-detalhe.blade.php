@@ -65,11 +65,69 @@
         @endforeach
     </div>
 
-    {{-- Recursos (módulos à la carte) — flag no banco central, por estabelecimento --}}
+    {{-- Plano (D55): nome que dirige os recursos. Trocar reaplica o padrão do plano. --}}
     <div class="flex flex-col gap-3">
         <div>
-            <flux:heading size="lg">Recursos</flux:heading>
-            <flux:subheading>Ligue ou desligue módulos deste estabelecimento. Padrão: tudo desligado.</flux:subheading>
+            <flux:heading size="lg">Plano</flux:heading>
+            <flux:subheading>
+                @if ($plano)
+                    Plano atual: <strong>{{ $planos[$plano]['nome'] ?? $plano }}</strong>. Trocar redefine os recursos para o padrão do plano.
+                @else
+                    Plano: <strong>não definido</strong> (recursos personalizados). Escolha um plano para padronizar os recursos — nada muda até aplicar.
+                @endif
+            </flux:subheading>
+        </div>
+
+        <flux:card class="flex flex-col gap-4">
+            <div class="grid gap-4 sm:grid-cols-3">
+                @foreach ($planos as $chave => $p)
+                    <button type="button" wire:click="$set('plano', '{{ $chave }}')"
+                        @class([
+                            'ng-card-interactive flex flex-col gap-3 p-4 text-left',
+                            'ring-2 ring-indigo-500' => $plano === $chave,
+                        ])>
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:heading size="sm">{{ $p['nome'] }}</flux:heading>
+                            @if ($plano === $chave)
+                                <flux:icon name="check-circle" class="size-5 shrink-0 text-indigo-500" />
+                            @endif
+                        </div>
+                        <div class="text-xl font-bold tracking-tight">
+                            R$ {{ number_format($p['preco_mes'], 2, ',', '.') }}<span class="text-sm font-normal text-zinc-500">/mês</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            @forelse ($p['recursos'] as $slug)
+                                <flux:badge color="green" size="sm">{{ \App\Enums\Recurso::from($slug)->rotulo() }}</flux:badge>
+                            @empty
+                                <flux:badge color="zinc" size="sm">Sem módulos extras</flux:badge>
+                            @endforelse
+                        </div>
+                    </button>
+                @endforeach
+            </div>
+
+            <flux:callout icon="exclamation-triangle">
+                <flux:callout.text>
+                    Aplicar um plano <strong>redefine</strong> os recursos para o padrão do plano. Rebaixar
+                    apenas esconde o acesso aos módulos retirados — os dados (ex.: clube) permanecem no estabelecimento.
+                </flux:callout.text>
+            </flux:callout>
+
+            <flux:error name="plano" />
+
+            <div class="flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                <flux:button wire:click="trocarPlano" wire:confirm="Aplicar este plano? Os recursos serão redefinidos para o padrão do plano." variant="primary" icon="check">Aplicar plano</flux:button>
+            </div>
+        </flux:card>
+    </div>
+
+    {{-- Ajuste fino de recursos (módulos à la carte) — flag no banco central, por
+         estabelecimento. Independente do plano: aqui dá pra ligar/desligar um módulo
+         pontual. Atenção: TROCAR O PLANO redefine os recursos para o padrão do plano. --}}
+    <div class="flex flex-col gap-3">
+        <div>
+            <flux:heading size="lg">Ajuste fino de recursos</flux:heading>
+            <flux:subheading>Ligue ou desligue módulos pontualmente. Trocar o plano acima redefine os recursos para o padrão do plano.</flux:subheading>
         </div>
 
         <flux:card class="flex flex-col gap-4">

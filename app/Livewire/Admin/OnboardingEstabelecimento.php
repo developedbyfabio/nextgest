@@ -38,7 +38,7 @@ class OnboardingEstabelecimento extends Component
 {
     use WithFileUploads;
 
-    public const TOTAL_ETAPAS = 5;
+    public const TOTAL_ETAPAS = 6;
 
     public int $etapa = 1;
 
@@ -98,6 +98,9 @@ class OnboardingEstabelecimento extends Component
     public $headerUpload = null;
 
     public $fundoUpload = null;
+
+    // Etapa 5 — plano (slug do catálogo config/planos.php). Sem default: escolha obrigatória.
+    public string $plano = '';
 
     public function mount(): void
     {
@@ -228,6 +231,10 @@ class OnboardingEstabelecimento extends Component
                 'headerUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
                 'fundoUpload' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             ],
+            5 => [
+                // Plano obrigatório, só chaves do catálogo (config/planos.php).
+                'plano' => ['required', 'string', Rule::in(array_keys(config('planos', [])))],
+            ],
             default => [],
         };
     }
@@ -238,6 +245,8 @@ class OnboardingEstabelecimento extends Component
             'slug.regex' => 'O slug deve ter apenas letras minúsculas, números e hífen, começando por letra ou número.',
             'slug.not_in' => 'Este slug é reservado e não pode ser usado.',
             'slug.unique' => 'Já existe um estabelecimento com este slug.',
+            'plano.required' => 'Selecione um plano.',
+            'plano.in' => 'Selecione um plano.',
         ];
     }
 
@@ -327,7 +336,7 @@ class OnboardingEstabelecimento extends Component
 
         // Revalida tudo (defesa: o cliente pode ter pulado etapas).
         $this->validate(
-            array_merge($this->regrasEtapa(1), $this->regrasEtapa(2), $this->regrasEtapa(4)),
+            array_merge($this->regrasEtapa(1), $this->regrasEtapa(2), $this->regrasEtapa(4), $this->regrasEtapa(5)),
             $this->mensagens(),
             $this->atributos(),
         );
@@ -347,6 +356,10 @@ class OnboardingEstabelecimento extends Component
             'ativo' => true,
             'segmento' => $this->segmento,
         ]);
+
+        // 1b) Aplica o plano escolhido: seta `plano` + os `recursos` do catálogo (D55).
+        //     Só atributos virtuais → preserva o `segmento` recém-gravado (regra de ouro).
+        $tenant->aplicarPlano($this->plano);
 
         // 2) No contexto do tenant: Dono + aparência (+ logo) + descrição + horário.
         $tenant->run(function () {
@@ -392,6 +405,7 @@ class OnboardingEstabelecimento extends Component
             'templateSugerido' => self::SUGESTAO_TEMPLATE[$this->segmento] ?? null,
             'fontes' => Aparencia::FONTES,
             'aparencia' => $this->aparenciaParaPrevia(),
+            'planos' => config('planos', []),
         ]);
     }
 }

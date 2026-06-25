@@ -12,8 +12,12 @@
   tenants (nome/slug/status/criado) + ações **Editar** (→ `admin.tenant.detalhe`), **Abrir** (portal
   do tenant em nova aba), **Criar dono** (modal), **Inativar/Ativar**, busca, "Criação rápida" e
   "Novo estabelecimento" (wizard de onboarding — ver [[Onboarding Guiado de Estabelecimento]]).
-- **Detalhe do tenant** (`App\Livewire\Admin\TenantDetalhe`) e **Onboarding**
-  (`App\Livewire\Admin\OnboardingEstabelecimento`).
+- **Detalhe/Editar do tenant** (`App\Livewire\Admin\TenantDetalhe`): resumo de alto nível,
+  impersonação de suporte, reset de 2FA do Dono, **Plano** (Básico/Profissional/Nextgest — D55) e
+  **Ajuste fino de recursos** (switches). Ver [[Planos (catálogo e aplicação)]] e
+  [[Recursos por Tenant (Feature Flags)]].
+- **Onboarding** (`App\Livewire\Admin\OnboardingEstabelecimento`): wizard de **6 etapas**
+  (inclui a etapa **Plano** — D55). Ver [[Onboarding Guiado de Estabelecimento]].
 
 ## Identidade visual (Fase 0 — D54)
 Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucional)]]):
@@ -27,4 +31,6 @@ Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucion
 
 ## Limites (o que NÃO é deste painel)
 - Não mexe em `MotorDisponibilidade`, agenda, portal nem no painel do tenant (guard `web`/`cliente`).
-- Pendente (próximas fatias): planos do SaaS + cobrança dos estabelecimentos.
+- **Plano nomeado** (recursos liberados) já existe (D55). Pendente (próximas fatias):
+  **faturamento/cobrança** da assinatura do SaaS e **suspensão por pagamento** (estado distinto do
+  "inativo" atual) — ver [[Mapeamento Central x Tenant (auditoria pré-planos)]].

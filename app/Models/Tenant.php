@@ -123,4 +123,56 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
         return in_array($recurso, $this->recursosAtivos(), true);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Plano nomeado (D55) — dirige os recursos
+    |--------------------------------------------------------------------------
+    |
+    | O plano é só um NOME (slug do catálogo config/planos.php) que define o
+    | conjunto de `recursos` ligados. Mora no MESMO JSON `data` (atributo virtual
+    | `plano`, igual a `segmento`/`recursos`). Tenants antigos podem não ter plano
+    | (null) — tratados como "não definido" (recursos personalizados); NUNCA mutar
+    | em massa.
+    |
+    */
+
+    /**
+     * Slug do plano atual, NORMALIZADO: só retorna se for um plano conhecido do
+     * catálogo. `null` = não definido (tenant antigo ou recursos personalizados).
+     */
+    public function planoAtual(): ?string
+    {
+        $chave = $this->plano; // atributo virtual (mora no `data`); pode vir null/lixo
+
+        return is_string($chave) && is_array(config("planos.{$chave}"))
+            ? $chave
+            : null;
+    }
+
+    /**
+     * Aplica um plano do catálogo: seta `plano` + redefine `recursos` para o padrão
+     * do plano. Persiste SÓ via atributos virtuais (regra de ouro do `data`: nunca
+     * reatribuir `$this->data` inteiro), então `segmento` e demais metadados sobrevivem.
+     *
+     * Rebaixar o plano só ESCONDE o acesso aos recursos retirados — os dados no banco
+     * do tenant (ex.: clube) permanecem. Chave desconhecida lança (o chamador valida antes).
+     *
+     * @throws \InvalidArgumentException quando o plano não existe no catálogo.
+     */
+    public function aplicarPlano(string $chave): void
+    {
+        $plano = config("planos.{$chave}");
+
+        if (! is_array($plano)) {
+            throw new \InvalidArgumentException("Plano desconhecido: {$chave}");
+        }
+
+        $this->plano = $chave;
+        $this->recursos = array_values(array_filter(
+            (array) ($plano['recursos'] ?? []),
+            'is_string',
+        ));
+        $this->save();
+    }
 }

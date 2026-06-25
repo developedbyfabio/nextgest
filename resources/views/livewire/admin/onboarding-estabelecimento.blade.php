@@ -6,7 +6,7 @@
     </x-ng.page-header>
 
     {{-- Stepper --}}
-    @php($passos = [1 => 'Identidade', 2 => 'Responsável', 3 => 'Funcionamento', 4 => 'Aparência', 5 => 'Revisão'])
+    @php($passos = [1 => 'Identidade', 2 => 'Responsável', 3 => 'Funcionamento', 4 => 'Aparência', 5 => 'Plano', 6 => 'Revisão'])
     <div class="flex flex-wrap items-center gap-x-2 gap-y-3">
         @foreach ($passos as $num => $rotulo)
             <button type="button" wire:click="irPara({{ $num }})" @disabled($num >= $etapa)
@@ -169,8 +169,54 @@
         </div>
     @endif
 
-    {{-- ETAPA 5 — Revisão e confirmação --}}
+    {{-- ETAPA 5 — Plano (define os recursos liberados; D55) --}}
     @if ($etapa === 5)
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <flux:heading size="lg">Plano</flux:heading>
+                <flux:text class="text-sm text-zinc-500">Define os módulos liberados para o estabelecimento. Pode ser trocado depois, no detalhe.</flux:text>
+            </div>
+
+            @error('plano')
+                <flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>
+            @enderror
+
+            <div class="grid gap-4 sm:grid-cols-3">
+                @foreach ($planos as $chave => $p)
+                    <button type="button" wire:click="$set('plano', '{{ $chave }}')"
+                        @class([
+                            'ng-card-interactive flex flex-col gap-3 p-4 text-left',
+                            'ring-2 ring-[var(--color-accent)]' => $plano === $chave,
+                        ])>
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:heading size="sm">{{ $p['nome'] }}</flux:heading>
+                            @if ($plano === $chave)
+                                <flux:icon name="check-circle" class="size-5 shrink-0 text-[var(--color-accent)]" />
+                            @endif
+                        </div>
+                        <div class="text-2xl font-bold tracking-tight">
+                            R$ {{ number_format($p['preco_mes'], 2, ',', '.') }}<span class="text-sm font-normal text-zinc-500">/mês</span>
+                        </div>
+                        <flux:separator />
+                        <ul class="flex flex-col gap-1.5 text-sm">
+                            @forelse ($p['recursos'] as $slug)
+                                <li class="flex items-center gap-2">
+                                    <flux:icon name="check" class="size-4 shrink-0 text-green-600" />
+                                    {{ \App\Enums\Recurso::from($slug)->rotulo() }}
+                                </li>
+                            @empty
+                                <li class="text-zinc-500">Recursos essenciais (sem módulos extras)</li>
+                            @endforelse
+                        </ul>
+                    </button>
+                @endforeach
+            </div>
+            <flux:text class="text-xs text-zinc-500">Preço de referência interna do admin. Trocar o plano depois redefine os recursos para o padrão do plano.</flux:text>
+        </div>
+    @endif
+
+    {{-- ETAPA 6 — Revisão e confirmação --}}
+    @if ($etapa === 6)
         <div class="grid gap-8 lg:grid-cols-3">
             <div class="flex flex-col gap-5 lg:col-span-2">
                 <flux:heading size="lg">Revisão</flux:heading>
@@ -181,6 +227,24 @@
                     <flux:text class="text-sm text-zinc-500">Segmento: {{ $segmentos[$segmento] ?? '—' }}</flux:text>
                     @if ($descricao)
                         <flux:text class="text-sm text-zinc-500">{{ $descricao }}</flux:text>
+                    @endif
+                </div>
+
+                {{-- Plano escolhido + recursos inclusos. --}}
+                @php($planoSel = $planos[$plano] ?? null)
+                <div class="flex flex-col gap-1 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                    <flux:heading size="sm">Plano</flux:heading>
+                    @if ($planoSel)
+                        <flux:text><strong>{{ $planoSel['nome'] }}</strong> · R$ {{ number_format($planoSel['preco_mes'], 2, ',', '.') }}/mês</flux:text>
+                        <div class="mt-1 flex flex-wrap gap-1.5">
+                            @forelse ($planoSel['recursos'] as $slug)
+                                <flux:badge color="green" size="sm">{{ \App\Enums\Recurso::from($slug)->rotulo() }}</flux:badge>
+                            @empty
+                                <flux:badge color="zinc" size="sm">Sem módulos extras</flux:badge>
+                            @endforelse
+                        </div>
+                    @else
+                        <flux:text class="text-sm text-zinc-400">Nenhum plano selecionado.</flux:text>
                     @endif
                 </div>
 

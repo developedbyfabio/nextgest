@@ -101,6 +101,7 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
         ->set('donoNome', 'Ana Lumiere')
         ->set('donoEmail', 'ana@studiolumiere.com')
         ->set('donoSenha', 'senha-inicial-123')
+        ->set('plano', 'profissional')
         ->call('confirmar')
         ->assertHasNoErrors()
         ->assertRedirect(route('admin.tenant.detalhe', ['tenantId' => 'studiolumiere']));
@@ -108,7 +109,9 @@ it('confirma e provisiona o tenant completo (banco, dono, tema, horário)', func
     $tenant = Tenant::find('studiolumiere');
     expect($tenant)->not->toBeNull()
         ->and($tenant->nome)->toBe('Studio Lumiere')
-        ->and($tenant->segmento)->toBe('estetica');
+        ->and($tenant->segmento)->toBe('estetica')
+        ->and($tenant->planoAtual())->toBe('profissional')               // plano aplicado (D55)
+        ->and($tenant->recursosAtivos())->toBe(['clube', 'gateway']);    // recursos do plano, segmento preservado
 
     $dados = $tenant->run(function () {
         $dono = User::where('email', 'ana@studiolumiere.com')->first();
@@ -145,6 +148,7 @@ it('faz upload de logo, cabeçalho e fundo no disco do tenant ao confirmar', fun
         ->set('donoNome', 'Dono X')
         ->set('donoEmail', 'dono@barbeariax.com')
         ->set('donoSenha', 'senha-inicial-123')
+        ->set('plano', 'basico')
         ->set('logoUpload', UploadedFile::fake()->image('logo.png', 64, 64))
         ->set('headerUpload', UploadedFile::fake()->image('capa.jpg', 800, 300))
         ->set('fundoUpload', UploadedFile::fake()->image('fundo.webp', 1200, 800))

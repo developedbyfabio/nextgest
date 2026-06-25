@@ -29,12 +29,16 @@ Mercado Pago etc.) são da **Fase 0b**, fora daqui.
     quebra nem liga recurso.
 
 ## Como ligar/desligar (admin)
-- Tela **Detalhes** do estabelecimento (`App\Livewire\Admin\TenantDetalhe`,
-  `/admin/estabelecimentos/{tenantId}`), seção **"Recursos"** com `flux:switch` por
-  recurso + botão **"Salvar recursos"** (ação explícita, guard `admin`).
-- **CRÍTICO:** a escrita grava **só o atributo virtual** (`$tenant->recursos = [...]`),
-  recarregando o tenant completo antes do `save()`. Nunca reatribuir `$tenant->data`
-  inteiro — isso apagaria o `segmento` (eles dividem o mesmo JSON `data`).
+- Tela **Editar** do estabelecimento (`App\Livewire\Admin\TenantDetalhe`,
+  `/admin/estabelecimentos/{tenantId}`). Desde D55, os recursos vêm de **duas vias**:
+  - **Plano** (seção no topo): aplicar um plano redefine os recursos para o padrão do plano.
+    Ver [[Planos (catálogo e aplicação)]].
+  - **"Ajuste fino de recursos"** (a antiga seção "Recursos"): `flux:switch` por recurso +
+    **"Salvar recursos"** (ação explícita, guard `admin`) para um ligar/desligar pontual,
+    independente do plano. **Atenção:** trocar o plano redefine tudo de volta ao padrão do plano.
+- **CRÍTICO:** a escrita grava **só os atributos virtuais** (`$tenant->recursos = [...]`,
+  `$tenant->plano = '...'`), recarregando o tenant completo antes do `save()`. Nunca reatribuir
+  `$tenant->data` inteiro — isso apagaria o `segmento`/`plano` (todos dividem o mesmo JSON `data`).
 
 ## Gating (esconder/bloquear recurso desligado)
 - **Rota:** middleware `recurso:{slug}` (`App\Http\Middleware\VerificaRecurso`, alias em

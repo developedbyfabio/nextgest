@@ -765,3 +765,35 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `#0B1120`); não emite `--cor-*` (central, sem tema de tenant). Verificado por Playwright (login
   admin: logo ok; dashboard/estabelecimentos legíveis em claro e escuro; toggle persiste; "Editar"×3,
   "Detalhes"=0). Tenant/portal inalterados (200). **Sem deploy.**
+
+---
+
+## D55 — Plano nomeado dirige os recursos (catálogo + aplicação + troca + etapa no onboarding)
+> Camada de NOME por cima das feature flags da Fase 0a (D37). Um "plano" liga um conjunto de
+> `recursos` de uma vez. **Sem migração/tabela/seeder/permissão nova** — reusa o `data` central e o
+> gating existente (`recurso:` + `@recurso`). Ver [[Planos (catálogo e aplicação)]] e
+> [[Recursos por Tenant (Feature Flags)]].
+- **Catálogo:** `config/planos.php` (fonte única). Mapa: **Básico=`[]`**,
+  **Profissional=`['clube','gateway']`**, **Nextgest=`['clube','gateway','whatsapp']`**. `preco_mes`
+  é **referência interna do admin** (a landing segue independente; unificação de preço é fase
+  posterior — não é fonte única de preço ainda).
+- **Persistência:** atributo virtual **`plano`** no `Tenant` (mora no JSON `data`, junto de
+  `segmento`/`recursos`). `Tenant::planoAtual()` normaliza (null se não definido ou fora do catálogo).
+- **Aplicação:** `Tenant::aplicarPlano($chave)` seta `plano` + redefine `recursos` para o padrão do
+  plano **só via atributos virtuais** (regra de ouro do `data`: nunca reatribuir `$this->data` inteiro
+  → `segmento` sobrevive). Chave fora do catálogo lança `InvalidArgumentException`.
+- **Onboarding:** wizard passou a **6 etapas** — nova etapa **Plano** entre Aparência (4) e Revisão
+  (6); seleção **obrigatória** (sem default silencioso). A Revisão mostra plano + recursos inclusos.
+  Ao confirmar, chama `aplicarPlano()` no tenant recém-criado.
+- **Troca de plano (Detalhe):** `TenantDetalhe::trocarPlano()` recarrega o tenant completo, reaplica
+  os recursos e re-sincroniza os toggles. Os switches manuais viraram **"Ajuste fino de recursos"**
+  (independentes), com aviso: **trocar o plano redefine os recursos**. Tenant **sem plano** (os atuais)
+  → "Plano: não definido (recursos personalizados)"; nada é mutado em massa.
+- **Rebaixar** (ex.: Nextgest→Básico) só **esconde o acesso** aos módulos retirados — os **dados** no
+  tenant (ex.: clube) permanecem. Como o gating lê `recursos` ao vivo, a troca reflete no painel na
+  hora (menu + rotas).
+- **Testes:** `tests/Feature/Admin/PlanoTenantTest.php` (aplicarPlano + preserva segmento; chave
+  inválida lança; planoAtual normaliza; rebaixar esconde; etapa Plano obrigatória; revisão mostra;
+  troca re-sincroniza; sem-plano não muta; **gating real por HTTP**: Nextgest libera `/painel/clube`,
+  Básico → 404). Suíte verde. **Dev apenas — sem deploy.** Em produção, o tenant real precisará ter o
+  `plano` definido manualmente (com backup), fora desta fatia.
