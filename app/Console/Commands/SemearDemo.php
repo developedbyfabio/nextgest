@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\CategoriaProduto;
 use App\Models\Cliente;
 use App\Models\ComissaoProfissional;
@@ -75,6 +76,7 @@ class SemearDemo extends Command
             $this->comissoesPersonalizadas($servicos, $profissionais);
             $clientes = $this->clientes($senha);
             $this->agendamentos($unidade, $servicos, $profissionais, $clientes);
+            $this->avaliacoes();
             $this->comandas($unidade, $servicos, $profissionais, $clientes);
             $this->historicoVendas($unidade, $profissionais);
             $this->backfillPagamentos($profissionais);
@@ -578,6 +580,46 @@ class SemearDemo extends Command
                 'preco' => $servico->preco,
                 'duracao_minutos' => $servico->duracao_minutos,
             ]);
+        }
+    }
+
+    /**
+     * Avaliações de exemplo (D51) — alguns atendimentos concluídos já avaliados,
+     * para o painel (Prompt 2) ter dados. Idempotente (firstOrCreate por
+     * agendamento). Deixa concluídos sem avaliação de propósito (para o popup
+     * aparecer ao logar como cliente na demo).
+     */
+    private function avaliacoes(): void
+    {
+        $concluidos = Agendamento::where('observacoes', self::MARCA_DEMO)
+            ->where('status', 'concluido')
+            ->whereDoesntHave('avaliacao')
+            ->orderBy('id')
+            ->take(3)
+            ->get();
+
+        $exemplos = [
+            [5, 'Atendimento impecável, voltarei sempre!'],
+            [4, 'Muito bom — só atrasou alguns minutos.'],
+            [5, null],
+        ];
+
+        foreach ($concluidos as $i => $ag) {
+            [$nota, $comentario] = $exemplos[$i % count($exemplos)];
+
+            Avaliacao::firstOrCreate(
+                ['agendamento_id' => $ag->id],
+                [
+                    'cliente_id' => $ag->cliente_id,
+                    'profissional_id' => $ag->profissional_id,
+                    'unidade_id' => $ag->unidade_id,
+                    'nota' => $nota,
+                    'comentario' => $comentario,
+                ],
+            );
+
+            // Popup já considerado exibido para os avaliados (coerência).
+            $ag->update(['avaliacao_popup_exibido_em' => now()]);
         }
     }
 }

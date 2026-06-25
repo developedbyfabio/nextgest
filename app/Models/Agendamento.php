@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Agendamento (o encontro marcado). Vive no banco do TENANT.
@@ -39,6 +40,7 @@ class Agendamento extends Model
         'criado_por_user_id',
         'valor_total',
         'observacoes',
+        'avaliacao_popup_exibido_em',
     ];
 
     protected function casts(): array
@@ -47,6 +49,7 @@ class Agendamento extends Model
             'data_hora_inicio' => 'datetime',
             'data_hora_fim' => 'datetime',
             'valor_total' => 'decimal:2',
+            'avaliacao_popup_exibido_em' => 'datetime',
         ];
     }
 
@@ -68,6 +71,12 @@ class Agendamento extends Model
     public function itens(): HasMany
     {
         return $this->hasMany(AgendamentoServico::class);
+    }
+
+    /** Avaliação do cliente para este atendimento (1 atendimento = 1 avaliação). */
+    public function avaliacao(): HasOne
+    {
+        return $this->hasOne(Avaliacao::class);
     }
 
     /**
