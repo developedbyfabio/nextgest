@@ -854,3 +854,36 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   persiste normalizado; **cria sob demanda** p/ tenant antigo sem duplicar; barra CPF/celular inválidos;
   valida documento; botão na lista). Suíte **497/497**. Verificado no dev: `fase3ademo` (com registro)
   carrega com máscaras; `barbeariateste` (antigo) abre vazio e ganha o registro ao salvar. **Sem deploy.**
+
+---
+
+## D58 — Modelo central de cobrança SaaS: assinatura + faturas + situação (Fase 4a)
+> Cobrança **salão → Nextgest** (≠ Clube, que é cliente → salão, no banco do tenant). Só **modelo de
+> dados + cálculo de situação + backfill** — sem UI de operação, sem geração de faturas, sem gateway,
+> sem bloqueio de login. Tela de Faturamento é a 4b; suspensão/bloqueio é a 4c. Ver
+> [[Cobrança da Assinatura SaaS]].
+- **Tabelas centrais aditivas:** `assinaturas` (1:1 com `tenants`, FK string + unique) e `faturas`
+  (1:N de assinatura, **unique** `assinatura_id`+`competencia`). Migrations de central (rodam com
+  `migrate`, **não** `tenants:migrate`).
+- **Snapshots:** `assinaturas.valor_mensal` e `faturas.valor` guardam o preço no momento — mudar o
+  catálogo (`config/planos.php`) **não** reescreve histórico (testado).
+- **`config/cobranca.php`:** `carencia_dias = 20` (dias após o vencimento em que o acesso continua →
+  "atrasada"; passado isso → "suspensa"), `trial_padrao_dias = 30`.
+- **Regras de vencimento/trial (spec da fase 4):** vencimento por `dia_vencimento` (1–28, clamp p/ mês
+  curto) OU dia da adesão OU `data_primeira_cobranca` combinada. Trial por `trial_dias` OU
+  `data_primeira_cobranca` (que sobrescreve). 1ª cobrança = `data_primeira_cobranca ?? data_inicio +
+  trial_dias`.
+- **Fonte única `Assinatura::situacaoAcesso()`** (consumida por 4b e 4c): `cancelada` (manual) →
+  cancelada; hoje < 1ª cobrança → `em_teste`; sem fatura não paga vencida → `ativa`; fatura não paga
+  mais antiga vencida há 1..carência → `atrasada`; vencida há > carência → `suspensa`. "Vence hoje"
+  ainda **não** é atraso (conta do dia seguinte). Testes de fronteira: dia 20 = atrasada, dia 21 =
+  suspensa; carência lida da config.
+- **Models** `App\Models\{Assinatura,Fatura}` usam `CentralConnection`; `Tenant::assinatura()` (hasOne).
+- **Backfill idempotente** `nextgest:provisionar-assinaturas` (dry-run padrão, `--apply`): cria 1
+  assinatura `em_teste` por tenant sem assinatura (plano = `planoAtual()`, valor = `preco_mes` do
+  catálogo quando conhecido senão 0, `data_inicio` = `created_at`, `trial_dias` = padrão). **Só cria,
+  nunca atualiza/apaga**; rodar 2× não muda nada.
+- **Testes:** `tests/Feature/Cobranca/ModeloCobrancaTest.php` (10) — fronteiras de situação, snapshot,
+  fatura paga não conta, cancelada, override de 1ª cobrança, backfill dry-run/apply/idempotência.
+  Suíte **507/507**. No dev, backfill provisionou os 4 tenants (`em_teste`); 2ª execução criou 0.
+  **Nada de painel/login/portal/Clube tocado. Sem deploy** (em produção: migrations com backup antes).

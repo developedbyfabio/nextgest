@@ -185,4 +185,13 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     {
         return $this->hasOne(Estabelecimento::class, 'tenant_id');
     }
+
+    /**
+     * Assinatura SaaS (1:1) — mensalidade salão → Nextgest (D58). Pode ser null em
+     * tenants ainda não provisionados (ver comando nextgest:provisionar-assinaturas).
+     */
+    public function assinatura(): HasOne
+    {
+        return $this->hasOne(Assinatura::class, 'tenant_id');
+    }
 }

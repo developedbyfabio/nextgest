@@ -36,6 +36,7 @@ Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucion
 
 ## Limites (o que NÃO é deste painel)
 - Não mexe em `MotorDisponibilidade`, agenda, portal nem no painel do tenant (guard `web`/`cliente`).
-- **Plano nomeado** (recursos liberados) já existe (D55). Pendente (próximas fatias):
-  **faturamento/cobrança** da assinatura do SaaS e **suspensão por pagamento** (estado distinto do
+- **Plano nomeado** (recursos liberados) já existe (D55). O **modelo de cobrança** SaaS (assinatura +
+  faturas + situação) existe na 4a (D58 — ver [[Cobrança da Assinatura SaaS]]). Pendente: **tela de
+  Faturamento** (4b) e **suspensão por pagamento** (4c — bloqueio no login, estado distinto do
   "inativo" atual) — ver [[Mapeamento Central x Tenant (auditoria pré-planos)]].
