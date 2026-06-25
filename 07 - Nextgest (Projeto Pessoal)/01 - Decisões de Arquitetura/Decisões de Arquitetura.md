@@ -1019,3 +1019,27 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   desconhecido → 200. O teste de transporte real (túnel HTTPS + "simular notificação" no painel MP +
   segredo no `.env`) é **manual do Fabio**. **Sem deploy** — produção: credenciais/URL de produção + HTTPS
   público + backup.
+
+## D63 — Deploy de produção da leva D54–D62 (visual admin, planos, cadastro, cobrança, MP)
+
+- **Escopo:** publicação em produção (`nextgest.com.br`) de D54 (visual admin) a D62 (webhook MP),
+  passando por planos+gating (D55), cadastro central do estabelecimento (D56/D57), modelo de cobrança
+  (D58), tela Faturamento (D59), suspensão+carência (D60) e adesão recorrente MP (D61). Inclui o D53
+  (seeder de tenant aditivo) que já estava no `main`.
+- **Migrations centrais ACUMULADAS e aditivas:** 5 numa leva (`estabelecimentos`, `assinaturas`,
+  `faturas`, `+mercadopago em assinaturas`, `webhook_eventos`). **Backup central+tenants antes** e
+  **checkpoint do `migrate:status`** (parar, conferir que são centrais/aditivas e nenhuma de tenant)
+  antes do `migrate --force`. Nada de `tenants:migrate`/`fresh`.
+- **Provisionamento idempotente:** `nextgest:provisionar-assinaturas` (dry-run → `--apply`) criou a
+  assinatura do tenant real `teste` como **`em_teste`** (não bloqueia — está em trial). Rodar de novo
+  não recria.
+- **Suspensão mexe no login real:** validado explicitamente que o dono do `teste` cai no **login**
+  (não na tela de suspensão) e que o **portal do cliente** segue 200. O `GarantirAssinaturaAtiva` só
+  barra `suspensa`/`cancelada`; enforcement ao vivo via `Assinatura::situacaoAcesso()`.
+- **MP inerte no deploy:** app sobe sem as vars do Mercado Pago; ativação (credenciais + URL do
+  webhook + 1ª adesão real) é um **passo separado** feito pelo Fabio quando quiser. Segredos só no
+  `.env`, nunca no chat/log.
+- **Efeito colateral bom:** o `config:cache` desta leva assou `APP_TIMEZONE=America/Sao_Paulo`
+  (antes o cache estava em UTC) — corrige o "agendar hoje" diagnosticado anteriormente.
+- **Estado final:** produção no commit do D62; landing/admin/painel/portal intactos; worker+cron
+  ativos; nenhuma suspensão acionada. Procedimento detalhado no [[Roteiro de Deploy Seguro]].
