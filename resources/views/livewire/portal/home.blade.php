@@ -151,6 +151,49 @@
                 </div>
             </div>
         </flux:modal>
+
+        {{-- Modal de AVALIAÇÃO (D51) — usado tanto pelo POPUP (abre no load) quanto
+             pelo botão "Avaliar" do histórico. Mesmo modal/ação para os dois. --}}
+        <flux:modal wire:model.self="mostrarAvaliacao" class="max-w-sm">
+            <div class="flex flex-col gap-4">
+                <div>
+                    <flux:heading size="lg">Como foi seu atendimento?</flux:heading>
+                    @if ($avaliando)
+                        <flux:text class="mt-1 text-sm" style="color: var(--cor-texto-suave);">
+                            {{ $avaliando->itens->map(fn ($i) => $i->servico?->nome)->filter()->join(', ') ?: 'Serviço' }}
+                            · {{ $avaliando->data_hora_inicio->translatedFormat('d/m/Y') }}
+                            @if ($avaliando->profissional) · {{ $avaliando->profissional->name }} @endif
+                        </flux:text>
+                    @endif
+                </div>
+
+                {{-- Estrelas clicáveis (preenche até a clicada/hover; acessível). --}}
+                <div x-data="{ hover: 0 }" class="flex items-center justify-center gap-1.5" role="radiogroup" aria-label="Sua nota de 1 a 5">
+                    @for ($i = 1; $i <= 5; $i++)
+                        <button type="button" wire:click="$set('nota', {{ $i }})"
+                            @mouseenter="hover = {{ $i }}" @mouseleave="hover = 0"
+                            role="radio" :aria-checked="$wire.nota === {{ $i }}" aria-label="{{ $i }} de 5"
+                            class="rounded-md p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
+                            <svg viewBox="0 0 24 24" fill="currentColor" class="size-10 transition"
+                                :class="(hover || $wire.nota) >= {{ $i }} ? 'text-amber-400' : 'text-zinc-300 dark:text-zinc-600'">
+                                <path d="M11.48 3.5a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .32-.988l5.519-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
+                            </svg>
+                        </button>
+                    @endfor
+                </div>
+                <flux:error name="nota" />
+
+                <flux:textarea wire:model="comentario" label="Comentário (opcional)" rows="3" placeholder="Conte como foi o atendimento…" />
+
+                <div class="flex justify-end gap-2">
+                    <flux:button wire:click="ignorarAvaliacao" variant="ghost">Ignorar</flux:button>
+                    <flux:button wire:click="salvarAvaliacao" variant="primary" icon="star" :disabled="$nota === null">
+                        <span wire:loading.remove wire:target="salvarAvaliacao">Avaliar</span>
+                        <span wire:loading wire:target="salvarAvaliacao">Salvando…</span>
+                    </flux:button>
+                </div>
+            </div>
+        </flux:modal>
     @else
         {{-- Visitante: usa o MESMO componente da prévia (tela 1 do carrossel):
              capa com imagem de cabeçalho + passos + chamadas. O fundo entra pelo
