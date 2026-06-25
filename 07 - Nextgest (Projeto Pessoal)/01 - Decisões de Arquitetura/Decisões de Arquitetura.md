@@ -911,6 +911,37 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   **cancelar**. `link_pagamento` continua **nulo** (gateway é a Fase 5). Dinheiro em **decimal**.
 - **Sem trilha de auditoria** de quem marcou/reverteu (melhoria futura).
 - **Testes:** `tests/Feature/Admin/FaturamentoTest.php` (8) — guard; cria no 1º uso; salva config;
-  barra status derivado; gera + barra duplicada; marca paga→ativa→reverte→cancela; suspensa informativo
-  **sem** bloquear login; botão na lista. Suíte **515/515**. Verificado no dev (fase3ademo:
-  em_teste → fatura aberta/Suspensa → paga/Ativa). **Sem deploy.**
+  barra status derivado; gera + barra duplicada; marca paga→ativa→reverte→cancela; badge suspensa no
+  admin (o **bloqueio efetivo do login chegou na 4c/D60**); botão na lista. Suíte **515/515**.
+  Verificado no dev (fase3ademo: em_teste → fatura aberta/Suspensa → paga/Ativa). **Sem deploy.**
+
+---
+
+## D60 — Suspensão por pagamento: bloqueio do painel + banner de carência (Fase 4c)
+> Fatia que toca o login do painel. **Auditoria-primeiro**: confirmado que o grupo `tenant`
+> (bootstrap/app.php) faz `InitializeTenancyByPath` → `GarantirTenantAtivo` → sessão, e embrulha
+> portal + painel; um middleware no grupo `painel` roda **depois** disso e **só** no painel.
+> Enforcement **ao vivo** via `situacaoAcesso()` (sem cron). Ver [[Cobrança da Assinatura SaaS]].
+- **Middleware `App\Http\Middleware\GarantirAssinaturaAtiva`** no grupo `painel` (guard `web`) —
+  **nunca** no portal/cliente nem no `/admin`. `suspensa`/`cancelada` → redireciona para a tela de
+  suspensão. `em_teste`/`ativa`/`atrasada` → segue (atrasada **não** bloqueia). Tenant **sem
+  assinatura** (null) → não bloqueia (defesa). **Auto-isento** em `painel.assinatura.suspensa` (evita
+  loop) e em `painel.logout` (deixa sair).
+- **Tela `App\Livewire\Auth\AssinaturaSuspensa`** (rota `painel.assinatura.suspensa`, layout `auth`,
+  **sem exigir login** → o dono cai nela ao tentar o painel). Mostra a **fatura pendente**
+  (`Assinatura::faturaPendente()`); botão **"Pagar agora"** só quando houver `link_pagamento` (nulo
+  hoje → orientação de regularização, sem botão quebrado; pronta pro gateway da Fase 5). Se não estiver
+  bloqueada, redireciona ao login (sem ficar presa).
+- **Banner de carência** no layout do painel (`atrasada`): "sua fatura venceu em DD/MM, regularize em
+  até N dias (até DD/MM)…". N e datas saem do vencimento + `config('cobranca.carencia_dias')`. **Gate
+  por `can('ver_financeiro')`** (permissão existente, **exclusiva do Dono** no seeder — sem papel, sem
+  permissão nova; ajustável). Calculado no `@php` do topo do layout (mesmo bloco — evita o bug de match
+  guloso do Blade, D52).
+- **Distinto do inativo:** `ativo=false` segue **404** (`GarantirTenantAtivo`) — caminho separado, não
+  vira tela de suspensão. **Portal do cliente intacto** (guard `cliente`, fora do middleware).
+  **Reversível ao vivo:** marcar a fatura paga (tela 4b) → próximo request do painel volta a 200.
+- **Testes:** `tests/Feature/Cobranca/SuspensaoTest.php` (10) — matriz HTTP: ativa/atrasada não
+  bloqueiam (banner só p/ Dono); suspensa/cancelada redirecionam (login e painel); tela isenta sem
+  loop; logout isento; portal 200; inativo 404 (mesmo com assinatura suspensa); reversível ao pagar.
+  Suíte **525/525**. Verificado no dev (banner em atrasada; tela de suspensão; portal do suspenso no ar).
+  **Sem deploy** — produção depois, com cuidado redobrado (login de clientes reais) + backup.

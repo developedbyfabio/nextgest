@@ -6,11 +6,19 @@
 > (nenhuma migration/seeder; só `SHOW`/`SELECT`). Sem Dxx novo — decisões virão nas fases de
 > implementação. Ambiente: dev (`192.168.11.210`).
 
-> **Atualização (D56 — Fase 3a):** o central deixou de ter só `tenants`. Foi criada a tabela
-> **`estabelecimentos`** (1:1 com `tenants`) como fonte de verdade do admin/cobrança (dados do negócio
-> + contato do dono), e o onboarding virou 7 etapas. Plano nomeado já existia (D55). Veja
-> [[Cadastro Central do Estabelecimento]]. O que segue era o retrato ANTES dessas fases — mantido como
-> histórico; faturamento da assinatura e suspensão por pagamento continuam pendentes.
+> **Atualização (D56–D60):** o central deixou de ter só `tenants`. Hoje tem **`estabelecimentos`**
+> (1:1, cadastro/cobrança — D56, onboarding 7 etapas) e a **cobrança SaaS**: **`assinaturas`** +
+> **`faturas`** (D58), tela de **Faturamento** (D59) e **suspensão por pagamento** (D60). Plano nomeado
+> = D55. Veja [[Cadastro Central do Estabelecimento]] e [[Cobrança da Assinatura SaaS]].
+>
+> **Estados de bloqueio do tenant (dois, distintos):**
+> 1. **Inativo** (`tenants.ativo=false`): `GarantirTenantAtivo` → **404 cego** em todo o tenant
+>    (portal + painel). Bloqueio administrativo do super-admin.
+> 2. **Suspenso por pagamento** (`Assinatura::situacaoAcesso()` = `suspensa`/`cancelada`):
+>    `GarantirAssinaturaAtiva` → **só o painel** redireciona p/ tela amigável; **portal segue no ar**.
+>    Ao vivo, reversível ao pagar.
+>
+> O que segue era o retrato ANTES dessas fases — mantido como histórico.
 
 ## TL;DR (o que decide as próximas fases)
 - **Central é mínimo:** só `tenants` (+ `domains`, `tenant_user_impersonation_tokens`, `admins`,

@@ -1,7 +1,7 @@
 ---
 projeto: Nextgest
 tipo: módulo
-status: em construção (4a modelo + 4b tela Faturamento)
+status: em construção (4a modelo + 4b Faturamento + 4c suspensão)
 criado: 2026-06-25
 tags: [nextgest, central, cobranca, assinatura, faturamento, saas]
 ---
@@ -20,9 +20,24 @@ do tenant. Aqui é tudo **central** (tabelas `assinaturas`/`faturas`).
 - **4a (D58):** modelo de dados + cálculo de situação + backfill. **Sem** UI, geração, gateway, bloqueio.
 - **4b (D59 — feita):** tela de Faturamento no admin (configurar assinatura, gerar/marcar faturas, ver
   situação). Ainda **sem** gateway e **sem** bloqueio.
-- **4c (futura):** suspensão/bloqueio efetivo no login do tenant para assinatura `suspensa`/`cancelada`
-  (estado distinto do "inativo" administrativo — ver [[Mapeamento Central x Tenant (auditoria pré-planos)]]).
-- **5 (futura):** gateway (link de pagamento / webhook).
+- **4c (D60 — feita):** suspensão/bloqueio efetivo no login do painel para `suspensa`/`cancelada` +
+  banner de carência para `atrasada`. Estado distinto do "inativo" (ver
+  [[Mapeamento Central x Tenant (auditoria pré-planos)]]).
+- **5 (futura):** gateway (preenche `link_pagamento` / webhook de confirmação).
+
+## Suspensão e carência (4c — D60)
+- **Middleware `GarantirAssinaturaAtiva`** no grupo `painel` (guard `web`) — **só** o painel, nunca o
+  portal/cliente nem o `/admin`. Roda **depois** da tenancy + `GarantirTenantAtivo`. Enforcement **ao
+  vivo** (`situacaoAcesso()`, sem cron): `suspensa`/`cancelada` → redireciona para a tela de suspensão;
+  `atrasada` (e demais) → segue. Tenant sem assinatura (null) não bloqueia. Auto-isento na tela de
+  suspensão (sem loop) e no logout (deixa sair).
+- **Tela de suspensão** `App\Livewire\Auth\AssinaturaSuspensa` (`painel.assinatura.suspensa`, layout
+  `auth`, sem login): mostra a fatura pendente; "Pagar agora" só com `link_pagamento` (nulo hoje →
+  orientação; pronta pro gateway). Distinta do `ativo=false` (404).
+- **Banner de carência** no layout do painel (`atrasada`): "venceu em DD/MM, regularize em até N dias
+  (até DD/MM)". Gate por **`can('ver_financeiro')`** (existente, exclusiva do Dono no seeder; ajustável).
+- **Portal do cliente intacto**; **reversível ao vivo** (marcar fatura paga → próximo request volta a
+  200).
 
 ## Tela "Faturamento" (4b — D59)
 `App\Livewire\Admin\Faturamento` (rota `admin.tenant.faturamento` =
@@ -79,11 +94,14 @@ tenants (`em_teste`); 2ª execução criou 0.
   dia 10/dia 20/suspensa dia 21), carência da config, fatura paga não conta, cancelada, override de 1ª
   cobrança, snapshot de valor, backfill (dry-run/apply/idempotência).
 - `tests/Feature/Admin/FaturamentoTest.php` (8): guard; cria no 1º uso; salva config; barra status
-  derivado; gera + barra duplicada; marca paga→ativa→reverte→cancela; suspensa informativo **sem**
-  bloquear login; botão na lista.
-Suíte **515/515**.
+  derivado; gera + barra duplicada; marca paga→ativa→reverte→cancela; badge suspensa no admin; botão.
+- `tests/Feature/Cobranca/SuspensaoTest.php` (10): matriz HTTP — ativa/atrasada não bloqueiam (banner
+  só Dono); suspensa/cancelada redirecionam (login e painel); tela isenta sem loop; logout isento;
+  portal 200; inativo 404; reversível ao pagar.
+Suíte **525/525**.
 
 ## Limites (até aqui)
-**Sem gateway** (`link_pagamento` nulo) e **sem bloqueio de login** (situação só informativa) — isso é
-5/4c. Nada de painel do dono/portal/Clube/spatie/motor tocado. **Dev apenas — sem deploy.** Em produção,
-migrations centrais com **backup antes**; o tenant real é configurado pela tela Faturamento.
+**Sem gateway** (`link_pagamento` nulo → tela de suspensão sem botão de pagar, só orientação) — isso é
+a Fase 5. Portal/Clube/spatie/motor intactos. **Dev apenas — sem deploy.** Em produção, migrations
+centrais com **backup antes**; o tenant real é configurado pela tela Faturamento; cuidado redobrado na
+4c (mexe no login de clientes reais).

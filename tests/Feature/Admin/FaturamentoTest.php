@@ -138,7 +138,7 @@ it('marca paga, recalcula situação para ativa, e reverte/cancela', function ()
     expect(Fatura::find($f->id)->status)->toBe(Fatura::CANCELADA);
 });
 
-it('mostra suspensa (informativo) SEM bloquear o login do tenant', function () {
+it('mostra suspensa no admin (informativo); o bloqueio do painel é a 4c', function () {
     Carbon::setTestNow('2026-06-25');
     criarTenant('lojablock');
 
@@ -153,11 +153,13 @@ it('mostra suspensa (informativo) SEM bloquear o login do tenant', function () {
 
     expect($a->situacaoAcesso())->toBe(Assinatura::SUSPENSA);
 
+    // No admin, o badge é só informativo (a tela de Faturamento não bloqueia nada).
     $this->actingAs(admin(), 'admin');
     Livewire::test(Faturamento::class, ['tenantId' => 'lojablock'])->assertSee('Suspensa');
 
-    // NENHUM bloqueio nesta fase: o login do tenant continua acessível (200).
-    $this->get('/lojablock/painel/login')->assertOk();
+    // O bloqueio EFETIVO é a 4c (D60): o login do tenant redireciona p/ a tela de suspensão.
+    $this->get('/lojablock/painel/login')
+        ->assertRedirect(route('painel.assinatura.suspensa', ['tenant' => 'lojablock']));
 });
 
 it('mostra o botão "Faturamento" na lista de estabelecimentos', function () {

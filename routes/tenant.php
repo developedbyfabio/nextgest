@@ -6,14 +6,16 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\SuporteController;
 use App\Http\Controllers\TenantArquivoController;
 use App\Http\Middleware\ForcarTrocaSenha;
+use App\Http\Middleware\GarantirAssinaturaAtiva;
+use App\Livewire\Auth\AssinaturaSuspensa;
 use App\Livewire\Auth\ClienteLogin;
 use App\Livewire\Auth\ClienteRegistrar;
 use App\Livewire\Auth\DesafioDoisFatores;
 use App\Livewire\Auth\PainelLogin;
 use App\Livewire\Auth\TrocarSenha;
 use App\Livewire\Painel\Agenda\Index as AgendaIndex;
-use App\Livewire\Painel\Avaliacoes\Index as AvaliacoesIndex;
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
+use App\Livewire\Painel\Avaliacoes\Index as AvaliacoesIndex;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
 use App\Livewire\Painel\Clube\Index as ClubeIndex;
 use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
@@ -89,8 +91,17 @@ Route::middleware(['tenant'])
 
         /*
         | Painel da equipe (guard `web`).
+        |
+        | GarantirAssinaturaAtiva (D60) embrulha TODO o painel: assinatura suspensa/
+        | cancelada → tela amigável de suspensão. Roda depois da tenancy/GarantirTenantAtivo
+        | (grupo `tenant`) e SÓ aqui (nunca no portal/cliente). Auto-isento na própria tela
+        | de suspensão e no logout (ver o middleware).
         */
-        Route::prefix('painel')->name('painel.')->group(function () {
+        Route::prefix('painel')->name('painel.')->middleware(GarantirAssinaturaAtiva::class)->group(function () {
+            // Tela de suspensão por pagamento — pública (sem auth), isenta do middleware
+            // acima. Distinta do `ativo=false` (que dá 404 no GarantirTenantAtivo).
+            Route::get('assinatura-suspensa', AssinaturaSuspensa::class)->name('assinatura.suspensa');
+
             Route::get('login', PainelLogin::class)
                 ->middleware('guest:web')
                 ->name('login');

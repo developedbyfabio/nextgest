@@ -19,6 +19,23 @@
             break;
         }
     }
+
+    // Aviso de carência (D60): só p/ o Dono (permissão ver_financeiro, exclusiva do Dono)
+    // e quando a assinatura está `atrasada` (dentro da carência). Suspensa nem chega aqui
+    // (o middleware GarantirAssinaturaAtiva já redireciona). Lê ao vivo (situacaoAcesso).
+    $avisoCarencia = null;
+    if (auth('web')->user()?->can('ver_financeiro')) {
+        $assinaturaAviso = tenant()?->assinatura;
+        if ($assinaturaAviso && $assinaturaAviso->situacaoAcesso() === \App\Models\Assinatura::ATRASADA
+            && ($faturaAviso = $assinaturaAviso->faturaPendente())) {
+            $limiteCarencia = $faturaAviso->data_vencimento->copy()->addDays((int) config('cobranca.carencia_dias', 20));
+            $avisoCarencia = [
+                'vencimento' => $faturaAviso->data_vencimento->format('d/m/Y'),
+                'limite' => $limiteCarencia->format('d/m/Y'),
+                'dias' => (int) \Illuminate\Support\Carbon::today()->diffInDays($limiteCarencia),
+            ];
+        }
+    }
 @endphp
 <!DOCTYPE html>
 {{-- font-size base no <html>: o "tamanho base" do tenant escala a UI (rem). --}}
@@ -52,6 +69,18 @@
                 @csrf
                 <flux:button type="submit" size="sm" variant="primary">Sair do suporte</flux:button>
             </form>
+        </div>
+    @endif
+
+    {{-- Aviso de carência (D60): fatura vencida dentro do prazo. Só Dono (ver_financeiro). --}}
+    @if ($avisoCarencia)
+        <div class="sticky top-0 z-40 flex flex-wrap items-center gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
+            <flux:icon name="exclamation-triangle" class="size-4 shrink-0" />
+            <span>
+                Sua fatura venceu em {{ $avisoCarencia['vencimento'] }}. Regularize em até
+                <strong>{{ $avisoCarencia['dias'] }} {{ $avisoCarencia['dias'] == 1 ? 'dia' : 'dias' }}</strong>
+                (até {{ $avisoCarencia['limite'] }}) para não pausar sua assinatura.
+            </span>
         </div>
     @endif
 

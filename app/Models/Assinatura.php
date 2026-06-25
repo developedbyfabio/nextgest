@@ -82,6 +82,18 @@ class Assinatura extends Model
     }
 
     /**
+     * Fatura pendente (não paga/cancelada) mais antiga — a que está em cobrança/atraso.
+     * Usada pelo aviso de carência (banner) e pela tela de suspensão. null se não houver.
+     */
+    public function faturaPendente(): ?Fatura
+    {
+        return $this->faturas()
+            ->whereNotIn('status', [Fatura::PAGA, Fatura::CANCELADA])
+            ->orderBy('data_vencimento')
+            ->first();
+    }
+
+    /**
      * FONTE ÚNICA do estado de acesso (consumida pela tela 4b e pela suspensão 4c).
      *
      * - `cancelada` (manual) → cancelada.
