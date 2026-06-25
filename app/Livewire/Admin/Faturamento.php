@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Models\Assinatura;
+use App\Models\Estabelecimento;
 use App\Models\Fatura;
 use App\Models\Tenant;
+use App\Services\MercadoPago\MercadoPagoException;
+use App\Services\MercadoPago\PreapprovalClient;
 use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
@@ -271,6 +274,57 @@ class Faturamento extends Component
             ->firstOrFail();
     }
 
+    /**
+     * Ativa a cobrança automática (recorrência Mercado Pago — D61). Cria o preapproval
+     * e expõe o link de adesão (o dono cadastra o cartão no MP). IDEMPOTENTE: se já há
+     * recorrência, não recria. A confirmação das cobranças vem pelo webhook (5b).
+     */
+    public function ativarCobrancaAutomatica(PreapprovalClient $mp): void
+    {
+        abort_unless(auth('admin')->check(), 403);
+
+        $a = $this->assinatura();
+
+        // Idempotência: já existe recorrência → não recria (só mantém o link/status atual).
+        if ($a->temRecorrencia()) {
+            Flux::toast('A cobrança automática já está ativada para este estabelecimento.');
+
+            return;
+        }
+
+        if ((float) $a->valor_mensal <= 0) {
+            Flux::toast('Defina um valor mensal maior que zero antes de ativar a cobrança automática.', variant: 'danger');
+
+            return;
+        }
+
+        // E-mail do pagador = contato cadastral do dono (tela Dados).
+        $payerEmail = Estabelecimento::where('tenant_id', $a->tenant_id)->value('dono_email');
+
+        if (empty($payerEmail)) {
+            Flux::toast('Cadastre o e-mail do dono na tela "Dados" antes de ativar a cobrança automática.', variant: 'danger');
+
+            return;
+        }
+
+        try {
+            $resultado = $mp->criarPreapproval($a, $payerEmail);
+        } catch (MercadoPagoException $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        $a->update([
+            'mp_preapproval_id' => $resultado['id'],
+            'mp_status' => $resultado['status'],
+            'link_adesao' => $resultado['init_point'],
+            'cobranca_automatica' => true,
+        ]);
+
+        Flux::toast('Cobrança automática criada. Envie o link de adesão para o dono cadastrar o cartão.', variant: 'success');
+    }
+
     public function render(): View
     {
         $a = $this->assinatura();
@@ -297,6 +351,11 @@ class Faturamento extends Component
             'situacao' => $situacao,
             'atraso' => $atraso,
             'faturas' => $a->faturas()->orderByDesc('competencia')->get(),
+            'recorrencia' => [
+                'ativa' => $a->temRecorrencia(),
+                'mp_status' => $a->mp_status,
+                'link' => $a->link_adesao,
+            ],
         ]);
     }
 }

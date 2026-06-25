@@ -38,6 +38,40 @@
         </flux:text>
     </flux:card>
 
+    {{-- Cobrança automática (recorrência Mercado Pago — D61) --}}
+    <flux:card class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <flux:heading size="lg">Cobrança automática (Mercado Pago)</flux:heading>
+                <flux:subheading>Débito recorrente mensal. O dono cadastra o cartão uma vez, no link de adesão.</flux:subheading>
+            </div>
+            @if (! $recorrencia['ativa'])
+                <flux:button wire:click="ativarCobrancaAutomatica" variant="primary" icon="credit-card" wire:loading.attr="disabled" wire:target="ativarCobrancaAutomatica">
+                    <span wire:loading.remove wire:target="ativarCobrancaAutomatica">Ativar cobrança automática</span>
+                    <span wire:loading wire:target="ativarCobrancaAutomatica">Ativando…</span>
+                </flux:button>
+            @else
+                <flux:badge color="green" size="lg">Ativada · MP: {{ $recorrencia['mp_status'] ?? '—' }}</flux:badge>
+            @endif
+        </div>
+
+        @if ($recorrencia['ativa'] && $recorrencia['link'])
+            <flux:separator />
+            <div class="flex flex-col gap-2">
+                <flux:text class="text-sm text-zinc-500">Link de adesão (envie ao dono para cadastrar o cartão):</flux:text>
+                <div class="flex items-center gap-2">
+                    <flux:input readonly value="{{ $recorrencia['link'] }}" class="font-mono text-xs" />
+                    <flux:button :href="$recorrencia['link']" target="_blank" variant="ghost" icon="arrow-top-right-on-square">Abrir</flux:button>
+                </div>
+                <flux:callout icon="information-circle">
+                    <flux:callout.text>
+                        A confirmação das cobranças mensais chega pelo webhook (próxima fase). O status acima é o que o Mercado Pago retornou na criação.
+                    </flux:callout.text>
+                </flux:callout>
+            </div>
+        @endif
+    </flux:card>
+
     {{-- Configuração da assinatura --}}
     <form wire:submit="salvarConfig">
         <flux:card class="flex flex-col gap-4">

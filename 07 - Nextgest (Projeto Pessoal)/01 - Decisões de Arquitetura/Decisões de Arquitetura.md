@@ -945,3 +945,36 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   loop; logout isento; portal 200; inativo 404 (mesmo com assinatura suspensa); reversível ao pagar.
   Suíte **525/525**. Verificado no dev (banner em atrasada; tela de suspensão; portal do suspenso no ar).
   **Sem deploy** — produção depois, com cuidado redobrado (login de clientes reais) + backup.
+
+---
+
+## D61 — Adesão recorrente via Mercado Pago Preapproval (Fase 5a, sandbox)
+> Modelo "Netflix": o dono cadastra o cartão **uma vez** e o MP debita o plano todo mês. Esta fase é só
+> a **ADESÃO** (criar a recorrência + obter o link). Confirmação das cobranças mensais = **webhook (5b)**.
+> **Passo 0 (doc oficial) confirmado**: o fluxo de `init_point` existe → sem Bricks. Ver
+> [[Cobrança da Assinatura SaaS]] (mapeamento da API).
+- **API:** `POST https://api.mercadopago.com/preapproval`, fluxo **"pago pendente"**: `status:"pending"`
+  + **sem `card_token_id`** → resposta traz **`init_point`** (página hospedada do MP onde o dono põe o
+  cartão). Payload: `reason`, `external_reference`(=tenant_id), `payer_email`, `back_url`, `status`,
+  `auto_recurring{frequency:1, frequency_type:"months", transaction_amount, currency_id:"BRL",
+  start_date}`. **`start_date` exige milissegundos + `Z`** (`Y-m-d\TH:i:s.v\Z` em UTC — `toIso8601String()`
+  do Carbon falha). 1ª cobrança = `primeiraCobranca()` (fim do trial); se já passou, `now()+buffer`.
+- **Segredo:** `MERCADOPAGO_ACCESS_TOKEN` só via `config('mercadopago.access_token')` (`config/mercadopago.php`).
+  **Nunca** cravado/logado/exposto; só **token de TESTE** nesta fase. Em falha, loga só `http_status` +
+  `mp_message` (sem token).
+- **Client** `App\Services\MercadoPago\PreapprovalClient` (`criarPreapproval`/`consultar`); erro →
+  `MercadoPagoException` (mensagem amigável). **Colunas centrais** em `assinaturas`:
+  `mp_preapproval_id` (unique), `mp_status`, `link_adesao` (init_point), `cobranca_automatica`.
+- **UI:** botão **"Ativar cobrança automática"** na tela Faturamento — **idempotente** (não recria se já
+  há `mp_preapproval_id`), exige `valor_mensal>0` e `dono_email` (tela Dados), trata erro sem 500, e
+  exibe o link de adesão + `mp_status`. **Falha de cobrança mensal:** carência de 20 dias começa na
+  falha (efetivo na 5b — só registrado aqui).
+- **Testes:** `tests/Feature/Cobranca/PreapprovalTest.php` (7) — API **mockada** (Http::fake): payload do
+  fluxo pending (sem card_token_id), persistência, **idempotência** (1 chamada), erro tratado, guardas
+  (valor 0 / sem e-mail). Suíte **532/532**.
+- **Validação real (sandbox):** conectividade OK; token TEST confirmado; o erro de **formato de
+  `start_date` foi pego e corrigido** numa chamada real. A criação real ainda retorna **HTTP 500 opaco**
+  do MP ("Internal server error") — atribuído à **conta de teste** (Assinaturas não habilitadas / test
+  buyer ausente), **não** ao nosso payload. A autorização via `init_point` (test buyer + cartão de teste)
+  é o passo **manual** do Fabio no painel do MP. **`faturas`/webhook/motor/portal/produção intactos.
+  Sem deploy.**

@@ -45,6 +45,10 @@ class Assinatura extends Model
         'dia_vencimento',
         'status',
         'observacoes',
+        'mp_preapproval_id',
+        'mp_status',
+        'link_adesao',
+        'cobranca_automatica',
     ];
 
     protected function casts(): array
@@ -55,7 +59,14 @@ class Assinatura extends Model
             'data_primeira_cobranca' => 'date',
             'trial_dias' => 'integer',
             'dia_vencimento' => 'integer',
+            'cobranca_automatica' => 'boolean',
         ];
+    }
+
+    /** Já existe uma recorrência criada no Mercado Pago (idempotência da adesão). */
+    public function temRecorrencia(): bool
+    {
+        return ! empty($this->mp_preapproval_id);
     }
 
     public function tenant(): BelongsTo

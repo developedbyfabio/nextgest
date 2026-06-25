@@ -1,7 +1,7 @@
 ---
 projeto: Nextgest
 tipo: módulo
-status: em construção (4a modelo + 4b Faturamento + 4c suspensão)
+status: em construção (4a/4b/4c + 5a adesão MP)
 criado: 2026-06-25
 tags: [nextgest, central, cobranca, assinatura, faturamento, saas]
 ---
@@ -23,7 +23,35 @@ do tenant. Aqui é tudo **central** (tabelas `assinaturas`/`faturas`).
 - **4c (D60 — feita):** suspensão/bloqueio efetivo no login do painel para `suspensa`/`cancelada` +
   banner de carência para `atrasada`. Estado distinto do "inativo" (ver
   [[Mapeamento Central x Tenant (auditoria pré-planos)]]).
-- **5 (futura):** gateway (preenche `link_pagamento` / webhook de confirmação).
+- **5a (D61 — feita):** adesão recorrente via Mercado Pago (Preapproval, sandbox) — cria a recorrência
+  e expõe o link de adesão. **Sem webhook ainda.**
+- **5b (futura):** webhook do MP (confirma cobranças mensais → gera/marca `faturas`; falha → carência).
+
+## Mercado Pago — mapeamento da API (Preapproval, confirmado no Passo 0 / D61)
+- **Endpoint:** `POST https://api.mercadopago.com/preapproval`. Auth: `Bearer <access_token>` (TEST no
+  sandbox). Consulta: `GET /preapproval/{id}`.
+- **Fluxo "pago pendente"** (o que usamos — sem capturar cartão no nosso front): `status:"pending"` e
+  **sem `card_token_id`** → resposta com **`init_point`** (página hospedada do MP; o dono loga e cadastra
+  o cartão). Existe também o fluxo "pago autorizado" (exige `card_token_id` via Bricks) — **não usamos**.
+- **Payload:** `reason`, `external_reference` (=tenant_id), `payer_email` (obrigatório), `back_url`,
+  `status`, `auto_recurring { frequency:1, frequency_type:"months", transaction_amount, currency_id:"BRL",
+  start_date, end_date?, free_trial? }`.
+- **Gotcha:** `start_date` exige **milissegundos + Z** (ex.: `2026-06-25T18:35:00.000Z`). Carbon
+  `toIso8601String()` (sem ms) → erro `Invalid format`. Usar `->utc()->format('Y-m-d\TH:i:s.v\Z')`.
+- **Status:** `pending | authorized | paused | cancelled`. **Webhook (5b):** tópicos
+  `subscription_preapproval` (estado da assinatura) e `subscription_authorized_payment` (cobranças).
+
+## Adesão recorrente (5a — D61)
+- **Config** `config/mercadopago.php` (token via `.env`, nunca cravado; `base_url`, `back_url`, timeout).
+- **Client** `App\Services\MercadoPago\PreapprovalClient` (`criarPreapproval`/`consultar`); falha →
+  `MercadoPagoException` (mensagem amigável; log só com `http_status`+`mp_message`, **sem token**).
+- **Colunas** em `assinaturas`: `mp_preapproval_id` (unique), `mp_status`, `link_adesao` (init_point),
+  `cobranca_automatica`.
+- **UI** (tela Faturamento): botão **"Ativar cobrança automática"** — **idempotente** (não recria),
+  exige `valor_mensal>0` e `dono_email`, trata erro sem 500, mostra o link de adesão + status do MP.
+- **Validação:** testes com `Http::fake` (7); real no sandbox confirmou conectividade e corrigiu o
+  formato de `start_date`. A criação real ainda dá **500 opaco** do MP (conta de teste sem Assinaturas
+  habilitadas / test buyer) — passo manual no painel do MP. **`link_pagamento`/webhook = 5b.**
 
 ## Suspensão e carência (4c — D60)
 - **Middleware `GarantirAssinaturaAtiva`** no grupo `painel` (guard `web`) — **só** o painel, nunca o
@@ -98,10 +126,13 @@ tenants (`em_teste`); 2ª execução criou 0.
 - `tests/Feature/Cobranca/SuspensaoTest.php` (10): matriz HTTP — ativa/atrasada não bloqueiam (banner
   só Dono); suspensa/cancelada redirecionam (login e painel); tela isenta sem loop; logout isento;
   portal 200; inativo 404; reversível ao pagar.
-Suíte **525/525**.
+- `tests/Feature/Cobranca/PreapprovalTest.php` (7): API **mockada** — payload do fluxo pending (sem
+  card_token_id), persistência, idempotência, erro tratado, guardas (valor 0 / sem e-mail).
+Suíte **532/532**.
 
 ## Limites (até aqui)
-**Sem gateway** (`link_pagamento` nulo → tela de suspensão sem botão de pagar, só orientação) — isso é
-a Fase 5. Portal/Clube/spatie/motor intactos. **Dev apenas — sem deploy.** Em produção, migrations
-centrais com **backup antes**; o tenant real é configurado pela tela Faturamento; cuidado redobrado na
-4c (mexe no login de clientes reais).
+A adesão recorrente (5a) cria a recorrência no MP, mas a **confirmação das cobranças é o webhook (5b)** —
+até lá, `faturas` continuam manuais (4b) e o `link_pagamento` da fatura segue nulo (a tela de suspensão
+usa `link_adesao` quando existir). Token **só sandbox**, nunca exposto. Portal/Clube/spatie/motor
+intactos. **Dev apenas — sem deploy.** Produção: credenciais de produção do MP + HTTPS público p/ o
+webhook (5b) + backup; cuidado redobrado na 4c (login de clientes reais).
