@@ -119,6 +119,39 @@
 
 ---
 
+## Cenário: migration central acumulada + provisionar assinaturas + ativação de gateway
+
+Quando a leva acumula **várias migrations centrais** (ex.: D54–D62: `estabelecimentos`,
+`assinaturas`, `faturas`, colunas MP, `webhook_eventos`) e sobe cobrança que **mexe no login real**.
+
+### Migration central acumulada (checkpoint duro)
+- Depois de `pull → composer → build`, rodar **`php artisan migrate:status`** e **PARAR**: listar as
+  pendentes, confirmar que são **todas centrais e aditivas** (`Schema::create`/`Schema::table` add
+  coluna; `cascadeOnDelete` em FK **não** é destrutivo) e que **nenhuma é de tenant**.
+- Só rodar **`php artisan migrate --force`** após o OK. **Nunca** `tenants:migrate` se a leva não tem
+  migration de tenant; **nunca** `fresh/reset`.
+- Conferir o resultado com `SHOW CREATE TABLE` (uniques/FKs) nas tabelas novas.
+
+### Provisionar assinaturas (idempotente)
+- `php artisan nextgest:provisionar-assinaturas` (**dry-run**) → **PARAR** e reportar quem será
+  provisionado → após OK, `--apply`. Cria 1 assinatura por tenant sem assinatura; **idempotente**
+  (rodar de novo não recria). Tenant em trial nasce **`em_teste`** → **não bloqueia** o dono.
+- Enforcement é **ao vivo** via `Assinatura::situacaoAcesso()` (sem cron); o middleware
+  `GarantirAssinaturaAtiva` só barra `suspensa`/`cancelada`. **Validar sempre** que o dono real
+  redireciona para o **login** (não para a tela de suspensão) e que o **portal do cliente** segue 200.
+
+### Ativação de gateway (Mercado Pago) — passo SEPARADO, opcional
+- O app sobe **inerte** sem as vars do MP (não quebra no boot) — deployar sem elas é seguro.
+- Para ligar: **o Fabio** põe `MERCADOPAGO_ACCESS_TOKEN` (produção, não `TEST-`) e
+  `MERCADOPAGO_WEBHOOK_SECRET` no `.env` (**nunca no chat/log/relatório**) → `php artisan
+  config:cache` → cadastrar a **URL do webhook** `https://nextgest.com.br/webhooks/pagamentos/mercadopago`
+  no painel MP.
+- Validar: "simular notificação" do MP chega/valida/processa; **POST sem assinatura é rejeitado
+  (401/403)**; então 1ª adesão real (cartão) → `preapproval` vai a `authorized` → 1ª cobrança vira
+  fatura paga pelo webhook.
+
+---
+
 ## Checklist rápido (cola mental)
 
 `push (dev)` → `backup (prod)` → `pull` → `composer/npm` → **`build`** → `migrate:status` →
