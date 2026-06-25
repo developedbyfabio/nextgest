@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Painel\Avaliacoes;
 
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -57,6 +58,28 @@ class Index extends Component
             ->with($with);
     }
 
+    /**
+     * Resumo (termômetro) do MESMO escopo da lista (RBAC + filtros de escopo):
+     * média de estrelas, nº de avaliações, atendimentos concluídos e taxa de
+     * avaliação. Ancorado nos atendimentos do escopo (a média/contagem usam as
+     * avaliações desses atendimentos).
+     */
+    protected function resumo(): array
+    {
+        $base = $this->escopo();
+
+        $concluidos = (clone $base)->count();
+        $avaliados = (clone $base)->whereHas('avaliacao')->count();
+        $media = (float) Avaliacao::whereIn('agendamento_id', (clone $base)->select('id'))->avg('nota');
+
+        return [
+            'concluidos' => $concluidos,
+            'avaliados' => $avaliados,
+            'media' => round($media, 1),
+            'taxa' => $concluidos > 0 ? (int) round($avaliados / $concluidos * 100) : 0,
+        ];
+    }
+
     public function render(): View
     {
         $atendimentos = $this->escopo()
@@ -66,6 +89,7 @@ class Index extends Component
         return view('livewire.painel.avaliacoes.index', [
             'atendimentos' => $atendimentos,
             'podeVerTudo' => $this->podeVerTudo(),
+            'resumo' => $this->resumo(),
         ]);
     }
 }

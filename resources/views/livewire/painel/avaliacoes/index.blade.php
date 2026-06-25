@@ -2,7 +2,31 @@
     <x-ng.page-header title="Últimos serviços"
         :subtitle="$podeVerTudo ? 'Atendimentos concluídos e suas avaliações' : 'Seus atendimentos concluídos e avaliações'" />
 
-    {{-- (resumo entra aqui — T2) --}}
+    {{-- Resumo (termômetro) do escopo/filtros atuais --}}
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="ng-surface flex flex-col gap-1 p-4">
+            <span class="text-xs font-medium" style="color: var(--cor-texto-suave);">Média</span>
+            <span class="flex items-center gap-2">
+                <span class="text-2xl font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['avaliados'] > 0 ? number_format($resumo['media'], 1, ',', '.') : '—' }}</span>
+                @if ($resumo['avaliados'] > 0)
+                    <x-portal.estrelas :nota="(int) round($resumo['media'])" />
+                @endif
+            </span>
+        </div>
+        <div class="ng-surface flex flex-col gap-1 p-4">
+            <span class="text-xs font-medium" style="color: var(--cor-texto-suave);">Avaliações</span>
+            <span class="text-2xl font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['avaliados'] }}</span>
+        </div>
+        <div class="ng-surface flex flex-col gap-1 p-4">
+            <span class="text-xs font-medium" style="color: var(--cor-texto-suave);">Atendimentos concluídos</span>
+            <span class="text-2xl font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['concluidos'] }}</span>
+        </div>
+        <div class="ng-surface flex flex-col gap-1 p-4">
+            <span class="text-xs font-medium" style="color: var(--cor-texto-suave);">Taxa de avaliação</span>
+            <span class="text-2xl font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['taxa'] }}%</span>
+        </div>
+    </div>
+
     {{-- (filtros entram aqui — T3) --}}
 
     @if ($atendimentos->isEmpty())
