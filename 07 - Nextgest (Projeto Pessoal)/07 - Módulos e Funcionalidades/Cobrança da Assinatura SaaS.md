@@ -43,6 +43,11 @@ do tenant. Aqui é tudo **central** (tabelas `assinaturas`/`faturas`).
 - **Respostas:** válido (mesmo duplicado) → 200; inválido → 401; falha de API → 500 (MP reenvia).
 - **Reconciliação:** `nextgest:reconciliar-assinaturas` (agendado `dailyAt 03:10`) — reaplica via o
   mesmo processador (idempotente); rede de segurança caso um webhook não chegue.
+- **Observabilidade (logs):** o handler loga `info`/`warning` nos pontos de decisão — recebido
+  (tipo/`action`/`data.id`/`live_mode`), resultado da validação (válida/`inválida → 401`), duplicado,
+  recurso não encontrado, e o desfecho (paga / vencida na falha / status atualizado). **Só fatos,
+  nunca segredos/assinatura/corpo bruto.** Permite acompanhar no `laravel.log` (ex.: "Simular
+  notificação" do painel MP → entrada → válida → recurso `123456` não encontrado → ignorado).
 
 ## Mercado Pago — mapeamento da API (Preapproval, confirmado no Passo 0 / D61)
 - **Endpoint:** `POST https://api.mercadopago.com/preapproval`. Auth: `Bearer <access_token>` (TEST no

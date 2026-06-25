@@ -356,3 +356,28 @@ rede instável, CI offline). Correção: **empacotar a fonte localmente** com `@
 - **Prova:** `unshare -n npm run build` (namespace de rede **isolado** = "Network unreachable") →
   build **conclui**. `document.fonts.check('400|500|600 16px "Instrument Sans"')` = true no portal e
   no painel. Em produção, o `npm ci` instala o `@fontsource` pelo `package-lock.json` (sem rede no build).
+
+## ⚠️ CRÍTICO: config CACHEADO faz `php artisan test` rodar contra o MySQL de DEV (zera o central)
+Sintoma que levou ao incidente: `php artisan test` começou a falhar com
+`Tenant cannot be created. Reason: Database tenant_lojaum already exists` e, ao checar, o **banco
+central de dev estava VAZIO** (`tenants`/`admins`/`estabelecimentos`/`assinaturas`/`faturas` = 0).
+- **Causa:** existia `bootstrap/cache/config.php` (alguém rodou `php artisan config:cache`/`optimize`).
+  Com o config CACHEADO, o Laravel **ignora o `<env DB_CONNECTION=sqlite>` do `phpunit.xml`** (o cache
+  já tem `mysql` resolvido e não relê env). Então `php artisan test` usou o **MySQL de dev** como
+  conexão central, e o `RefreshDatabase` rodou **`migrate:fresh`** → **dropou e recriou vazias** todas
+  as tabelas do `nextgest_central`.
+- **O que sobrevive:** os bancos `tenant_*` (ex.: `tenant_barbeariateste`) **não** são tocados pelo
+  `migrate:fresh` do central — os dados internos de cada tenant (users/clientes/agendamentos) ficam
+  intactos. Perde-se só o **registro central** (lista de tenants + admin + cobrança).
+- **Prevenção (regra dura):**
+  1. **NUNCA** manter `config:cache`/`optimize` em DEV. Se for testar build de prod, rodar
+     `php artisan optimize:clear` **antes** de qualquer `php artisan test`.
+  2. Antes de `php artisan test`, garantir que **não** há `bootstrap/cache/config.php`
+     (`php artisan config:clear`).
+  3. Idealmente, um **guard** no `tests/TestCase`/`Pest.php` que **aborta** a suíte se a conexão
+     central não for sqlite (`config('database.default') !== 'sqlite'` → `throw`), para o teste
+     **nunca** tocar MySQL mesmo com config cacheado.
+- **Recuperação:** como os `tenant_*` sobrevivem, dá pra **re-registrar** os tenants no central
+  (INSERT em `tenants` — sem `Tenant::create`, que tentaria recriar o banco já existente), recriar o
+  super-admin (`php artisan` de criação) e re-provisionar assinaturas (comando idempotente). O `data`
+  (segmento/recursos/plano) e `estabelecimentos`/`faturas` são reconstruídos por melhor-esforço/UI.

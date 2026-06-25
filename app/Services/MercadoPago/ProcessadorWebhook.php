@@ -9,6 +9,7 @@ use App\Models\Fatura;
 use App\Models\WebhookEvento;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Processa um evento de assinatura do Mercado Pago (D62). Sempre CONSULTA o recurso na
@@ -49,6 +50,8 @@ class ProcessadorWebhook
         $chave = 'authorized_payment:'.$authorizedPaymentId;
 
         if ($this->jaProcessado($chave)) {
+            Log::info('Webhook MP: evento duplicado, ignorado', ['chave' => $chave]);
+
             return;
         }
 
@@ -57,6 +60,10 @@ class ProcessadorWebhook
         $assinatura = Assinatura::where('mp_preapproval_id', Arr::get($pago, 'preapproval_id'))->first();
 
         if (! $assinatura) {
+            Log::warning('Webhook MP: assinatura não encontrada para o pagamento (ignorado)', [
+                'preapproval_id' => Arr::get($pago, 'preapproval_id'),
+                'authorized_payment_id' => $authorizedPaymentId,
+            ]);
             $this->registrar($chave, 'subscription_authorized_payment'); // não é nossa: marca p/ não repetir
 
             return;
@@ -82,6 +89,12 @@ class ProcessadorWebhook
             );
 
             $assinatura->update(['status' => Assinatura::ATIVA]);
+
+            Log::info('Webhook MP: cobrança aprovada → fatura marcada paga', [
+                'tenant' => $assinatura->tenant_id,
+                'competencia' => $competencia->toDateString(),
+                'gateway_referencia' => $referencia,
+            ]);
         } else {
             // Recusada → fatura vencida NA DATA DA FALHA (hoje); dispara a carência (4c).
             $assinatura->faturas()->updateOrCreate(
@@ -95,6 +108,12 @@ class ProcessadorWebhook
                     'gateway_referencia' => $referencia,
                 ],
             );
+
+            Log::info('Webhook MP: cobrança recusada → fatura vencida na data da falha', [
+                'tenant' => $assinatura->tenant_id,
+                'competencia' => $competencia->toDateString(),
+                'status_pagamento' => $statusPagamento,
+            ]);
         }
 
         $this->registrar($chave, 'subscription_authorized_payment');
@@ -110,6 +129,8 @@ class ProcessadorWebhook
         $chave = 'preapproval:'.$preapprovalId.':'.$status;
 
         if ($this->jaProcessado($chave)) {
+            Log::info('Webhook MP: evento duplicado, ignorado', ['chave' => $chave]);
+
             return;
         }
 
@@ -125,6 +146,15 @@ class ProcessadorWebhook
             }
 
             $assinatura->save();
+
+            Log::info('Webhook MP: status da recorrência atualizado', [
+                'tenant' => $assinatura->tenant_id,
+                'mp_status' => $status,
+            ]);
+        } else {
+            Log::warning('Webhook MP: assinatura não encontrada para a recorrência (ignorado)', [
+                'preapproval_id' => $preapprovalId,
+            ]);
         }
 
         $this->registrar($chave, 'subscription_preapproval');
