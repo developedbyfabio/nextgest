@@ -689,3 +689,28 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   - **Feature completa no dev.** Publicar em produção pelo [[Roteiro de Deploy Seguro]] — o deploy
     inclui a **migration de tenant** do Prompt 1 (`tenants:migrate`) **e** o re-seed das permissões
     (`tenants:seed`) para a aba aparecer aos papéis certos. **Não rodado em produção.**
+
+---
+
+## D52 — Menu: grupo da rota atual expandido + acordeão (só um aberto)
+> Refinamento de UX do menu (continua a D45/D46/D47). NÃO reverte "grupos fechados no load" (D47) —
+> só adiciona a exceção do grupo da página atual. Só UX; motor/negócio intocados. Suíte 462/462.
+- **Grupo da rota atual começa EXPANDIDO** (resolve o "esquece no reload"): no `painel.blade.php`,
+  `$grupoAtivo` é computado no servidor (`request()->routeIs(...)` com a lista de rotas de cada grupo)
+  e passado como `:expanded="$grupoAtivo === 'operacao'"` etc. Como é server-side, vale após reload E
+  após `wire:navigate` (o layout re-renderiza com o grupo certo aberto). Início / páginas sem grupo →
+  `$grupoAtivo = null` → todos fechados.
+- **Acordeão (só um aberto):** o `flux:sidebar.group` (web component `ui-disclosure`) NÃO tem acordeão
+  nativo. Um `<script>` no layout, ao abrir um grupo MANUALMENTE, fecha os demais **clicando no botão
+  deles** (usa o próprio toggle do Flux — não mexe no estado interno). Detecção de "aberto" robusta:
+  **visibilidade do conteúdo** (`getComputedStyle(div).display !== 'none'`), independente de como o
+  `ui-disclosure` representa o estado pós-hidratação (o atributo `open` server-side não é confiável no
+  cliente). Delegação no `document` (sobrevive ao `wire:navigate`) com guarda contra registro duplicado.
+- **Não trava:** o usuário pode fechar o grupo ativo manualmente. **Highlight do item ativo** inalterado.
+- **Gotcha (Blade):** o cálculo de `$grupoAtivo` entrou num bloco `@php ... @endphp`. Ao colocá-lo logo
+  após os `@php(...)` inline do topo, o regex de bloco do Blade **engoliu** os inline (de `@php($tenantId...)`
+  até o `@endphp`), deixando `$aparencia` etc. indefinidos (500). **Fix:** unir tudo num ÚNICO bloco
+  `@php ... @endphp` (sem misturar inline + bloco no topo).
+- Verificado por Playwright (Operação abre em "Últimos serviços" e **persiste no reload**; navegar p/
+  Gestão fecha Operação; abrir manualmente fecha o anterior; fechar o ativo é permitido) + 4 testes
+  (Início 0 grupos abertos; Operação/Gestão/Financeiro 1 cada). Sidebar colapsável/flyout/drawer/perfil intactos.

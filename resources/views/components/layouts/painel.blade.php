@@ -1,7 +1,25 @@
-@php($tenantId = tenant('id'))
-@php($aparencia = \App\Support\Aparencia::doTenant())
-@php($logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']))
-@php($fotoPerfilUrl = \App\Support\Aparencia::urlArquivo(auth('web')->user()?->foto_perfil))
+@php
+    $tenantId = tenant('id');
+    $aparencia = \App\Support\Aparencia::doTenant();
+    $logoUrl = \App\Support\Aparencia::urlArquivo($aparencia['logo']);
+    $fotoPerfilUrl = \App\Support\Aparencia::urlArquivo(auth('web')->user()?->foto_perfil);
+
+    // Grupo do menu que contém a ROTA ATUAL → começa EXPANDIDO (após navegação e
+    // reload). Início / páginas sem grupo → null (todos fechados). Mantém a decisão
+    // D47 (grupos fechados no load); só adiciona a exceção do grupo da página atual.
+    $rotasGrupo = [
+        'operacao' => ['painel.agenda', 'painel.avaliacoes', 'painel.servicos', 'painel.produtos', 'painel.vendas*', 'painel.bloqueios', 'painel.funcionamento', 'painel.kanban'],
+        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.integracoes*'],
+        'financeiro' => ['painel.financeiro'],
+    ];
+    $grupoAtivo = null;
+    foreach ($rotasGrupo as $grupo => $rotas) {
+        if (request()->routeIs(...$rotas)) {
+            $grupoAtivo = $grupo;
+            break;
+        }
+    }
+@endphp
 <!DOCTYPE html>
 {{-- font-size base no <html>: o "tamanho base" do tenant escala a UI (rem). --}}
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="font-size: {{ $aparencia['tamanho_base'] }};">
@@ -82,7 +100,7 @@
                 Início
             </flux:sidebar.item>
 
-            <flux:sidebar.group heading="Operação" icon="squares-2x2" expandable :expanded="false">
+            <flux:sidebar.group heading="Operação" icon="squares-2x2" expandable :expanded="$grupoAtivo === 'operacao'">
                 @canany(['ver_agenda', 'ver_agenda_propria'])
                     <flux:navlist.item icon="calendar-days" :href="route('painel.agenda', ['tenant' => $tenantId])" :current="request()->routeIs('painel.agenda')" wire:navigate>Agendamentos</flux:navlist.item>
                 @endcanany
@@ -107,7 +125,7 @@
                 @endcan
             </flux:sidebar.group>
 
-            <flux:sidebar.group heading="Gestão" icon="cog-6-tooth" expandable :expanded="false">
+            <flux:sidebar.group heading="Gestão" icon="cog-6-tooth" expandable :expanded="$grupoAtivo === 'gestao'">
                 @can('gerir_unidades')
                     <flux:navlist.item icon="building-storefront" :href="route('painel.unidades', ['tenant' => $tenantId])" :current="request()->routeIs('painel.unidades')" wire:navigate>Unidades</flux:navlist.item>
                 @endcan
@@ -137,7 +155,7 @@
             </flux:sidebar.group>
 
             @can('ver_financeiro')
-                <flux:sidebar.group heading="Financeiro" icon="banknotes" expandable :expanded="false">
+                <flux:sidebar.group heading="Financeiro" icon="banknotes" expandable :expanded="$grupoAtivo === 'financeiro'">
                     <flux:navlist.item icon="currency-dollar" :href="route('painel.financeiro', ['tenant' => $tenantId])" :current="request()->routeIs('painel.financeiro')" wire:navigate>Visão financeira</flux:navlist.item>
                 </flux:sidebar.group>
             @endcan
@@ -228,5 +246,43 @@
     <flux:toast position="top right" />
 
     @fluxScripts
+
+    {{-- Acordeão do menu: SÓ UM grupo aberto por vez. O grupo da rota atual já vem
+         expandido pelo servidor (:expanded acima). Aqui, ao abrir um grupo MANUALMENTE,
+         fechamos os demais clicando no botão deles (usa o próprio toggle do Flux
+         `ui-disclosure` — não mexe no estado interno). Delegação no document (sobrevive
+         ao wire:navigate); guarda contra registro duplicado. --}}
+    <script>
+        (function () {
+            if (window.__ngSidebarAcordeao) return;
+            window.__ngSidebarAcordeao = true;
+
+            // "Aberto" = o painel de conteúdo do grupo está visível (display != none).
+            // Detecção robusta — independe de como o ui-disclosure representa o estado.
+            function aberto(grupo) {
+                var conteudo = grupo.querySelector(':scope > div');
+                return !! conteudo && getComputedStyle(conteudo).display !== 'none';
+            }
+
+            document.addEventListener('click', function (e) {
+                var grupo = e.target.closest('ui-disclosure[data-flux-sidebar-group]');
+                if (! grupo) return;
+
+                var botao = grupo.querySelector(':scope > button');
+                if (! botao || ! botao.contains(e.target)) return; // só o cabeçalho do grupo
+
+                // Depois que o grupo alternou: se ESTE abriu, fecha os demais abertos
+                // (clicando no botão deles — usa o próprio toggle do Flux).
+                requestAnimationFrame(function () {
+                    if (! aberto(grupo)) return; // o clique fechou este → nada a fazer
+                    document.querySelectorAll('ui-disclosure[data-flux-sidebar-group]').forEach(function (outro) {
+                        if (outro === grupo || ! aberto(outro)) return;
+                        var b = outro.querySelector(':scope > button');
+                        if (b) b.click();
+                    });
+                });
+            });
+        })();
+    </script>
 </body>
 </html>
