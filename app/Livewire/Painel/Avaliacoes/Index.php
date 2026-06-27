@@ -7,6 +7,7 @@ namespace App\Livewire\Painel\Avaliacoes;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Unidade;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -44,6 +45,9 @@ class Index extends Component
 
     public ?int $filtroUnidade = null;
 
+    /** Filtro por profissional — SÓ para quem vê tudo (Dono). Ignorado p/ profissional (D67). */
+    public ?int $filtroProfissional = null;
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()->canAny(['ver_avaliacoes', 'ver_avaliacoes_proprias']), 403);
@@ -54,6 +58,11 @@ class Index extends Component
     {
         if (str_starts_with($name, 'filtro')) {
             $this->resetPage();
+        }
+
+        // Trocar a unidade limpa o profissional escolhido (pode não ser dela).
+        if ($name === 'filtroUnidade') {
+            $this->filtroProfissional = null;
         }
     }
 
@@ -80,6 +89,10 @@ class Index extends Component
             ->when(! $this->podeVerTudo(), fn ($q) => $q->where('profissional_id', auth('web')->id()))
             // Filtro por cliente: só faz sentido (e só é permitido) para quem vê tudo.
             ->when($this->podeVerTudo() && $this->filtroCliente !== '', fn ($q) => $q->whereHas('cliente', fn ($c) => $c->where('nome', 'like', '%'.$this->filtroCliente.'%')))
+            // Filtro por profissional: SÓ na visão do Dono. Para o profissional o gate é
+            // false → o filtro é IGNORADO e o escopo já está forçado no próprio usuário
+            // acima (não dá para ver outro mandando outro profissional_id — lição 8).
+            ->when($this->podeVerTudo() && $this->filtroProfissional, fn ($q) => $q->where('profissional_id', $this->filtroProfissional))
             ->when($this->filtroUnidade, fn ($q) => $q->where('unidade_id', $this->filtroUnidade))
             ->when($this->filtroPeriodo !== '', fn ($q) => $q->where('data_hora_inicio', '>=', match ($this->filtroPeriodo) {
                 'semana' => now()->startOfWeek(),
@@ -129,11 +142,20 @@ class Index extends Component
             ->orderByDesc('data_hora_inicio')
             ->paginate(15);
 
+        // Lista de profissionais para o filtro — só montada para quem vê tudo (Dono),
+        // coerente com a unidade selecionada (se houver).
+        $profissionais = $this->podeVerTudo()
+            ? User::where('e_profissional', true)
+                ->when($this->filtroUnidade, fn ($q) => $q->whereHas('unidades', fn ($u) => $u->where('unidades.id', $this->filtroUnidade)))
+                ->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('livewire.painel.avaliacoes.index', [
             'atendimentos' => $atendimentos,
             'podeVerTudo' => $this->podeVerTudo(),
             'resumo' => $this->resumo(),
             'unidades' => Unidade::where('ativo', true)->orderBy('nome')->get(),
+            'profissionais' => $profissionais,
         ]);
     }
 }

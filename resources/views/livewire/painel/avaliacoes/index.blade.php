@@ -31,6 +31,15 @@
     <div class="flex flex-wrap items-end gap-3">
         @if ($podeVerTudo)
             <flux:input wire:model.live.debounce.300ms="filtroCliente" icon="magnifying-glass" placeholder="Buscar cliente" class="w-48" label="Cliente" size="sm" />
+
+            {{-- Filtro por profissional: SÓ na visão de quem vê tudo (Dono). O profissional
+                 não recebe este select e o servidor ignora qualquer profissional_id dele (D67). --}}
+            <flux:select wire:model.live="filtroProfissional" label="Profissional" size="sm" class="w-44">
+                <flux:select.option value="">Todos os profissionais</flux:select.option>
+                @foreach ($profissionais as $p)
+                    <flux:select.option value="{{ $p->id }}">{{ $p->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
         @endif
 
         <flux:select wire:model.live="filtroPeriodo" label="Período" size="sm" class="w-36">
@@ -62,7 +71,7 @@
             </flux:select>
         @endif
 
-        <flux:icon name="arrow-path" wire:loading.delay wire:target="filtroCliente,filtroPeriodo,filtroNota,filtroComentario,filtroUnidade" class="mb-2 size-5 animate-spin" style="color: var(--cor-principal);" />
+        <flux:icon name="arrow-path" wire:loading.delay wire:target="filtroCliente,filtroProfissional,filtroPeriodo,filtroNota,filtroComentario,filtroUnidade" class="mb-2 size-5 animate-spin" style="color: var(--cor-principal);" />
     </div>
 
     @if ($atendimentos->isEmpty())

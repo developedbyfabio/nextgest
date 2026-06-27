@@ -1112,3 +1112,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Testes:** 2 em `ClubeTest` (botão usa `novoAssinante`, sem `$flux` no `wire:click`; adicionar
   assinante cria a assinatura). Suíte **547/547**. Verificado por HTTP (Playwright): modal não abre
   sozinho, abre no clique, assinante criado; link do estado vazio presente. **Sem migration. Sem deploy.**
+
+---
+
+## D67 — Filtro por profissional em "Últimos serviços" (sem enfraquecer o anonimato D51)
+> Mais um filtro na aba de avaliações, **só na visão do Dono**. O anonimato do profissional (D51)
+> continua forçado **no servidor** — o filtro não vira brecha. Reusa a permissão existente; sem RBAC
+> novo. Ver [[Últimos serviços (Avaliações)]].
+- **Visão do Dono** (`can('ver_avaliacoes')`): select "Profissional" na barra de filtros; filtra a
+  lista por profissional **mantendo o nome do cliente** (gestão). Combina com os demais filtros; o
+  resumo do topo recalcula (usa o mesmo `escopo()`). A lista de profissionais é coerente com a unidade
+  selecionada; trocar a unidade limpa o profissional escolhido.
+- **Visão do profissional** (`ver_avaliacoes_proprias`): **inalterada** — só os atendimentos dele,
+  **anônimo** (a query nem carrega `cliente`), e o select de profissional **não é renderizado**.
+- **Blindagem (lição 8):** o filtro só é aplicado quando `podeVerTudo()` é true
+  (`->when($this->podeVerTudo() && $this->filtroProfissional, …)`). Para o profissional o gate é false
+  → o `filtroProfissional` recebido é **ignorado** e o escopo já está forçado em `profissional_id =
+  auth id`. Mandar outro `profissional_id` **não** vaza dados de outro nem o nome do cliente.
+- **Componente:** `App\Livewire\Painel\Avaliacoes\Index` (+ view) — só somou o filtro; query/anonimato/
+  permissão preservados. **Não** tocou motor/atendimento/faturamento/RBAC.
+- **Testes:** `AvaliacoesPainelTest` +3 (Dono filtra e mantém o cliente; select não renderiza p/ o
+  profissional; **SEGURANÇA**: profissional forçando outro id segue só com os dele e anônimo). Suíte
+  **550/550**. Verificado por HTTP (Playwright): Dono filtra por "Jorge Tesoura" com nomes de cliente
+  e resumo recalculado; profissional (Ana) sem o filtro, sem coluna de cliente. **Sem migration. Sem deploy.**

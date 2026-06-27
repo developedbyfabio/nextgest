@@ -139,3 +139,41 @@ it('filtra por período (data do atendimento)', function () {
         ->set('filtroPeriodo', 'dia')
         ->assertSee('HojeMarcador')->assertDontSee('AntigoMarcador');
 });
+
+// ---- D67: filtro por profissional (visão Dono) + blindagem do anonimato ------
+
+it('Dono filtra por profissional e mantém o nome do cliente', function () {
+    concluido($this, $this->jorge, 5, 'Comentário do Jorge');
+    concluido($this, $this->ana, 4, 'Comentário da Ana');
+
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@ult.test']), 'web');
+
+    Livewire::test(Index::class)
+        ->set('filtroProfissional', $this->jorge->id)
+        ->assertSee('Comentário do Jorge')
+        ->assertDontSee('Comentário da Ana')
+        ->assertSee('Cliente Secreto'); // visão de gestão mantém o nome
+});
+
+it('o select de profissional NÃO é renderizado para o profissional', function () {
+    concluido($this, $this->jorge, 5);
+    $this->actingAs($this->jorge, 'web');
+
+    Livewire::test(Index::class)
+        ->assertDontSeeHtml('wire:model.live="filtroProfissional"');
+});
+
+it('SEGURANÇA: profissional forçando outro profissional_id não vê dados de outro nem o cliente', function () {
+    concluido($this, $this->jorge, 5, 'Comentário do Jorge');
+    concluido($this, $this->ana, 4, 'Comentário da Ana');
+
+    $this->actingAs($this->jorge, 'web');
+
+    // Tenta burlar: manda o id da Ana no filtro. O servidor IGNORA (gate por permissão)
+    // e o escopo segue forçado no próprio usuário.
+    Livewire::test(Index::class)
+        ->set('filtroProfissional', $this->ana->id)
+        ->assertSee('Comentário do Jorge')      // continua vendo só os DELE
+        ->assertDontSee('Comentário da Ana')     // NÃO vaza o de outro
+        ->assertDontSee('Cliente Secreto');      // continua anônimo
+});
