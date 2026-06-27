@@ -339,3 +339,26 @@
 [wire\:loading\.flex\.delay] {
     display: none;
 }
+
+/*
+| D73 — Transição suave da sidebar inteira (expandir ↔ colapsar) no DESKTOP.
+|
+| O Flux troca a largura por classe (w-64 ↔ data-flux-sidebar-collapsed-desktop:w-14,
+| + padding p-4 ↔ px-2) ao clicar no hambúrguer; sem `transition` a troca era um
+| "teleporte". Aqui só adicionamos a transição de width/padding — o conteúdo central
+| desliza junto porque a coluna do grid do app é `min-content` (acompanha a largura da
+| sidebar a cada frame), sem reflow brusco. Os rótulos são ocultados pelo próprio Flux
+| (display:none no estado recolhido) e a sidebar tem `overflow-hidden` → não quebram
+| linha nem vazam durante a animação.
+|
+| SÓ desktop (lg+, onde o colapso acontece). No mobile a sidebar é um drawer que usa
+| `transition-transform` (x-init do Flux) — não tocamos. Fora de @layer para vencer os
+| utilitários. `prefers-reduced-motion` já é respeitado pelo bloco global do @layer base
+| (zera a transition-duration com !important) → troca instantânea, sem bug. Sobrevive ao
+| wire:navigate por ser CSS puro (não depende de JS reinicializar). Ver D73.
+*/
+@media (min-width: 1024px) {
+    [data-flux-sidebar] {
+        transition: width 250ms ease, padding 250ms ease;
+    }
+}

@@ -20,6 +20,11 @@
                                     Tudo confirmado
                                 @endif
                             </flux:text>
+                            {{-- Card cheio também leva à agenda (o estado vazio já levava — Fatia 1). --}}
+                            <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
+                               class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-principal);">
+                                Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
+                            </a>
                         @else
                             <flux:heading size="lg" style="color: var(--cor-texto);">Nenhum agendamento para hoje</flux:heading>
                             <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Dia livre na agenda.</flux:text>
@@ -56,6 +61,11 @@
                             @else
                                 <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Nenhum horário restante hoje.</flux:text>
                             @endif
+                            {{-- Card cheio também leva à agenda (o estado vazio já levava — Fatia 1). --}}
+                            <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
+                               class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-secundaria);">
+                                Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
+                            </a>
                         @else
                             <flux:heading size="lg" style="color: var(--cor-texto);">Nenhum agendamento seu hoje</flux:heading>
                             <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Aproveite o dia livre.</flux:text>

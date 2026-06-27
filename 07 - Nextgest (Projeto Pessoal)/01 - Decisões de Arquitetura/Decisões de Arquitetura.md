@@ -1261,3 +1261,28 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Testes:** `RecursosTenantTest` +2 — (1) `VerificaRecurso` está nos persistentes; (2) a rota do
   clube o tem (com `:clube`) e a de integrações (sem gate) não. Suíte **567/567**. **Sem migration.
   Sem deploy.**
+
+---
+
+## D73 — Transição suave da sidebar (expandir↔colapsar) + card "agendamento hoje" clicável
+> Dois polimentos de UI/navegação no painel do tenant. Acordeão dos grupos (D66) e os dois estados
+> da sidebar (D36/D47/D52) ficam **idênticos** — só ganham a transição. **Só view/CSS.**
+- **Transição da sidebar inteira:** o Flux troca a largura por **classe** (`w-64` ↔
+  `data-flux-sidebar-collapsed-desktop:w-14`, + `p-4` ↔ `px-2`) ao clicar no hambúrguer; **sem
+  `transition` era "teleporte"**. Adicionada UMA regra em `resources/css/app.css` (fora de `@layer`,
+  p/ vencer utilitários):
+  `@media (min-width:1024px){ [data-flux-sidebar]{ transition: width .25s ease, padding .25s ease } }`.
+  O conteúdo central **desliza junto** porque a coluna do grid do app é `min-content` (acompanha a
+  largura a cada frame) — **sem reflow/salto**. Os rótulos são ocultados pelo próprio Flux
+  (`display:none` no recolhido) e a sidebar tem `overflow-hidden` → **não quebram linha nem vazam**.
+- **Só desktop (lg+)**, onde o colapso acontece; no **mobile** a sidebar é drawer com
+  `transition-transform` (x-init do Flux) — **não tocado**. **`prefers-reduced-motion`** já é
+  respeitado pelo bloco global do `@layer base` (zera a duração com `!important`) → troca instantânea.
+  CSS puro → **sobrevive ao `wire:navigate`** (não volta a teleportar).
+- **Card "N agendamento(s) hoje" clicável:** no `resumo-do-dia`, os estados **cheios** (casa e pessoal)
+  ganharam o mesmo link **"Ver agendamentos →"** (`wire:navigate`) que os estados vazios já tinham
+  (Fatia 1) — leva à agenda, navegável por teclado, cor de acento.
+- **Verificação (HTTP/Playwright):** card cheio mostra o link e navega p/ `/painel/agenda`; sidebar
+  anima **256→103→56px** (frame intermediário capturado — não teleporta), `transition-property =
+  width, padding` / `.25s`, reexpande p/ 256; com `prefers-reduced-motion` a duração cai p/ ~0. Sem
+  vazamento de rótulos no frame do meio. Suíte **567/567**. **Sem migration. Sem deploy.**

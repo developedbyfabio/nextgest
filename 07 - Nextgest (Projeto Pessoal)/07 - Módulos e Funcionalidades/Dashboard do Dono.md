@@ -110,3 +110,9 @@ gráfico **"Previsão da semana (a receber)"** (barras Seg–Dom). Regra: Σ `ag
 filtro de unidade. Cálculo em `Metricas::previsaoSemana()`/`previsaoSemanaPorDia()` (agregado, sem N+1);
 **lê a agenda, não toca o `MotorDisponibilidade`**. Mesmo público de antes (`ver_dashboard`). Testes em
 `DashboardTest`; contagem de queries do dashboard mantida (≤ 25).
+
+## Card "resumo do dia" clicável + sidebar animada (D73)
+O card de resumo do dia (`resumo-do-dia`, no Início e na Agenda) passou a levar à agenda também no
+estado **cheio** ("N agendamento(s) hoje / Tudo confirmado") — o link **"Ver agendamentos →"**
+(`wire:navigate`), antes só nos estados vazios. Em paralelo, a **sidebar inteira** ganhou transição
+suave ao expandir/colapsar (antes era "teleporte"); detalhes em [[Decisões de Arquitetura]] (D73).
