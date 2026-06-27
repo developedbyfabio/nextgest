@@ -174,41 +174,32 @@
                     </ul>
                 </div>
 
-                {{-- Finalizar atendimento → comanda (visível também ao Profissional do
-                     próprio atendimento, que não tem gerir_agenda). Idempotente:
-                     se a comanda já existe, abre a existente. --}}
-                @if ($podeFinalizar && ! $modoRemarcar)
-                    <flux:separator />
-                    <div class="flex flex-col gap-2">
-                        @if ($comandaDoDetalhe)
-                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="shopping-cart">Abrir comanda</flux:button>
-                        @elseif ($detalhe->status === 'concluido')
-                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="shopping-cart">Gerar comanda</flux:button>
-                        @else
-                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="check-circle">Finalizar atendimento</flux:button>
-                            <flux:text class="text-xs" style="color: var(--cor-texto-suave);">Conclui o atendimento e abre a comanda (cliente e profissional travados).</flux:text>
-                        @endif
-                    </div>
-                @endif
+                {{-- Transições disponíveis SEM 'concluido': concluir é só pelo "Finalizar
+                     atendimento" (gera comanda). Ver D70. --}}
+                @php($transicoes = collect(\App\Models\Agendamento::TRANSICOES[$detalhe->status])->reject(fn ($s) => $s === 'concluido'))
 
-                @if ($podeGerir)
+                {{-- Ações de status (grandes, largura cheia) — empilhadas ACIMA do
+                     "Finalizar", que segue sendo o destaque conclusivo. --}}
+                @if ($podeGerir && ($modoRemarcar || $transicoes->isNotEmpty()))
                     <flux:separator />
 
                     @unless ($modoRemarcar)
-                        {{-- Ações de status (só transições permitidas) --}}
-                        <div class="flex flex-wrap gap-2">
-                            @foreach (\App\Models\Agendamento::TRANSICOES[$detalhe->status] as $proximo)
-                                @if ($proximo === 'cancelado')
-                                    <flux:button wire:click="pedirCancelar" size="sm" variant="danger" icon="x-mark">Cancelar</flux:button>
-                                @else
-                                    <flux:button wire:click="mudarStatus('{{ $proximo }}')" size="sm" variant="primary">{{ $statusLabel[$proximo] }}</flux:button>
-                                @endif
+                        <div class="flex flex-col gap-2">
+                            @foreach ($transicoes as $proximo)
+                                @continue($proximo === 'cancelado')
+                                <flux:button wire:click="mudarStatus('{{ $proximo }}')" variant="outline" class="w-full justify-center">{{ $statusLabel[$proximo] }}</flux:button>
                             @endforeach
-                        </div>
 
-                        @if (! in_array($detalhe->status, \App\Models\Agendamento::STATUS_LIVRES, true) && $detalhe->status !== 'concluido')
-                            <flux:button wire:click="iniciarRemarcacao" size="sm" variant="subtle" icon="arrow-path">Remarcar</flux:button>
-                        @endif
+                            @if (! in_array($detalhe->status, \App\Models\Agendamento::STATUS_LIVRES, true))
+                                <flux:button wire:click="iniciarRemarcacao" variant="outline" icon="arrow-path" class="w-full justify-center">Remarcar</flux:button>
+                            @endif
+
+                            {{-- Cancelar: ação de risco, destacada (vermelho) e por último. Mantém a
+                                 confirmação em modal (D65) — não muda a regra de liberar o horário. --}}
+                            @if ($transicoes->contains('cancelado'))
+                                <flux:button wire:click="pedirCancelar" variant="danger" icon="x-mark" class="w-full justify-center">Cancelar</flux:button>
+                            @endif
+                        </div>
                     @else
                         {{-- Modo remarcar --}}
                         <div class="flex flex-col gap-3">
@@ -226,6 +217,23 @@
                             <flux:button wire:click="cancelarRemarcacao" size="sm" variant="ghost">Voltar</flux:button>
                         </div>
                     @endunless
+                @endif
+
+                {{-- Finalizar atendimento → comanda (DESTAQUE, embaixo). Visível também ao
+                     Profissional do próprio atendimento, que não tem gerir_agenda. Único
+                     caminho até 'concluido'. Idempotente: se a comanda já existe, abre. --}}
+                @if ($podeFinalizar && ! $modoRemarcar)
+                    <flux:separator />
+                    <div class="flex flex-col gap-2">
+                        @if ($comandaDoDetalhe)
+                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="shopping-cart" class="w-full justify-center">Abrir comanda</flux:button>
+                        @elseif ($detalhe->status === 'concluido')
+                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="shopping-cart" class="w-full justify-center">Gerar comanda</flux:button>
+                        @else
+                            <flux:button wire:click="finalizarAtendimento" variant="primary" icon="check-circle" class="w-full justify-center">Finalizar atendimento</flux:button>
+                            <flux:text class="text-xs" style="color: var(--cor-texto-suave);">Conclui o atendimento e abre a comanda (cliente e profissional travados).</flux:text>
+                        @endif
+                    </div>
                 @endif
             </div>
         @endif

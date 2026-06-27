@@ -7,6 +7,7 @@ namespace App\Livewire\Painel\Agenda;
 use App\Models\Agendamento;
 use App\Models\Unidade;
 use App\Models\User;
+use App\Models\Venda;
 use App\Services\Agendamento\Agendador;
 use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Agendamento\SlotIndisponivelException;
@@ -67,6 +68,13 @@ class Index extends Component
         'cancelado' => 'Cancelado',
         'nao_compareceu' => 'Não compareceu',
     ];
+
+    /**
+     * Status alcançáveis pela troca manual (`mudarStatus`). 'concluido' fica DE FORA
+     * de propósito: concluir só pelo "Finalizar atendimento" (que gera/abre a comanda),
+     * garantindo "todo atendimento concluído tem comanda". Ver D70.
+     */
+    public const STATUS_VIA_MUDAR = ['confirmado', 'em_andamento', 'cancelado', 'nao_compareceu'];
 
     /** Cor semântica do status (barra de acento dos cartões). Não é tema da marca. */
     public const STATUS_HEX = [
@@ -136,6 +144,16 @@ class Index extends Component
     public function mudarStatus(string $novo, Agendador $agendador): void
     {
         $this->authorize('gerir_agenda');
+
+        // Conclusão NÃO passa por aqui: 'concluido' (e qualquer status fora da whitelist)
+        // é rejeitado. Fecha a brecha de concluir sem comanda — concluir é só pelo
+        // "Finalizar atendimento". Ver D70.
+        if (! in_array($novo, self::STATUS_VIA_MUDAR, true)) {
+            Flux::toast('Para concluir, use "Finalizar atendimento".', variant: 'danger');
+
+            return;
+        }
+
         $agendamento = $this->escopo()->whereKey($this->detalheId)->firstOrFail();
 
         try {
@@ -289,7 +307,7 @@ class Index extends Component
 
         // Comanda já existente do atendimento + se o usuário pode finalizar/gerar.
         $comandaDoDetalhe = $detalhe
-            ? \App\Models\Venda::where('agendamento_id', $detalhe->id)->where('status', '!=', 'cancelada')->value('id')
+            ? Venda::where('agendamento_id', $detalhe->id)->where('status', '!=', 'cancelada')->value('id')
             : null;
         $podeFinalizar = $detalhe
             && $this->podeFinalizar($detalhe)

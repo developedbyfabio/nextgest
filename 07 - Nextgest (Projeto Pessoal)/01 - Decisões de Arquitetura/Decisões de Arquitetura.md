@@ -1183,3 +1183,31 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   não-profissional não dispara; **só o profissional daquele atendimento** (não o de outro). Suíte
   **561/561**. Verificado por HTTP (Playwright): toast aparece p/ a profissional (Ana) e some sozinho.
   **Sem WebSocket. Sem migration. Sem deploy.**
+
+---
+
+## D70 — Modal de atendimento: "todo concluído gera comanda" (remoção do botão "Concluído")
+> **Decisão de negócio (Fabio):** não existe "atendimento concluído sem comanda". Logo, o único
+> caminho até o status `concluido` passa a ser o **"Finalizar atendimento"** (que gera/abre a comanda).
+> Auditoria que embasou: [[Fluxo de atendimento (modal da agenda)]] (Fatia 5 — Parte 1).
+- **Botão "Concluído" removido** do modal/flyout da agenda (a opção que chamava
+  `mudarStatus('concluido')`).
+- **`Agenda\Index::mudarStatus()` com whitelist** (`STATUS_VIA_MUDAR =
+  ['confirmado','em_andamento','cancelado','nao_compareceu']`): qualquer destino fora dela — em
+  especial `'concluido'` — é **rejeitado** com toast "Para concluir, use 'Finalizar atendimento'".
+  Fecha a brecha de concluir manipulando o componente. **O `Agendador::mudarStatus()` NÃO mudou** —
+  continua aceitando `concluido` porque é o `finalizarAtendimento()` quem o usa (concluir + comanda).
+- **Status `concluido` preservado** (não removido do sistema): segue consumido por **Avaliações (D51)**
+  (escopo `where status=concluido`, popup/elegibilidade), **Previsão (D68)** (que o exclui do "a
+  receber") e **métricas** de comparecimento/ranking (`Metricas`). Comanda/venda/comissão/estoque não
+  leem o status (independentes). Sem observer reagindo a `concluido`.
+- **Botões reorganizados (só view):** Confirmado/Em andamento/Não compareceu/**Remarcar** ficam
+  **grandes (largura cheia)** empilhados **acima**; **Cancelar** com **realce de risco** (vermelho),
+  mantendo a confirmação em modal (D65) e a liberação de horário inalterada; o **"Finalizar
+  atendimento"** segue `primary`, embaixo, como ação conclusiva. Não tocamos `MotorDisponibilidade`
+  nem a lógica de cada ação — só tamanho/posição/variante.
+- **Testes:** `AgendaTest` ganhou 2 — "NÃO conclui pelo mudarStatus" (status intacto + 0 comandas +
+  toast) e "modal não oferece o botão Concluído" (`assertDontSeeHtml mudarStatus('concluido')` +
+  `assertSeeHtml finalizarAtendimento`). `FinalizarAtendimentoTest` segue verde (conclusão via
+  Finalizar). Suíte **563/563**. Verificado por HTTP (Playwright, Dono): flyout sem "Concluído",
+  botões grandes acima e "Finalizar" em destaque. **Sem migration. Sem deploy.**

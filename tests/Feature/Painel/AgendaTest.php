@@ -7,6 +7,7 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Servico;
 use App\Models\Unidade;
+use App\Models\Venda;
 use App\Services\Agendamento\Agendador;
 use App\Services\Agendamento\MotorDisponibilidade;
 use Carbon\Carbon;
@@ -63,6 +64,28 @@ it('aplica transição de status válida', function () {
         ->call('mudarStatus', 'em_andamento');
 
     expect($this->agA->fresh()->status)->toBe('em_andamento');
+});
+
+it('NÃO conclui pelo mudarStatus — concluir é só pelo Finalizar (gera comanda)', function () {
+    Livewire::actingAs(usuarioComPapel('Dono'), 'web');
+
+    Livewire::test(Index::class)
+        ->call('abrirDetalhe', $this->agA->id)
+        ->call('mudarStatus', 'concluido')
+        ->assertDispatched('toast-show'); // aviso "use Finalizar"
+
+    // Brecha fechada: status não mudou e nenhuma comanda foi criada.
+    expect($this->agA->fresh()->status)->toBe('confirmado')
+        ->and(Venda::where('agendamento_id', $this->agA->id)->count())->toBe(0);
+});
+
+it('o modal não oferece o botão "Concluído" (concluir só pelo Finalizar)', function () {
+    Livewire::actingAs(usuarioComPapel('Dono'), 'web');
+
+    Livewire::test(Index::class)
+        ->call('abrirDetalhe', $this->agA->id)
+        ->assertDontSeeHtml("mudarStatus('concluido')")
+        ->assertSeeHtml('finalizarAtendimento');
 });
 
 it('rejeita transição de status inválida', function () {
