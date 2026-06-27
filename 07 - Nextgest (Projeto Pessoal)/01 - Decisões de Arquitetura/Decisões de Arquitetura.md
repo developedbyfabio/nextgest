@@ -1156,3 +1156,30 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   do dashboard segue **≤ 25** (as 2 queries agregadas extras não viram N+1). Suíte **554/554**.
   Verificado por HTTP (Playwright): card "Previsão de faturamento" R$ 570,00 + gráfico "Previsão da
   semana (a receber)" coerentes. **Sem migration. Sem deploy.**
+
+---
+
+## D69 — Aviso "próximo atendimento chegando" (toast por polling, 15 min antes)
+> Avisa o **profissional logado** quando ele tem atendimento "a atender" começando em ≤ 15 min, com um
+> **toast** (reusa o sistema do Flux) que some sozinho. Tempo real por **polling Livewire leve**, sem
+> WebSocket. Só **LÊ** a agenda — não toca o `MotorDisponibilidade`. Ver [[Aviso de próximo atendimento]].
+- **Componente global** `App\Livewire\Painel\AvisoProximoAtendimento` (view só com o gatilho), embutido
+  no **layout do painel** — porém **só montado quando `e_profissional`** (`@if` no layout): não-profissional
+  nem carrega o componente → zero polling/queries.
+- **Checagem** `verificar()`: se profissional, busca o **próximo** atendimento dele com status a atender
+  (`whereNotIn('status', ['concluido','cancelado','nao_compareceu'])`) e `data_hora_inicio` em
+  `(agora, agora+15min]` (fuso `APP_TIMEZONE`, índice composto `(profissional_id, data_hora_inicio)`).
+  Achou → `Flux::toast(heading: 'Seu próximo atendimento está chegando', text: '<cliente> · HH:MM ·
+  <serviço>')`.
+- **Idempotência:** guarda os ids avisados na **sessão** (`aviso_proximo:<userId>`) — avisa **uma vez**
+  por agendamento, sem repetir a cada poll nem entre navegações.
+- **Disparo por `wire:init` + `wire:poll.60s` (NÃO no mount):** telas que redirecionam no `mount` (ex.:
+  o Dashboard manda o profissional p/ a agenda) ainda **renderizam** o layout/este componente antes do
+  redirect — rodar no `mount` "consumia" o aviso numa página descartada (marcava a sessão e o toast se
+  perdia). `wire:init` roda no cliente, só em páginas realmente exibidas. (Bug pego e corrigido na
+  validação.)
+- **Testes:** `tests/Feature/Painel/AvisoProximoAtendimentoTest.php` (7) — dispara na janela;
+  idempotente (sessão); marca na sessão; fora da janela não dispara; status encerrado não dispara;
+  não-profissional não dispara; **só o profissional daquele atendimento** (não o de outro). Suíte
+  **561/561**. Verificado por HTTP (Playwright): toast aparece p/ a profissional (Ana) e some sozinho.
+  **Sem WebSocket. Sem migration. Sem deploy.**

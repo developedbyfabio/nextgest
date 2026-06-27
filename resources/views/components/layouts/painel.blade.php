@@ -272,6 +272,12 @@
         </flux:modal>
     @endif
 
+    {{-- Aviso "próximo atendimento chegando" (D69): só para profissional (não monta p/
+         os demais → sem polling/queries). Dispara um toast por polling leve (60s). --}}
+    @if (auth('web')->user()?->e_profissional)
+        <livewire:painel.aviso-proximo-atendimento />
+    @endif
+
     <flux:toast position="top right" />
 
     @fluxScripts
