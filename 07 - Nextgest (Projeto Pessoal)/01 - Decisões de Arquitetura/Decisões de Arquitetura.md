@@ -1237,6 +1237,27 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   tenant suspenso segue **200**.
 - **Testes:** `SuspensaoTest` +2 — (1) `Livewire::getPersistentMiddleware()` contém o middleware;
   (2) a rota do painel o tem e a do portal **não**. Suíte **565/565**.
-- **Fora de escopo (reportado):** o **B1** (gating de recurso de plano nas ações Livewire) **não** é
-  coberto por esta mudança — `VerificaRecurso` não foi adicionado aos persistentes. Baixo (página
-  gated dá 404); follow-up fácil (mesma técnica) se quiser fechar. **Sem migration. Sem deploy.**
+- **B1 (gating de recurso nas ações Livewire):** fechado em seguida — ver **D72**. **Sem migration.
+  Sem deploy.**
+
+---
+
+## D72 — Gating de recurso de plano revalidado nas AÇÕES Livewire (correção B1)
+> Achado **B1** da [[Auditoria de Segurança (rev. 1)]]: o `VerificaRecurso` (`recurso:clube|whatsapp|
+> gateway`) também só rodava no **GET**; uma aba de um componente gated aberta antes de o recurso ser
+> desligado seguia executando ações. Baixo (sem o recurso a página nem carrega — 404 no GET), fechado
+> "de graça" com a **mesma técnica do D71**.
+- **Correção:** `VerificaRecurso` entra na lista de **persistent middleware do Livewire**
+  (`AppServiceProvider`), depois do `InitializeTenancyByPath` e do `GarantirAssinaturaAtiva`.
+- **Auto-escopado:** o Livewire só reaplica o que estava na **rota original**; o `VerificaRecurso` só
+  vive nas rotas de **clube/integrações** → reaplicado só nesses componentes; resto do painel e portal
+  intactos. O filtro casa por classe ignorando o argumento (`Str::before(':')`), então `recurso:clube`
+  é reaplicado **com** o argumento.
+- **Aborta 404** (não redirect) — padrão idêntico ao `Illuminate\Auth\Middleware\Authorize` (o `can:`),
+  que **já** é persistente por padrão e aborta 403. Sem falso 404 no uso normal (quem não tem o recurso
+  não tem snapshot).
+- **Verificação (HTTP/Playwright):** clube carregado (recurso ON) → desliga `clube` na aba viva →
+  ação Livewire do componente de clube retorna **404 (bloqueada)**. Recursos restaurados após o teste.
+- **Testes:** `RecursosTenantTest` +2 — (1) `VerificaRecurso` está nos persistentes; (2) a rota do
+  clube o tem (com `:clube`) e a de integrações (sem gate) não. Suíte **567/567**. **Sem migration.
+  Sem deploy.**

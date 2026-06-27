@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Recurso;
+use App\Http\Middleware\VerificaRecurso;
 use App\Livewire\Admin\TenantDetalhe;
 use App\Models\Tenant;
 use App\Models\User;
@@ -150,4 +151,25 @@ it('middleware recurso:whatsapp LIBERA com o recurso ligado — HTTP autenticado
         ->get('/lojaum/painel/_prova_recurso')
         ->assertOk()
         ->assertSee('ok');
+});
+
+// ---- B1 (D72): gating de recurso também nas AÇÕES Livewire -------------------
+//
+// Mesma técnica do M1: o VerificaRecurso é persistent middleware, então o Livewire o
+// reaplica no /update — mas SÓ nos componentes cuja ROTA ORIGINAL o tinha (clube e
+// integrações). O filtro casa por classe ignorando o argumento, então `recurso:clube` é
+// reaplicado com o argumento. Aborta 404 (igual ao Authorize persistente que aborta 403).
+
+it('B1: VerificaRecurso é persistent middleware do Livewire (vale nas ações /update)', function () {
+    expect(Livewire::getPersistentMiddleware())->toContain(VerificaRecurso::class);
+});
+
+it('B1: a rota gated (clube) tem o VerificaRecurso; uma sem gate (integracoes) não', function () {
+    $router = app('router');
+
+    $gated = $router->gatherRouteMiddleware($router->getRoutes()->getByName('painel.clube'));
+    expect($gated)->toContain('App\Http\Middleware\VerificaRecurso:clube');
+
+    $semGate = $router->gatherRouteMiddleware($router->getRoutes()->getByName('painel.integracoes'));
+    expect(collect($semGate)->contains(fn ($m) => str_starts_with($m, VerificaRecurso::class)))->toBeFalse();
 });

@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Http\Middleware\GarantirAssinaturaAtiva;
 use App\Http\Middleware\InicializarTenancyArquivosLivewire;
+use App\Http\Middleware\VerificaRecurso;
 use App\Services\Clube\GatewayRecorrente;
 use App\Services\Clube\GatewayRecorrenteManual;
 use Illuminate\Support\Facades\Blade;
@@ -51,6 +52,14 @@ class AppServiceProvider extends ServiceProvider
             // InitializeTenancyByPath: a tenancy inicializa antes (lição 4, senão 500). O
             // redirect para a tela de suspensão é respeitado pelo Livewire.
             GarantirAssinaturaAtiva::class,
+            // Correção B1 (D72): o gating de recurso de plano (`recurso:clube|whatsapp|gateway`)
+            // também só valia no GET. Mesma técnica do M1: como persistent middleware, o Livewire
+            // o reaplica no /update — mas SÓ nos componentes cuja rota original o tinha (clube e
+            // integrações). O filtro casa por classe ignorando o argumento (`Str::before(':')`),
+            // então `recurso:clube` é reaplicado COM o argumento. Aborta 404 (recurso off),
+            // igual ao `Authorize` (can:) persistente que aborta 403. Quem não tem o recurso nem
+            // carrega a página (404 no GET) → sem snapshot → sem falso 404 no uso normal.
+            VerificaRecurso::class,
         ]);
 
         /*

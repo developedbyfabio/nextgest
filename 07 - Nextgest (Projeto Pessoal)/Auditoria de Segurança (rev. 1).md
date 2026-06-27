@@ -22,8 +22,8 @@ Crítico ou Alto confirmado.** Os achados são **1 Médio de enforcement** (susp
 ações Livewire — **já corrigido, D71**), itens **Baixos** de hardening e um **checklist de produção**
 (APP_DEBUG).
 
-> **Atualização (D71):** o achado **M1 foi corrigido**. Os demais seguem em aberto para o Fabio
-> priorizar (M2 checklist de produção; B1–B5 hardening).
+> **Atualização (D71/D72):** **M1 e B1 corrigidos**. Seguem em aberto para o Fabio priorizar:
+> M2 (checklist de produção) e B2–B5 (hardening).
 
 ---
 
@@ -62,10 +62,10 @@ ações Livewire — **já corrigido, D71**), itens **Baixos** de hardening e um
 
 ### BAIXO
 
-**B1 — Gating de recurso (plano) também não revalidado nas ações Livewire** — mesmo mecanismo do M1
-(`VerificaRecurso` é middleware de rota). Difícil de explorar: obter snapshot de um componente gated
-exige ter **carregado a página** dele (que dá 404 com o recurso off). Só explorável se o recurso for
-desligado **depois** da página carregada. Correção: mesma direção do M1.
+**B1 — Gating de recurso (plano) também não revalidado nas ações Livewire** — ✅ **CORRIGIDO (D72)**
+> `VerificaRecurso` virou **persistent middleware do Livewire** (mesma técnica do M1; auto-escopado a
+> clube/integrações). Aborta 404 nas ações quando o recurso está off (verificado por Playwright). +2
+> testes em `RecursosTenantTest`. Ver [[Decisões de Arquitetura]] (D72).
 
 **B2 — Webhook MP sem checagem de frescor do `ts`** — `ValidadorWebhook` valida o HMAC mas não rejeita
 assinaturas antigas (janela de replay). Impacto baixo: o processamento é **idempotente** e **consulta
