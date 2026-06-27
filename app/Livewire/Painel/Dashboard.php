@@ -122,6 +122,7 @@ class Dashboard extends Component
             'delta' => null,
             'faturamento' => 0.0,
             'vendasPagas' => 0,
+            'previsaoSemana' => 0.0,
             'ticketMedio' => 0.0,
             'comissaoAPagar' => 0.0,
             'deltaFaturamento' => null,
@@ -132,7 +133,7 @@ class Dashboard extends Component
             'profissionais' => [],
             'comparecimento' => ['taxa' => null, 'concluido' => 0, 'nao_compareceu' => 0, 'cancelado' => 0],
             'graficos' => [
-                'faturamento' => $vazio, 'maisVendidos' => $vazio,
+                'previsao' => $vazio, 'faturamento' => $vazio, 'maisVendidos' => $vazio,
                 'porDia' => $vazio, 'servicos' => $vazio, 'horarios' => $vazio, 'comparecimento' => $vazio,
             ],
         ];
@@ -161,7 +162,20 @@ class Dashboard extends Component
         $fatPorDia = $m->faturamentoPorDia();
         $maisVendidos = $m->maisVendidos();
 
+        // Previsão (a receber) da semana corrente — D68 (lê a agenda; não toca o motor).
+        $previsaoSemana = $m->previsaoSemana();
+        $previsaoPorDia = $m->previsaoSemanaPorDia();
+
         $graficos = [
+            'previsao' => [
+                'labels' => $previsaoPorDia['labels'],
+                'datasets' => [[
+                    'label' => 'A receber (R$)',
+                    'data' => $previsaoPorDia['valores'],
+                    'backgroundColor' => $cor,
+                    'borderRadius' => 6,
+                ]],
+            ],
             'faturamento' => [
                 'labels' => $fatPorDia['labels'],
                 'datasets' => [[
@@ -230,6 +244,7 @@ class Dashboard extends Component
             'delta' => $comp['delta'],
             'faturamento' => $faturamento,
             'vendasPagas' => $vendasPagas,
+            'previsaoSemana' => $previsaoSemana,
             'ticketMedio' => $m->ticketMedio(),
             'comissaoAPagar' => $m->comissaoAPagar(),
             'deltaFaturamento' => $m->comparativoFaturamento(),

@@ -148,6 +148,59 @@ class Metricas
         return ['labels' => $labels, 'valores' => $valores];
     }
 
+    // ----- Previsão de faturamento (a receber da SEMANA CORRENTE) — D68 -----
+    //
+    // LÊ a agenda (não toca o MotorDisponibilidade). "A receber" = agendamentos da
+    // semana corrente (Seg–Dom, no fuso do app) cujo status ainda é "a atender":
+    // exclui concluído/cancelado/não-compareceu. Respeita o filtro de unidade. É
+    // SEMPRE a semana atual — independe do período selecionado no dashboard.
+
+    /** [início, fim] da semana corrente (Seg 00:00 → Dom 23:59:59) no fuso do app. */
+    private function semanaCorrente(): array
+    {
+        $hoje = Carbon::now();
+
+        return [$hoje->copy()->startOfWeek(Carbon::MONDAY), $hoje->copy()->endOfWeek(Carbon::SUNDAY)];
+    }
+
+    /** Agendamentos da semana corrente a atender (não cancelado/concluído/no-show). */
+    private function baseAReceberSemana()
+    {
+        [$ini, $fim] = $this->semanaCorrente();
+
+        return Agendamento::query()
+            ->whereBetween('data_hora_inicio', [$ini, $fim])
+            ->whereNotIn('status', ['concluido', 'cancelado', 'nao_compareceu'])
+            ->when($this->unidadeId, fn ($q) => $q->where('unidade_id', $this->unidadeId));
+    }
+
+    /** Previsão (a receber) da semana corrente: soma de `valor_total`. */
+    public function previsaoSemana(): float
+    {
+        return (float) $this->baseAReceberSemana()->sum('valor_total');
+    }
+
+    /** Previsão por dia da semana corrente (Seg–Dom), com dias zerados. */
+    public function previsaoSemanaPorDia(): array
+    {
+        [$ini, $fim] = $this->semanaCorrente();
+
+        $soma = $this->baseAReceberSemana()->get(['data_hora_inicio', 'valor_total'])
+            ->groupBy(fn ($a) => $a->data_hora_inicio->format('Y-m-d'))
+            ->map(fn ($g) => (float) $g->sum('valor_total'));
+
+        $rotulos = [1 => 'Seg', 2 => 'Ter', 3 => 'Qua', 4 => 'Qui', 5 => 'Sex', 6 => 'Sáb', 7 => 'Dom'];
+        $labels = [];
+        $valores = [];
+
+        foreach (CarbonPeriod::create($ini->copy()->startOfDay(), $fim->copy()->startOfDay()) as $dia) {
+            $labels[] = $rotulos[$dia->dayOfWeekIso] ?? $dia->format('D');
+            $valores[] = round((float) ($soma[$dia->format('Y-m-d')] ?? 0), 2);
+        }
+
+        return ['labels' => $labels, 'valores' => $valores];
+    }
+
     /** Comissão por profissional (vendas pagas no período/unidade). Para o relatório 2C. */
     public function comissoesPorProfissional(): Collection
     {

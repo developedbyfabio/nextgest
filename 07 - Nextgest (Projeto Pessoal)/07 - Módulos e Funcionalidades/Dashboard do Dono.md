@@ -101,3 +101,12 @@ na agenda — por isso fica nos dois lugares).
 - [[Vendas e Comanda]] (fonte do faturamento real) · [[Produtos e Estoque]]
 - [[Modelo de Dados - Núcleo de Agendamento]] (agendamentos / `agendamento_servico`)
 - [[Papéis e Permissões (RBAC)]] (gate por `ver_agenda` + atributo `e_profissional`)
+
+## Previsão de faturamento da semana (D68)
+O card **"Vendas pagas"** foi substituído por **"Previsão de faturamento"** (bloco Financeiro) + um
+gráfico **"Previsão da semana (a receber)"** (barras Seg–Dom). Regra: Σ `agendamentos.valor_total` da
+**semana corrente** (no fuso do app) com status **a atender** — exclui concluído/cancelado/não-compareceu.
+É **a receber** (não realizado). Sempre a semana atual (independe do período do dashboard); respeita o
+filtro de unidade. Cálculo em `Metricas::previsaoSemana()`/`previsaoSemanaPorDia()` (agregado, sem N+1);
+**lê a agenda, não toca o `MotorDisponibilidade`**. Mesmo público de antes (`ver_dashboard`). Testes em
+`DashboardTest`; contagem de queries do dashboard mantida (≤ 25).

@@ -81,7 +81,8 @@
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <x-ng.indicador titulo="Faturamento" :valor="'R$ '.number_format($d['faturamento'], 2, ',', '.')"
                         icone="banknotes" :tendencia="$d['deltaFaturamento']" sub="vendas pagas" />
-                    <x-ng.indicador titulo="Vendas pagas" :valor="$d['vendasPagas']" icone="shopping-cart" sub="no período" />
+                    <x-ng.indicador titulo="Previsão de faturamento" :valor="'R$ '.number_format($d['previsaoSemana'], 2, ',', '.')"
+                        icone="calendar-days" sub="a receber esta semana" />
                     <x-ng.indicador titulo="Ticket médio" :valor="'R$ '.number_format($d['ticketMedio'], 2, ',', '.')"
                         icone="receipt-percent" sub="por venda paga" />
                     <x-ng.indicador titulo="Comissão a pagar" :valor="'R$ '.number_format($d['comissaoAPagar'], 2, ',', '.')"
@@ -106,6 +107,9 @@
 
         {{-- Gráficos (escurecem levemente durante o recálculo) --}}
         <div wire:loading.class.delay="opacity-60" wire:target="{{ $alvosFiltro }}" class="grid gap-4 transition-opacity lg:grid-cols-2">
+            <x-ng.grafico chave="previsao" titulo="Previsão da semana (a receber)" tipo="bar"
+                :dados="$d['graficos']['previsao']" :vazio="$d['previsaoSemana'] <= 0" />
+
             <x-ng.grafico chave="faturamento" titulo="Faturamento por dia" tipo="line"
                 :dados="$d['graficos']['faturamento']" :vazio="! $temVendas" />
 

@@ -1135,3 +1135,24 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   profissional; **SEGURANÇA**: profissional forçando outro id segue só com os dele e anônimo). Suíte
   **550/550**. Verificado por HTTP (Playwright): Dono filtra por "Jorge Tesoura" com nomes de cliente
   e resumo recalculado; profissional (Ana) sem o filtro, sem coluna de cliente. **Sem migration. Sem deploy.**
+
+---
+
+## D68 — Início: card "Previsão de faturamento" (substitui "Vendas pagas") + gráfico da semana
+> Lê a **agenda** (tabela `agendamentos`) — **NÃO** toca o `MotorDisponibilidade` (engine de slots é
+> outra coisa). Só apresentação/leitura. Ver [[Dashboard do Dono]].
+- **Regra (a receber):** previsão = Σ `agendamentos.valor_total` da **semana corrente** (Seg–Dom, no
+  fuso do app) cujo status ainda é **a atender** — `whereNotIn('status', ['concluido','cancelado',
+  'nao_compareceu'])` (= pendente/confirmado/em_andamento). Exclui concluído/cancelado/no-show. É
+  **a receber**, não realizado — sublinha "a receber esta semana".
+- **Sempre a semana atual:** independe do filtro de período do dashboard; respeita o filtro de
+  **unidade**. `Carbon::now()->startOfWeek(MONDAY)..endOfWeek(SUNDAY)` (fuso `APP_TIMEZONE`).
+- **Onde:** métodos `Metricas::previsaoSemana()` e `previsaoSemanaPorDia()` (query **agregada**, sem
+  N+1). O card **substitui** "Vendas pagas" no bloco Financeiro (mesmo público — `ver_dashboard`,
+  Dono/Gerente; quem não via o bloco continua sem). Gráfico de barras `chave="previsao"` reusando
+  `x-ng.grafico` (Chart.js já existente; sem lib nova), por dia Seg–Dom.
+- **Testes:** `DashboardTest` +4 (regra exclui cancelado/concluído/no-show e só semana corrente;
+  por-dia 7 dias Seg–Dom; filtro de unidade; card substitui "Vendas pagas"). `ContagemQueriesTest`
+  do dashboard segue **≤ 25** (as 2 queries agregadas extras não viram N+1). Suíte **554/554**.
+  Verificado por HTTP (Playwright): card "Previsão de faturamento" R$ 570,00 + gráfico "Previsão da
+  semana (a receber)" coerentes. **Sem migration. Sem deploy.**

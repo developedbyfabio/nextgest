@@ -178,3 +178,45 @@ it('redireciona a Recepção (sem ver_dashboard) para a agenda', function () {
     Livewire::test(Dashboard::class)
         ->assertRedirect(route('painel.agenda', ['tenant' => 'lojadash']));
 });
+
+// ---- D68: Previsão de faturamento (a receber da semana corrente) -------------
+
+it('previsão da semana soma só os a atender (exclui cancelado/concluído/no-show)', function () {
+    $hoje = Carbon::today();
+    criarAg($this->c1, $this->jorge, $hoje->copy()->setTime(9, 0), 'confirmado', [$this->corte]);       // 50 → conta
+    criarAg($this->c2, $this->ana, $hoje->copy()->setTime(10, 0), 'pendente', [$this->barba]);          // 30 → conta
+    criarAg($this->c3, $this->jorge, $hoje->copy()->setTime(11, 0), 'concluido', [$this->corte]);       // fora (concluído)
+    criarAg($this->c1, $this->ana, $hoje->copy()->setTime(12, 0), 'cancelado', [$this->corte]);         // fora
+    criarAg($this->c2, $this->jorge, $hoje->copy()->setTime(13, 0), 'nao_compareceu', [$this->barba]);  // fora
+    criarAg($this->c3, $this->ana, $hoje->copy()->addWeek()->setTime(9, 0), 'confirmado', [$this->corte]); // fora (outra semana)
+
+    expect(metricas30d()->previsaoSemana())->toBe(80.0); // 50 + 30
+});
+
+it('previsão por dia tem 7 dias (Seg–Dom) e a soma bate com o card', function () {
+    criarAg($this->c1, $this->jorge, Carbon::today()->setTime(9, 0), 'confirmado', [$this->corte]); // 50 hoje
+
+    $por = metricas30d()->previsaoSemanaPorDia();
+    expect($por['labels'])->toBe(['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'])
+        ->and(array_sum($por['valores']))->toBe(50.0)
+        ->and(metricas30d()->previsaoSemana())->toBe(50.0);
+});
+
+it('filtro de unidade vale para a previsão', function () {
+    $outra = Unidade::create(['nome' => 'Filial', 'ativo' => true]);
+    criarAg($this->c1, $this->jorge, Carbon::today()->setTime(9, 0), 'confirmado', [$this->corte]); // matriz, 50
+    criarAg($this->c2, $this->ana, Carbon::today()->setTime(10, 0), 'confirmado', [$this->barba])
+        ->update(['unidade_id' => $outra->id]); // filial, 30
+
+    $matriz = new Metricas(Carbon::today()->subDays(29)->startOfDay(), Carbon::today()->endOfDay(), $this->unidade->id);
+    expect($matriz->previsaoSemana())->toBe(50.0);
+});
+
+it('o card Previsão substitui Vendas pagas no Início', function () {
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@dash.test']), 'web');
+
+    Livewire::test(Dashboard::class)
+        ->assertSee('Previsão de faturamento')
+        ->assertSee('Previsão da semana (a receber)') // título do gráfico
+        ->assertDontSee('Vendas pagas');              // o card antigo saiu
+});
