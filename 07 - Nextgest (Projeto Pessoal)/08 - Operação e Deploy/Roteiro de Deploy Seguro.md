@@ -152,6 +152,23 @@ Quando a leva acumula **várias migrations centrais** (ex.: D54–D62: `estabele
 
 ---
 
+## Cenário: deploy só-código (sem migration)
+
+Incremento backend/testes/doc, sem mudança de schema (ex.: D64 — logs do webhook + guard de testes).
+Baixo risco, mas os trilhos continuam:
+- **Backup central mesmo assim** (registra o caminho do dump) — barato e é a regra.
+- **`migrate:status` deve mostrar ZERO pendente.** Se aparecer qualquer migration pendente, **PARAR e
+  reportar** — é inesperado num deploy só-código. **Não** rodar `migrate`.
+- **Build é opcional** (rodar é inofensivo) se o frontend não mudou — confirmar no diff que não há
+  `resources/`/assets antes de pular.
+- Seguir mesmo assim: `pull → composer → cache → queue:restart → validar` (matriz de regressão
+  completa: site, admin, **dono real loga**, **portal no ar**, endpoint sensível de pé, log limpo).
+- **Logs novos não podem vazar segredo** — revisar no diff que só logam fatos (ids/tipos/status),
+  nunca token/secret/assinatura/corpo. Lembrar que `LOG_LEVEL=warning` em produção **filtra os
+  `Log::info`** (baixar para `info` + `config:cache` só quando precisar de observabilidade fina).
+
+---
+
 ## Checklist rápido (cola mental)
 
 `push (dev)` → `backup (prod)` → `pull` → `composer/npm` → **`build`** → `migrate:status` →
