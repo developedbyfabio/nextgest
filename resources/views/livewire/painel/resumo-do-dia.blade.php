@@ -1,4 +1,7 @@
 <div>
+    {{-- O link "Ver agendamentos" é redundante quando já se está na agenda (o card
+         aparece lá também) — esconde-se nesse caso. D73. --}}
+    @php($naAgenda = request()->routeIs('painel.agenda'))
     @if ($resumo['mostraCasa'] || $resumo['mostraPessoal'])
         <div class="ng-surface flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-8">
             {{-- Bloco da CASA (gestão: total de hoje + a confirmar) --}}
@@ -21,17 +24,21 @@
                                 @endif
                             </flux:text>
                             {{-- Card cheio também leva à agenda (o estado vazio já levava — Fatia 1). --}}
-                            <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
-                               class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-principal);">
-                                Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
-                            </a>
+                            @unless ($naAgenda)
+                                <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
+                                   class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-principal);">
+                                    Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
+                                </a>
+                            @endunless
                         @else
                             <flux:heading size="lg" style="color: var(--cor-texto);">Nenhum agendamento para hoje</flux:heading>
                             <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Dia livre na agenda.</flux:text>
-                            <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
-                               class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-principal);">
-                                Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
-                            </a>
+                            @unless ($naAgenda)
+                                <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
+                                   class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-principal);">
+                                    Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
+                                </a>
+                            @endunless
                         @endif
                     </div>
                 </div>
@@ -62,17 +69,21 @@
                                 <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Nenhum horário restante hoje.</flux:text>
                             @endif
                             {{-- Card cheio também leva à agenda (o estado vazio já levava — Fatia 1). --}}
-                            <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
-                               class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-secundaria);">
-                                Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
-                            </a>
+                            @unless ($naAgenda)
+                                <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
+                                   class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-secundaria);">
+                                    Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
+                                </a>
+                            @endunless
                         @else
                             <flux:heading size="lg" style="color: var(--cor-texto);">Nenhum agendamento seu hoje</flux:heading>
                             <flux:text class="text-sm" style="color: var(--cor-texto-suave);">Aproveite o dia livre.</flux:text>
-                            <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
-                               class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-secundaria);">
-                                Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
-                            </a>
+                            @unless ($naAgenda)
+                                <a href="{{ route('painel.agenda', ['tenant' => tenant('id')]) }}" wire:navigate
+                                   class="mt-1.5 inline-flex items-center gap-1 text-sm font-medium" style="color: var(--cor-secundaria);">
+                                    Ver agendamentos <flux:icon name="arrow-right" class="size-4" />
+                                </a>
+                            @endunless
                         @endif
                     </div>
                 </div>
