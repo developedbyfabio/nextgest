@@ -1286,3 +1286,29 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   anima **256→103→56px** (frame intermediário capturado — não teleporta), `transition-property =
   width, padding` / `.25s`, reexpande p/ 256; com `prefers-reduced-motion` a duração cai p/ ~0. Sem
   vazamento de rótulos no frame do meio. Suíte **567/567**. **Sem migration. Sem deploy.**
+
+## D74 — Deploy de produção da leva D65–D73 + M1 + B1 (painel, segurança Livewire, sidebar)
+
+- **Data:** 27/06/2026. **Commit publicado:** `66ab3d7` (D73). **Rollback:** `d1a580d` (D64).
+- **Escopo:** entrou em produção a leva de melhorias do painel — D65 (admin: confirmação por modal
+  `x-ng.confirmar`), D66 (Clube: modal de assinante + polimentos), D67 (Últimos serviços: filtro por
+  profissional só p/ Dono, anonimato blindado), D68 (Início: card Previsão de faturamento + gráfico da
+  semana), D69 (aviso "próximo atendimento chegando" por polling), D70 (modal: remove botão
+  "Concluído" — todo concluído gera comanda), **D71/M1** (suspensão revalidada nas ações Livewire),
+  **D72/B1** (gating de plano revalidado nas ações Livewire), D73 (sidebar anima + card "agendamento
+  hoje" clicável).
+- **Migrations: NENHUMA.** O índice composto `agendamentos(profissional_id, data_hora_inicio)` que a
+  Fatia 4 (D68) usa **já existia** (criado antes na migration de tenant
+  `2026_06_22_130001_add_indices_performance_agendamentos_vendas`). Deploy efetivamente **só-código**
+  (+ build, pois `app.css`/views mudaram).
+- **M1/B1 (defesa em profundidade Livewire):** o `GarantirAssinaturaAtiva` (suspensão) e o gating de
+  recurso passaram a valer **também nas ações Livewire** (registrados como **persistent middleware**
+  no `AppServiceProvider`; o `redirect` é respeitado via `Utils::applyMiddleware`→`abort`). Antes só
+  o carregamento de página era barrado; agora um `wire:click` de tenant suspenso/sem-recurso também
+  é bloqueado.
+- **Validação de regressão:** site 200; admin (login + Editar/Dados/Faturamento, guest→login sem
+  500); **Dono real do `teste` cai no login (não na suspensão)** — assinatura `em_teste`; portal do
+  cliente no ar; tenant inexistente → 404 (`GarantirTenantAtivo` intacto, fora do diff); webhook MP
+  de pé (401 sem assinatura); `laravel.log` sem erro novo; workers reciclados.
+- **MP de produção:** **não ativado** (credenciais/URL/1ª adesão = passo manual à parte). Render
+  visual fino do painel (gráfico, animação da sidebar, modal) confere no navegador do Fabio.
