@@ -37,7 +37,7 @@ Alinhada à **landing** (mesma fonte de verdade; ver [[Landing (Site Institucion
   toggle sol/lua reusando **`x-landing.tema-toggle`** no header (+ radio no dropdown de perfil).
 - **Paleta:** classes Tailwind de marca (`from-violet-600 via-indigo-600 to-blue-600` + slate). Não
   emite `--cor-*` (central, sem tema de tenant).
-- **Confirmações (D64):** Inativar, Aplicar plano, Reverter pagamento e Cancelar fatura usam o modal
+- **Confirmações (D65):** Inativar, Aplicar plano, Reverter pagamento e Cancelar fatura usam o modal
   padrão **`x-ng.confirmar`** (red destrutiva / amber reversível) — **nunca** `confirm()` nativo. Ver
   [[Padrao de UI-UX (Design System)]].
 

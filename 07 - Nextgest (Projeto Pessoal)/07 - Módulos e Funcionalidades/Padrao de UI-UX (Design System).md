@@ -90,13 +90,13 @@ em `app.css`: `.ng-card-portal` (cartão de opção/lista), `.ng-skeleton-portal
 no portal usam `flux:modal` (não `wire:confirm` nativo). Ver
 [[Auditoria de UI (Portal e Painel)]] e [[Identidade Visual do Estabelecimento (Tema)]].
 
-### Confirmação padrão: `x-ng.confirmar` (nunca `confirm()` nativo) — D27/D64
+### Confirmação padrão: `x-ng.confirmar` (nunca `confirm()` nativo) — D27/D65
 Toda confirmação (painel do tenant E /admin) usa o componente **`x-ng.confirmar`**
 (`components/ng/confirmar.blade.php`): modal Flux com `titulo`/`texto`/`icone`/`tom`
 (**red** destrutiva | **amber** atenção/reversível), "Voltar" + o botão de confirmar no
 **slot**. **Proibido** `wire:confirm`/`window.confirm` (popup "site diz…"). Disparo:
 `wire:click="pedirX(...)"` → `Flux::modal('nome')->show()`; o confirmar chama o método da
-ação e fecha o modal. O /admin foi alinhado a esse padrão no **D64** (havia 4 `wire:confirm`).
+ação e fecha o modal. O /admin foi alinhado a esse padrão no **D65** (havia 4 `wire:confirm`).
 
 ## Painel + dashboard temáticos (Etapa B, 2026-06-21)
 O shell do painel e as telas de auth também refletem a marca (`cssVars()`), com a

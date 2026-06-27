@@ -1046,7 +1046,31 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 
 ---
 
-## D64 — Confirmações nativas do navegador → modal padrão do sistema (Flux)
+## D64 — Deploy de produção do incremento pós-D63: observabilidade do webhook + guard de testes
+
+- **Escopo:** subir os 2 commits que entraram após o D63 — `ac68b93` (logs de observabilidade no
+  webhook do MP, **sem mudar lógica**) e `b80f386` (travas anti-incidente na suíte de testes) + doc.
+  **Sem migration** (deploy só-código backend + testes). MP de produção **segue não ativado**.
+- **Logs do webhook = só fatos:** registram `tipo`, `action`, `data_id`, `live_mode`, `chave`,
+  `status`, ids e desfecho (recebido / assinatura inválida→401 / válida / aprovada / recusada /
+  duplicado / não encontrada). **Nunca** token, secret, x-signature ou corpo. Validado no diff e no
+  log real (POST de teste → 401 logado sem segredo).
+- **Gotcha LOG_LEVEL:** em produção `LOG_LEVEL=warning`, então os `Log::info` do webhook (recebido,
+  assinatura válida, cobrança aprovada) **não são gravados** — só `warning`/`error`. Para
+  observabilidade completa durante a ativação/depuração do MP, baixar temporariamente para
+  `LOG_LEVEL=info` no `.env` + `config:cache` (decisão do Fabio).
+- **Guard de testes (não afeta runtime):** `tests/bootstrap.php` limpa cache de config antes da
+  suíte e o `TestCase` exige conexão sqlite — impede que um config cacheado aponte o `php artisan
+  test` para o banco real. Afeta só a suíte.
+- **Checkpoint do `migrate:status`:** confirmado **ZERO pendente** (D54–D62 no batch [3]); nenhum
+  `migrate` rodado. Procedimento "deploy só-código" no [[Roteiro de Deploy Seguro]].
+- **Regressão validada:** site 200, admin (login + Editar/Dados/Faturamento, guest→login sem 500),
+  **dono real do `teste` cai no login (não na suspensão)**, portal do cliente no ar, webhook de pé
+  (401 sem assinatura), MP inerte, `laravel.log` sem erro novo.
+
+---
+
+## D65 — Confirmações nativas do navegador → modal padrão do sistema (Flux)
 > Só a CAMADA de confirmação mudou (popup `confirm()`/`wire:confirm` → modal Flux). Lógica das ações,
 > permissões/RBAC e a exigência de confirmar nas destrutivas: **intactas**. Auditoria-primeiro: o
 > painel do tenant já estava no padrão; só o /admin tinha `wire:confirm` (4 pontos das fatias recentes).
