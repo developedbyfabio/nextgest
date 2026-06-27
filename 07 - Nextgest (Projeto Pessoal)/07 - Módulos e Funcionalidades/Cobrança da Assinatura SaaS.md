@@ -155,6 +155,15 @@ tenants (`em_teste`); 2ª execução criou 0.
   preapproval authorized/cancelled; desconhecido (ack); falha de API→500; reconciliação.
 Suíte **542/542**. Validação ao vivo no dev: POST sem/forjada assinatura → 401.
 
+## Suspensão também nas ações Livewire (D71 — correção M1)
+O `GarantirAssinaturaAtiva` agora é **persistent middleware do Livewire** (`AppServiceProvider`), além
+de estar no grupo do painel. Assim a suspensão vale também nas **ações Livewire** (`/update`), não só
+no GET — fecha a brecha de uma aba aberta antes da suspensão continuar operando. **Auto-escopado:** o
+Livewire só reaplica o que estava na **rota original** do componente, então vale no **painel** e nunca
+no **portal** (que não tem o middleware). Tenant suspenso → ação bloqueada e redireciona à tela de
+suspensão; ativo/em teste/em carência agem normal; portal segue 200. Detalhes e prova (Playwright) na
+[[Auditoria de Segurança (rev. 1)]] e em [[Decisões de Arquitetura]] (D71).
+
 ## Limites / produção
 Ciclo de cobrança completo no **dev/sandbox**. Para produção: trocar para **credenciais de produção**
 do MP (token + webhook secret), cadastrar a **URL real** do webhook (`nextgest.com.br`, HTTPS público —

@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\GarantirAssinaturaAtiva;
 use App\Models\Assinatura;
 use App\Models\Fatura;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
+use Livewire\Livewire;
 
 /*
 | Fase 4c (D60) — suspensão por pagamento. Enforcement AO VIVO (situacaoAcesso) só no
@@ -143,4 +145,29 @@ it('marcar a fatura paga libera o painel no próximo request (ao vivo)', functio
     $a->faturaPendente()->update(['status' => Fatura::PAGA, 'data_pagamento' => Carbon::today()]);
 
     $this->actingAs($dono, 'web')->get('/lojaum/painel')->assertOk();
+});
+
+// ---- M1 (D71): suspensão também nas AÇÕES Livewire (não só no GET) ----------
+//
+// O GarantirAssinaturaAtiva precisa valer nas requisições de update do Livewire, senão
+// uma aba aberta antes da suspensão continua agindo. Como o endpoint /update é central e
+// só reaplica os PERSISTENT middleware que estavam na ROTA ORIGINAL do componente, a
+// blindagem é a dupla: (1) ele é persistent; (2) ele está na rota do painel. Juntos →
+// reaplicado nas ações do painel; ausente no portal (rota do cliente não o tem) → portal
+// intacto. (Verificado fim-a-fim por HTTP/Playwright: suspenso bloqueia a ação e
+// redireciona; dono ativo age normal; portal segue 200.)
+
+it('M1: GarantirAssinaturaAtiva é persistent middleware do Livewire (vale nas ações /update)', function () {
+    expect(Livewire::getPersistentMiddleware())->toContain(GarantirAssinaturaAtiva::class);
+});
+
+it('M1: a rota do painel tem o GarantirAssinaturaAtiva (logo é reaplicado nas ações; portal não o tem)', function () {
+    $router = app('router');
+
+    $rotaPainel = $router->getRoutes()->getByName('painel.agenda');
+    expect($router->gatherRouteMiddleware($rotaPainel))->toContain(GarantirAssinaturaAtiva::class);
+
+    // Portal do cliente NÃO carrega o middleware → não será reaplicado nas ações dele.
+    $rotaPortal = $router->getRoutes()->getByName('tenant.home');
+    expect($router->gatherRouteMiddleware($rotaPortal))->not->toContain(GarantirAssinaturaAtiva::class);
 });

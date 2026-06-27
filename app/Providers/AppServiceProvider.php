@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Middleware\GarantirAssinaturaAtiva;
 use App\Http\Middleware\InicializarTenancyArquivosLivewire;
 use App\Services\Clube\GatewayRecorrente;
 use App\Services\Clube\GatewayRecorrenteManual;
@@ -42,6 +43,14 @@ class AppServiceProvider extends ServiceProvider
         */
         Livewire::addPersistentMiddleware([
             InitializeTenancyByPath::class,
+            // Correção M1 (D71): a suspensão por pagamento (GarantirAssinaturaAtiva) só rodava
+            // no GET de página; as AÇÕES Livewire passavam livres (aba aberta antes da
+            // suspensão continuava operando). Como persistent middleware, o Livewire o reaplica
+            // no /update — mas SÓ para componentes cuja ROTA ORIGINAL o tinha (= o grupo do
+            // PAINEL). O portal/cliente nunca o teve → segue intacto. Listado DEPOIS do
+            // InitializeTenancyByPath: a tenancy inicializa antes (lição 4, senão 500). O
+            // redirect para a tela de suspensão é respeitado pelo Livewire.
+            GarantirAssinaturaAtiva::class,
         ]);
 
         /*

@@ -1211,3 +1211,32 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `assertSeeHtml finalizarAtendimento`). `FinalizarAtendimentoTest` segue verde (conclusão via
   Finalizar). Suíte **563/563**. Verificado por HTTP (Playwright, Dono): flyout sem "Concluído",
   botões grandes acima e "Finalizar" em destaque. **Sem migration. Sem deploy.**
+
+---
+
+## D71 — Suspensão por pagamento revalidada também nas AÇÕES Livewire (correção M1)
+> Achado **M1** da [[Auditoria de Segurança (rev. 1)]]: o `GarantirAssinaturaAtiva` só rodava no **GET
+> de página**; o middleware persistente do tenancy reaplicava só o `InitializeTenancyByPath`. Uma aba
+> aberta **antes** da suspensão continuava **executando ações Livewire** (furava o lever de cobrança).
+> Ver [[Cobrança da Assinatura SaaS]].
+- **Correção (1 linha, centralizada):** `GarantirAssinaturaAtiva` entra na lista de
+  **persistent middleware do Livewire** (`AppServiceProvider::boot`), **depois** do
+  `InitializeTenancyByPath`.
+- **Por que é seguro/auto-escopado:** o Livewire só reaplica um persistent middleware se ele estava na
+  **rota original** do componente (`PersistentMiddleware::getApplicablePersistentMiddleware` junta a
+  middleware da rota e filtra pela lista). Como o `GarantirAssinaturaAtiva` só vive no **grupo do
+  painel**, ele é reaplicado nas ações **do painel** e **nunca** nas do **portal/cliente** (cuja rota
+  não o tem) → **portal intacto**. Ordem: `InitializeTenancyByPath` antes → a tenancy inicializa
+  primeiro (lição 4, senão 500). O `redirect` para a tela de suspensão é respeitado pelo Livewire
+  (`Utils::applyMiddleware` faz `abort($response)`), igual ao `Authenticate` persistente.
+- **Escopo:** só painel (guard web). `em_teste`/`ativa`/`atrasada` agem normal. A tela de suspensão
+  não tem ação Livewire → sem loop. **GET inalterado** (persistent só atua no `/update`).
+- **Reprodução + verificação (área sensível, fim-a-fim por HTTP/Playwright):** ANTES — suspenso, ação
+  `navegar` **executava** (data 27→28/06, sem redirect). DEPOIS — suspenso, a ação é **bloqueada e
+  redireciona** para `assinatura-suspensa` (data não muda). Dono **ativo** age normal. **Portal** do
+  tenant suspenso segue **200**.
+- **Testes:** `SuspensaoTest` +2 — (1) `Livewire::getPersistentMiddleware()` contém o middleware;
+  (2) a rota do painel o tem e a do portal **não**. Suíte **565/565**.
+- **Fora de escopo (reportado):** o **B1** (gating de recurso de plano nas ações Livewire) **não** é
+  coberto por esta mudança — `VerificaRecurso` não foi adicionado aos persistentes. Baixo (página
+  gated dá 404); follow-up fácil (mesma técnica) se quiser fechar. **Sem migration. Sem deploy.**
