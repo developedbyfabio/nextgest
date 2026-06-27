@@ -137,10 +137,10 @@
                         <flux:table.cell>{{ $f->forma_pagamento ?? '—' }}</flux:table.cell>
                         <flux:table.cell class="text-right">
                             @if ($f->status === 'paga')
-                                <flux:button wire:click="reverter({{ $f->id }})" wire:confirm="Reverter o pagamento desta fatura?" size="sm" variant="ghost" icon="arrow-uturn-left">Reverter</flux:button>
+                                <flux:button wire:click="pedirReverter({{ $f->id }})" size="sm" variant="ghost" icon="arrow-uturn-left">Reverter</flux:button>
                             @elseif ($f->status !== 'cancelada')
                                 <flux:button wire:click="abrirPagar({{ $f->id }})" size="sm" variant="ghost" icon="banknotes">Marcar paga</flux:button>
-                                <flux:button wire:click="cancelar({{ $f->id }})" wire:confirm="Cancelar esta fatura?" size="sm" variant="subtle" icon="x-mark">Cancelar</flux:button>
+                                <flux:button wire:click="pedirCancelar({{ $f->id }})" size="sm" variant="subtle" icon="x-mark">Cancelar</flux:button>
                             @endif
                         </flux:table.cell>
                     </flux:table.row>
@@ -185,4 +185,19 @@
             </div>
         </form>
     </flux:modal>
+
+    {{-- Confirmações por modal (padrão x-ng.confirmar — sem confirm nativo). --}}
+    <x-ng.confirmar name="reverter-fatura" tom="amber" icone="arrow-uturn-left" titulo="Reverter o pagamento?"
+        texto="A fatura volta para 'aberta' (limpa data e forma de pagamento). Use para corrigir um lançamento.">
+        @if ($reverterId)
+            <flux:button wire:click="reverter({{ $reverterId }})" variant="primary" icon="arrow-uturn-left">Reverter</flux:button>
+        @endif
+    </x-ng.confirmar>
+
+    <x-ng.confirmar name="cancelar-fatura" tom="red" icone="x-mark" titulo="Cancelar esta fatura?"
+        texto="A fatura fica como 'cancelada' e não conta mais para a situação da assinatura.">
+        @if ($cancelarId)
+            <flux:button wire:click="cancelar({{ $cancelarId }})" variant="danger" icon="x-mark">Cancelar fatura</flux:button>
+        @endif
+    </x-ng.confirmar>
 </div>

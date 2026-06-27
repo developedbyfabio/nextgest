@@ -57,6 +57,19 @@ class TenantDetalhe extends Component
      * escolhido (D55). Recarrega o Tenant COMPLETO antes de salvar (regra de ouro do
      * `data`: preserva `segmento`/outros). Rebaixar só esconde o acesso — não apaga dados.
      */
+    /** Valida a seleção e abre o modal de confirmação (x-ng.confirmar, sem confirm nativo — D65). */
+    public function pedirTrocarPlano(): void
+    {
+        abort_unless(auth('admin')->check(), 403);
+
+        $this->validate(
+            ['plano' => ['required', 'string', Rule::in(array_keys(config('planos', [])))]],
+            ['plano.required' => 'Selecione um plano.', 'plano.in' => 'Selecione um plano.'],
+        );
+
+        Flux::modal('aplicar-plano')->show();
+    }
+
     public function trocarPlano(): void
     {
         abort_unless(auth('admin')->check(), 403);
@@ -76,6 +89,7 @@ class TenantDetalhe extends Component
             $this->recursos[$recurso->value] = in_array($recurso->value, $ativos, true);
         }
 
+        Flux::modal('aplicar-plano')->close();
         Flux::toast('Plano aplicado. Recursos redefinidos para o padrão do plano.', variant: 'success');
     }
 

@@ -110,9 +110,21 @@ class Tenants extends Component
         Flux::toast('Estabelecimento criado.', variant: 'success');
     }
 
+    /** Id do tenant alvo da confirmação de inativação (preenchido ao abrir o modal). */
+    public ?string $inativarId = null;
+
+    /** Abre o modal de confirmação (padrão x-ng.confirmar, sem confirm nativo — D65). */
+    public function pedirInativar(string $id): void
+    {
+        $this->inativarId = $id;
+        Flux::modal('inativar-tenant')->show();
+    }
+
     public function inativar(string $id): void
     {
         Tenant::whereKey($id)->update(['ativo' => false]);
+        $this->inativarId = null;
+        Flux::modal('inativar-tenant')->close();
         Flux::toast('Estabelecimento inativado.');
     }
 

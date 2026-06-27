@@ -118,7 +118,7 @@
             <flux:error name="plano" />
 
             <div class="flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-700">
-                <flux:button wire:click="trocarPlano" wire:confirm="Aplicar este plano? Os recursos serão redefinidos para o padrão do plano." variant="primary" icon="check">Aplicar plano</flux:button>
+                <flux:button wire:click="pedirTrocarPlano" variant="primary" icon="check">Aplicar plano</flux:button>
             </div>
         </flux:card>
     </div>
@@ -195,4 +195,10 @@
             </div>
         </div>
     </flux:modal>
+
+    {{-- Confirmação de aplicar plano (padrão x-ng.confirmar — sem confirm nativo). --}}
+    <x-ng.confirmar name="aplicar-plano" tom="amber" icone="arrow-path" titulo="Aplicar este plano?"
+        texto="Os recursos serão redefinidos para o padrão do plano. Rebaixar esconde o acesso aos módulos retirados — os dados permanecem.">
+        <flux:button wire:click="trocarPlano" variant="primary" icon="check">Aplicar plano</flux:button>
+    </x-ng.confirmar>
 </div>

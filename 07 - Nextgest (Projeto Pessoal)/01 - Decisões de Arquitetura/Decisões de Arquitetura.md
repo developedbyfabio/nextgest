@@ -1043,3 +1043,24 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   (antes o cache estava em UTC) — corrige o "agendar hoje" diagnosticado anteriormente.
 - **Estado final:** produção no commit do D62; landing/admin/painel/portal intactos; worker+cron
   ativos; nenhuma suspensão acionada. Procedimento detalhado no [[Roteiro de Deploy Seguro]].
+
+---
+
+## D64 — Confirmações nativas do navegador → modal padrão do sistema (Flux)
+> Só a CAMADA de confirmação mudou (popup `confirm()`/`wire:confirm` → modal Flux). Lógica das ações,
+> permissões/RBAC e a exigência de confirmar nas destrutivas: **intactas**. Auditoria-primeiro: o
+> painel do tenant já estava no padrão; só o /admin tinha `wire:confirm` (4 pontos das fatias recentes).
+- **Reuso (não criei nada novo):** componente já existente **`x-ng.confirmar`**
+  (`components/ng/confirmar.blade.php`) — modal Flux com `titulo`/`texto`/`icone`/`tom` (**red**
+  destrutiva | **amber** atenção/reversível), botão "Voltar" + o confirmar no **slot**. Padrão D27 usado
+  em equipe/unidades/serviços/bloqueios.
+- **Pattern aplicado:** disparo `wire:click="pedirX(...)"` → no componente `Flux::modal('nome')->show()`
+  (guarda o id alvo quando há); confirmar no slot chama o método **existente** (`inativar`/`cancelar`/
+  `reverter`/`trocarPlano`), que faz o trabalho e dá `Flux::modal('nome')->close()`.
+- **4 pontos trocados (/admin):** Inativar estabelecimento (`tenants`, amber), Aplicar plano
+  (`tenant-detalhe`, amber, `pedirTrocarPlano` valida a seleção antes de abrir), Reverter pagamento
+  (`faturamento`, amber) e **Cancelar fatura** (`faturamento`, **red**). Reset de 2FA já era modal.
+- **Testes:** `tests/Feature/Admin/ConfirmacaoModalTest.php` (3) — as telas do admin **não** contêm
+  `wire:confirm` e o modal de confirmação está renderizado. Suíte **545/545**. Verificado por HTTP
+  (Playwright): modais abrem na marca (amber/red) e **zero diálogos nativos** detectados. Sem migration.
+  **Sem deploy** (mudança só-código; produção é deploy à parte).

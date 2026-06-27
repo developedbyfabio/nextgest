@@ -244,6 +244,17 @@ class Faturamento extends Component
         Flux::toast('Fatura marcada como paga.', variant: 'success');
     }
 
+    /** Ids alvos das confirmações por modal (x-ng.confirmar, sem confirm nativo — D65). */
+    public ?int $reverterId = null;
+
+    public ?int $cancelarId = null;
+
+    public function pedirReverter(int $faturaId): void
+    {
+        $this->reverterId = $faturaId;
+        Flux::modal('reverter-fatura')->show();
+    }
+
     public function reverter(int $faturaId): void
     {
         abort_unless(auth('admin')->check(), 403);
@@ -254,7 +265,15 @@ class Faturamento extends Component
             'forma_pagamento' => null,
         ]);
 
+        $this->reverterId = null;
+        Flux::modal('reverter-fatura')->close();
         Flux::toast('Pagamento revertido (fatura voltou a aberta).');
+    }
+
+    public function pedirCancelar(int $faturaId): void
+    {
+        $this->cancelarId = $faturaId;
+        Flux::modal('cancelar-fatura')->show();
     }
 
     public function cancelar(int $faturaId): void
@@ -263,6 +282,8 @@ class Faturamento extends Component
 
         $this->faturaDoTenant($faturaId)->update(['status' => Fatura::CANCELADA]);
 
+        $this->cancelarId = null;
+        Flux::modal('cancelar-fatura')->close();
         Flux::toast('Fatura cancelada.');
     }
 

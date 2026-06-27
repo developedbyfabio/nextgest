@@ -36,7 +36,7 @@
                         <flux:button :href="route('tenant.home', ['tenant' => $tenant->id])" target="_blank" size="sm" variant="ghost" icon="arrow-top-right-on-square">Abrir</flux:button>
                         <flux:button wire:click="abrirDono('{{ $tenant->id }}')" size="sm" variant="ghost" icon="user-plus">Criar dono</flux:button>
                         @if ($tenant->ativo)
-                            <flux:button wire:click="inativar('{{ $tenant->id }}')" wire:confirm="Inativar este estabelecimento?" size="sm" variant="subtle" icon="eye-slash">Inativar</flux:button>
+                            <flux:button wire:click="pedirInativar('{{ $tenant->id }}')" size="sm" variant="subtle" icon="eye-slash">Inativar</flux:button>
                         @else
                             <flux:button wire:click="ativar('{{ $tenant->id }}')" size="sm" variant="subtle" icon="eye">Ativar</flux:button>
                         @endif
@@ -89,4 +89,12 @@
             </div>
         </form>
     </flux:modal>
+
+    {{-- Confirmação de inativar (padrão x-ng.confirmar — sem confirm nativo). --}}
+    <x-ng.confirmar name="inativar-tenant" tom="amber" icone="eye-slash" titulo="Inativar estabelecimento?"
+        texto="Bloqueia o acesso (portal e painel), mas não apaga nada — dá para reativar depois.">
+        @if ($inativarId)
+            <flux:button wire:click="inativar('{{ $inativarId }}')" variant="primary" icon="eye-slash">Inativar</flux:button>
+        @endif
+    </x-ng.confirmar>
 </div>
