@@ -26,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
             GatewayRecorrente::class,
             GatewayRecorrenteManual::class,
         );
+
+        // WhatsApp (D75): driver atual é a Evolution API. Trocar de provedor = trocar
+        // só este binding (o WhatsAppService e os consumidores não mudam).
+        $this->app->bind(
+            \App\Services\WhatsApp\WhatsAppGateway::class,
+            \App\Services\WhatsApp\EvolutionGateway::class,
+        );
     }
 
     public function boot(): void

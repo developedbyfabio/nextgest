@@ -20,6 +20,9 @@ class WhatsappConfig extends Model
     protected $table = 'whatsapp_config';
 
     protected $fillable = [
+        'instancia',
+        'instancia_token',
+        'status_conexao',
         'telefone',
         'phone_number_id',
         'business_account_id',
@@ -30,12 +33,15 @@ class WhatsappConfig extends Model
 
     protected $hidden = [
         'token',
+        'instancia_token',
     ];
 
     protected function casts(): array
     {
         return [
             'token' => 'encrypted',
+            // Token DAQUELA instância (Evolution) — cifrado; nunca em texto/serialização/log.
+            'instancia_token' => 'encrypted',
             'verificado' => 'boolean',
             'ativo' => 'boolean',
         ];

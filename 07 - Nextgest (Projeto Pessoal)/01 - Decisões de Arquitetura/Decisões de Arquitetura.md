@@ -1312,3 +1312,30 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   de pé (401 sem assinatura); `laravel.log` sem erro novo; workers reciclados.
 - **MP de produção:** **não ativado** (credenciais/URL/1ª adesão = passo manual à parte). Render
   visual fino do painel (gráfico, animação da sidebar, modal) confere no navegador do Fabio.
+
+---
+
+## D75 — WhatsApp Fatia 1: config por tenant + `WhatsAppService`/driver Evolution (envio de teste)
+> Fundação de envio de WhatsApp no Nextgest, falando com a **Evolution única** (Fatia 0,
+> `127.0.0.1:8088`). **Sem automação** (Fatia 3) e **sem tela de QR** (Fatia 2) — só envio MANUAL
+> validado ponta a ponta. Ver [[WhatsApp (Evolution) no Nextgest]] e [[Infra — Evolution API (WhatsApp)]].
+- **Modelo:** 1 Evolution, **1 instância por salão** (`ng_{tenantId}`, único na Evolution compartilhada).
+- **Separação de credenciais (segurança):** a **key GLOBAL** da Evolution é segredo de **infra** —
+  só no `.env` do Nextgest (`EVOLUTION_BASE_URL`/`EVOLUTION_API_KEY`/`EVOLUTION_TIMEOUT`) via
+  `config('whatsapp.*')`. No **banco do tenant** (`whatsapp_config`, migration **aditiva**) vai só o
+  que identifica o salão: `instancia` (nome) + `instancia_token` (token DAQUELA instância, cast
+  `encrypted` + `$hidden`) + `status_conexao`. **A chave-mestra nunca entra no banco do tenant.**
+- **Camadas:** `WhatsAppGateway` (contrato) ← `EvolutionGateway` (HTTP puro, por nome de instância) +
+  `WhatsAppService` (orquestra por tenant: lê/grava `whatsapp_config`, usa o token da instância e cai
+  para a global se ausente). Binding no `AppServiceProvider` (trocar de provedor = trocar o binding).
+  Número normalizado (BR → DDI 55, sem `+`). Falha/timeout → `WhatsAppException` (log sem segredo,
+  nunca 500).
+- **Disparo manual (CLI, sem UI):** `nextgest:whatsapp-conectar {tenant}` (cria/garante a instância,
+  persiste nome+token, salva o QR em PNG) e `nextgest:whatsapp-teste {tenant} {numero}` (envia texto).
+  Ambos **gated pelo recurso `whatsapp`** (abortam se off).
+- **Verificação:** 8 testes (`WhatsAppFatia1Test`, Evolution mockada): chamada certa à instância do
+  tenant; token da instância vs global; normalização; erro tratado; gating; segredo cifrado/sem vazar
+  + key global fora do banco. Suíte **575/575**. **Ponta a ponta real** (até o QR) contra a Evolution
+  viva: `nextgest:whatsapp-conectar barbeariateste` criou `ng_barbeariateste`, persistiu a config e
+  gerou o QR; **entrega da mensagem** depende do Fabio conectar um número de teste (escanear o QR) e
+  rodar o `whatsapp-teste`. **Sem deploy.**

@@ -60,6 +60,12 @@ curl -s http://127.0.0.1:8088/instance/fetchInstances -H "apikey: $APIKEY"
   é **recusada** (HTTP 000). Postgres/Redis nem publicam porta.
 - **Nextgest intacto** (MySQL 3306, pasta, serviços) — não tocado.
 
+## Consumo pelo Nextgest (Fatia 1 / D75)
+O Nextgest fala com esta Evolution via `config/whatsapp.php` (lendo `EVOLUTION_BASE_URL`/
+`EVOLUTION_API_KEY` do **`.env` do Nextgest** — a key **global** vive lá, nunca no banco do tenant).
+Cada salão é a instância `ng_{tenantId}`. Detalhes em [[WhatsApp (Evolution) no Nextgest]].
+Instâncias já criadas no dev pela integração: `nextgest_teste` (prova da Fatia 0) e `ng_barbeariateste`.
+
 ## Limites / próximas fatias
 - **Só dev**, fechado no localhost. **Produção** (com exposição/segurança blindada — TLS, firewall,
   domínio) fica para depois, à parte.
