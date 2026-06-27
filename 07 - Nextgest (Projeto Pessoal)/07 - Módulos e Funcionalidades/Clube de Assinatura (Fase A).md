@@ -112,3 +112,11 @@ O benefício deixou de ser **% desconto** e passou a ser **cobertura de serviço
 recorrente real (MP Preapproval + webhook, Fase 2/3) — segue costura manual. Cota por-serviço (vs
 por-plano) e item-pai "Financeiro"/billing da plataforma ficam para depois. **Gancho Fase 4:**
 inadimplentes/risco → disparo de WhatsApp.
+
+## Correção — modal "Adicionar assinante" (D66)
+Bug: na aba **Assinantes**, o modal de novo assinante **abria sozinho** e o botão ficava
+não-determinístico. Causa: o gatilho misturava a magia Alpine `$flux` dentro de um `wire:click`
+(Livewire) — `wire:click="$set(...); $flux.modal('novo-assinante').show()"` —, malformado: ao
+renderizar a aba o `.show()` disparava. Correção: método server-side `novoAssinante()` (reseta +
+`Flux::modal('novo-assinante')->show()`, padrão de `novoPlano`/`gerirBeneficiarios`) + botão
+`wire:click="novoAssinante"`. Regra de negócio do Clube **intacta**. Testes em `ClubeTest`.

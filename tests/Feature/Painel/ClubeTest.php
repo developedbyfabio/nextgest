@@ -420,3 +420,33 @@ it('não-regressão: comanda PAGA (não cancelada) mantém o uso', function () {
     expect($v->fresh()->status)->toBe('paga')
         ->and($ben->usosNoPeriodo($a, '2026-06'))->toBe(1); // consumo real permanece
 });
+
+// ---- D66: modal de novo assinante (sem confirm/abre-sozinho) ----------------
+
+it('aba Assinantes: botão usa novoAssinante (server-side), sem $flux no wire:click', function () {
+    ligarClube();
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@clube.test']), 'web');
+
+    Livewire::test(Index::class)
+        ->set('aba', 'assinantes')
+        ->assertSeeHtml('wire:click="novoAssinante"')
+        ->assertDontSeeHtml('$flux.modal'); // o gatilho malformado não existe mais
+});
+
+it('adicionar assinante pelo modal cria a assinatura', function () {
+    ligarClube();
+    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@clube.test']), 'web');
+
+    $plano = planoClube();
+    $cliente = Cliente::create(['nome' => 'Maria Assinante', 'telefone' => '11999990000']);
+
+    Livewire::test(Index::class)
+        ->set('aba', 'assinantes')
+        ->call('novoAssinante')               // abre o modal + reseta (não dispara sozinho)
+        ->set('novoClienteId', $cliente->id)
+        ->set('novoPlanoId', $plano->id)
+        ->call('adicionarAssinante')
+        ->assertHasNoErrors();
+
+    expect(AssinaturaClube::where('cliente_id', $cliente->id)->where('plano_id', $plano->id)->count())->toBe(1);
+});

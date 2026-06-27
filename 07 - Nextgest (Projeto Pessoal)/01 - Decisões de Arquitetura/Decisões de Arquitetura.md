@@ -1088,3 +1088,27 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `wire:confirm` e o modal de confirmação está renderizado. Suíte **545/545**. Verificado por HTTP
   (Playwright): modais abrem na marca (amber/red) e **zero diálogos nativos** detectados. Sem migration.
   **Sem deploy** (mudança só-código; produção é deploy à parte).
+
+---
+
+## D66 — Bugs do Clube (modal de assinante) + polimentos de UI de baixo risco
+> Fatia segura: 2 bugs + 2 polimentos. **Não** tocou `MotorDisponibilidade`, fluxo de atendimento,
+> faturamento, RBAC/anonimato nem backend de cobrança — só UI/navegação. Auditoria-primeiro: bugs do
+> Clube reproduzidos no dev antes de corrigir.
+- **Bug (causa raiz comum) — modal "Adicionar assinante":** o gatilho era
+  `wire:click="$set('novoClienteId', null); $flux.modal('novo-assinante').show()"` — misturar a magia
+  **Alpine `$flux`** dentro de um **`wire:click`** (Livewire) é malformado: ao renderizar a aba
+  Assinantes o `.show()` disparava sozinho (**modal abria automático**) e o clique ficava
+  não-determinístico. **Correção:** método server-side `Clube\Index::novoAssinante()` (reseta +
+  `Flux::modal('novo-assinante')->show()`, igual a `novoPlano`/`gerirBeneficiarios`) + botão
+  `wire:click="novoAssinante"`. Regra de negócio do Clube intacta.
+- **Polimento — estado vazio do Início:** card "Nenhum agendamento para hoje" (`resumo-do-dia`) ganhou
+  link **"Ver agendamentos →"** (cor de acento, `wire:navigate`) para `painel.agenda`, nos dois blocos
+  (casa/gestão e pessoal/profissional). Só navegação.
+- **Polimento — animação do menu:** transição suave ao abrir um grupo do acordeão da sidebar — keyframe
+  CSS `ng-menu-reveal` em `ui-disclosure[data-flux-sidebar-group] > div` (`app.css`), respeitando
+  `prefers-reduced-motion`. **Não** mexe na lógica do acordeão nem no highlight do grupo/item ativo
+  (D47/D52); roda no abrir (display→block) e no load; sobrevive a `wire:navigate`.
+- **Testes:** 2 em `ClubeTest` (botão usa `novoAssinante`, sem `$flux` no `wire:click`; adicionar
+  assinante cria a assinatura). Suíte **547/547**. Verificado por HTTP (Playwright): modal não abre
+  sozinho, abre no clique, assinante criado; link do estado vazio presente. **Sem migration. Sem deploy.**

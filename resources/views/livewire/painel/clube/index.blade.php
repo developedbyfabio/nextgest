@@ -170,7 +170,7 @@
                         @endforeach
                     </flux:select>
                 </div>
-                <flux:button wire:click="$set('novoClienteId', null); $flux.modal('novo-assinante').show()" variant="primary" icon="user-plus">Adicionar assinante</flux:button>
+                <flux:button wire:click="novoAssinante" variant="primary" icon="user-plus">Adicionar assinante</flux:button>
             </div>
 
             @if ($assinantes->total() === 0)

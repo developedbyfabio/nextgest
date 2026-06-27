@@ -243,6 +243,19 @@ class Index extends Component
 
     // ---- Assinantes ---------------------------------------------------------
 
+    /**
+     * Abre o modal de novo assinante (padrão server-side, igual a novoPlano/
+     * gerirBeneficiarios). Antes o gatilho misturava `$flux` (Alpine) num `wire:click`
+     * (Livewire) — malformado: abria o modal sozinho ao renderizar a aba. Ver D66.
+     */
+    public function novoAssinante(): void
+    {
+        $this->gate();
+        $this->reset('novoClienteId', 'novoPlanoId');
+        $this->resetValidation();
+        Flux::modal('novo-assinante')->show();
+    }
+
     public function adicionarAssinante(Assinaturas $assinaturas): void
     {
         $this->gate();

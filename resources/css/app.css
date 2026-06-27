@@ -262,6 +262,33 @@
     }
 
     /*
+    | Transição suave ao abrir um grupo do menu lateral (acordeão D47/D52). SÓ visual:
+    | não toca a lógica do acordeão nem o highlight do item/grupo ativo. O reveal dispara
+    | quando o conteúdo do grupo passa de display:none→block (abrir) e no load. (D66)
+    */
+    ui-disclosure[data-flux-sidebar-group] > div {
+        animation: ng-menu-reveal 0.18s ease-out;
+    }
+
+    @keyframes ng-menu-reveal {
+        from {
+            opacity: 0;
+            transform: translateY(-0.25rem);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        ui-disclosure[data-flux-sidebar-group] > div {
+            animation: none;
+        }
+    }
+
+    /*
     | Kanban (Etapa C) — feedback de arrastar-e-soltar (SortableJS).
     | Cores da marca; legível no claro e no escuro.
     */

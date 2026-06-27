@@ -98,6 +98,12 @@ Toda confirmação (painel do tenant E /admin) usa o componente **`x-ng.confirma
 `wire:click="pedirX(...)"` → `Flux::modal('nome')->show()`; o confirmar chama o método da
 ação e fecha o modal. O /admin foi alinhado a esse padrão no **D65** (havia 4 `wire:confirm`).
 
+### Animação do menu lateral (D66)
+Abrir um grupo do acordeão da sidebar tem transição suave (antes "teleportava"): keyframe
+`ng-menu-reveal` (fade + slide curto) em `ui-disclosure[data-flux-sidebar-group] > div` (`app.css`),
+com `prefers-reduced-motion` respeitado. **Só visual** — não toca a lógica do acordeão nem o highlight
+do grupo/item ativo (D47/D52); roda ao abrir (display→block) e no load; sobrevive a `wire:navigate`.
+
 ## Painel + dashboard temáticos (Etapa B, 2026-06-21)
 O shell do painel e as telas de auth também refletem a marca (`cssVars()`), com a
 classe **`.dark`** ligada automaticamente quando a superfície da marca é escura
