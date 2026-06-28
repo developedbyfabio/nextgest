@@ -13,10 +13,14 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
- * Gestão de OPT-OUT do WhatsApp (Controle de mensagens, D83) — torna visível/gerenciável
- * o opt-out interno do D79 (`clientes.whatsapp_optout`). Lista quem está marcado como
- * "não enviar" e permite marcar/desmarcar manualmente (busca por nome/telefone). Gated
- * (`recurso:whatsapp` + `can('gerenciar_whatsapp')`). Respeitado nos comandos/jobs (D79/D81).
+ * Gestão de OPT-OUT do WhatsApp (D83 + Broadcast Fatia 1, D86). Dois consentimentos
+ * INDEPENDENTES por cliente:
+ *  - GERAL (transacional): `whatsapp_optout` — bloqueia TUDO (lembrete/avaliação/marketing).
+ *  - MARKETING: `whatsapp_marketing_optout` — bloqueia só broadcast; lembretes continuam.
+ *
+ * Bloquear é imediato; LIBERAR (re-consentir) pede confirmação (D65). Gated por
+ * `recurso:whatsapp` + `can('gerenciar_whatsapp')`. O transacional (D79/D81) respeita só
+ * o geral; o marketing será consumido pela Fatia 2 via `Cliente::aceitaMarketing()`.
  */
 #[Layout('components.layouts.painel')]
 #[Title('WhatsApp · Opt-out')]
@@ -24,73 +28,92 @@ class OptOut extends Component
 {
     use WithPagination;
 
-    /** Busca p/ ADICIONAR ao opt-out (entre quem NÃO está marcado). */
+    /** Tipos de consentimento → coluna no cliente. */
+    private const COLUNAS = [
+        'geral' => 'whatsapp_optout',
+        'marketing' => 'whatsapp_marketing_optout',
+    ];
+
+    /** Busca p/ encontrar um cliente e ajustar os consentimentos dele. */
     public string $busca = '';
 
-    /** Cliente em confirmação de "voltar a enviar" (modal D65). */
+    /** Confirmação de LIBERAR (re-consentir) — modal D65. */
     public ?int $confirmarId = null;
 
     public string $confirmarNome = '';
+
+    public string $confirmarTipo = '';
 
     public function mount(): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
     }
 
-    /** Abre o modal de confirmação antes de tirar o cliente do opt-out (ação sensível). */
-    public function confirmarRemocao(int $clienteId): void
+    /** Bloqueia um consentimento (imediato — parar de enviar é seguro). */
+    public function bloquear(int $clienteId, string $tipo): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+        $coluna = self::COLUNAS[$tipo] ?? null;
+        if (! $coluna) {
+            return;
+        }
 
-        $this->confirmarId = $clienteId;
-        $this->confirmarNome = (string) (Cliente::whereKey($clienteId)->value('nome') ?? '');
-        Flux::modal('optout-voltar')->show();
-    }
-
-    /** Marca o cliente como opt-out (não recebe mais mensagens). */
-    public function marcar(int $clienteId): void
-    {
-        abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
-
-        Cliente::whereKey($clienteId)->update(['whatsapp_optout' => true]);
+        Cliente::whereKey($clienteId)->update([$coluna => true]);
         $this->busca = '';
         $this->resetPage();
-        Flux::toast('Cliente adicionado ao opt-out.', variant: 'success');
+        Flux::toast($tipo === 'geral' ? 'Cliente bloqueado (não recebe nada).' : 'Cliente saiu do marketing.', variant: 'success');
     }
 
-    /** Remove o opt-out (volta a poder receber). */
-    public function desmarcar(int $clienteId): void
+    /** Abre o modal antes de LIBERAR (o cliente volta a receber — consentimento). */
+    public function confirmarLiberacao(int $clienteId, string $tipo): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+        if (! isset(self::COLUNAS[$tipo])) {
+            return;
+        }
 
-        Cliente::whereKey($clienteId)->update(['whatsapp_optout' => false]);
-        $this->confirmarId = null;
-        $this->confirmarNome = '';
-        Flux::modal('optout-voltar')->close();
-        Flux::toast('Cliente removido do opt-out.', variant: 'success');
+        $this->confirmarId = $clienteId;
+        $this->confirmarTipo = $tipo;
+        $this->confirmarNome = (string) (Cliente::whereKey($clienteId)->value('nome') ?? '');
+        Flux::modal('optout-liberar')->show();
+    }
+
+    /** Libera (volta a poder receber) o consentimento confirmado. */
+    public function liberar(int $clienteId, string $tipo): void
+    {
+        abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+        $coluna = self::COLUNAS[$tipo] ?? null;
+        if (! $coluna) {
+            return;
+        }
+
+        Cliente::whereKey($clienteId)->update([$coluna => false]);
+        $this->reset('confirmarId', 'confirmarNome', 'confirmarTipo');
+        Flux::modal('optout-liberar')->close();
+        Flux::toast('Consentimento liberado.', variant: 'success');
     }
 
     public function render(): View
     {
-        $optouts = Cliente::query()
-            ->where('whatsapp_optout', true)
+        // Clientes com ALGUMA restrição (geral OU marketing).
+        $restritos = Cliente::query()
+            ->where(fn ($q) => $q->where('whatsapp_optout', true)->orWhere('whatsapp_marketing_optout', true))
             ->orderBy('nome')
             ->paginate(15);
 
-        // Resultados da busca p/ adicionar — só entre quem NÃO está marcado.
+        // Busca: qualquer cliente (para ajustar os consentimentos dele).
         $resultados = collect();
         if (mb_strlen(trim($this->busca)) >= 2) {
             $termo = '%'.trim($this->busca).'%';
             $resultados = Cliente::query()
-                ->where('whatsapp_optout', false)
                 ->where(fn ($q) => $q->where('nome', 'like', $termo)->orWhere('telefone', 'like', $termo))
                 ->orderBy('nome')
                 ->limit(8)
-                ->get(['id', 'nome', 'telefone']);
+                ->get(['id', 'nome', 'telefone', 'whatsapp_optout', 'whatsapp_marketing_optout']);
         }
 
         return view('livewire.painel.whatsapp.optout', [
-            'optouts' => $optouts,
+            'restritos' => $restritos,
             'resultados' => $resultados,
         ]);
     }

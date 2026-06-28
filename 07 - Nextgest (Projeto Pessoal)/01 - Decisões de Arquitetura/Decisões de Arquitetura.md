@@ -1634,3 +1634,24 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   preserva a janela própria (D83); inválido não salva e dispara o foco (D84); o salvar global também
   preserva a janela. Sem regressão (Automações D77). Suíte **648/648**. Prints: cards com "Testar" +
   "Salvar" próprios; toast "Lembrete de serviço salvo.". **Só UI. Sem deploy.**
+
+## D86 — Broadcast Fatia 1: consentimento de marketing separado do opt-out geral
+> **Base** do broadcast real: separa **marketing** do **transacional**. O cliente pode sair do
+> marketing **sem perder** lembrete/avaliação. **Não dispara nada em massa** (o disparo é a Fatia 2).
+> Ver [[WhatsApp (Evolution) no Nextgest]].
+- **Dois consentimentos independentes** no cliente: `whatsapp_optout` (GERAL/transacional, D83 —
+  bloqueia tudo) e o novo `whatsapp_marketing_optout` (aditivo — bloqueia **só** broadcast). Modelo
+  **opt-out** (recebe por padrão, sai se quiser).
+- **Independência garantida pela não-mudança:** os comandos transacionais (D79/D81) continuam olhando
+  **só** `whatsapp_optout` — não passam a checar marketing. Logo sair do marketing **não** afeta o
+  lembrete/avaliação. (Testado nas 4 combinações.)
+- **Pronto p/ a Fatia 2 (sem disparar):** `Cliente::aceitaMarketing()` (`!geral && !marketing`) e o
+  escopo `Cliente::aceitamMarketing()` (plural, evita colisão com o método) para a seleção em massa.
+- **Tela Opt-out estendida** (reusa/estende D83, não recria): dois controles por cliente — **Tudo
+  (transacional)** e **Marketing** — visualmente separados (colunas/badges próprios). **Bloquear** é
+  imediato; **liberar** (re-consentir) confirma (D65). Gated por `gerenciar_whatsapp`. Métodos
+  `bloquear/confirmarLiberacao/liberar($id, $tipo)`.
+- **Verificação:** `MarketingOptoutTest` (6) — `aceitaMarketing()` nas 4 combinações; escopo filtra; opt-out
+  de marketing **não** bloqueia o transacional; opt-out geral bloqueia (D83); a tela mexe em cada flag de
+  forma independente; tipo inválido é no-op. Sem regressão (opt-out geral D83). Suíte **654/654**. Print:
+  tela com os dois consentimentos. **Não dispara nada. Sem deploy.**

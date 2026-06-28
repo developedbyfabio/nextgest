@@ -247,12 +247,12 @@ it('opt-out pela tela bloqueia e remover libera o envio', function () {
     $cli = clienteCm('Bruna');
     agCm(now()->copy()->addMinutes(30), 'confirmado', $cli);
 
-    Livewire::test(OptOut::class)->call('marcar', $cli->id);
+    Livewire::test(OptOut::class)->call('bloquear', $cli->id, 'geral');
     expect(Cliente::find($cli->id)->whatsapp_optout)->toBeTrue();
     $this->artisan('nextgest:enviar-lembretes');
     Queue::assertNotPushed(EnviarLembreteWhatsApp::class);
 
-    Livewire::test(OptOut::class)->call('desmarcar', $cli->id);
+    Livewire::test(OptOut::class)->call('liberar', $cli->id, 'geral');
     expect(Cliente::find($cli->id)->whatsapp_optout)->toBeFalse();
     $this->artisan('nextgest:enviar-lembretes');
     Queue::assertPushed(EnviarLembreteWhatsApp::class, 1);

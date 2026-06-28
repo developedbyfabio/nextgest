@@ -72,15 +72,15 @@ it('validação OK na Janela não dispara o evento de foco e salva', function ()
         ->and(WhatsappConfig::first()->janela['fim'])->toBe('18:00');
 });
 
-it('opt-out: confirmarRemocao prepara o modal e desmarcar tira do opt-out', function () {
+it('opt-out: confirmarLiberacao prepara o modal e liberar tira do opt-out', function () {
     $cli = Cliente::create(['nome' => 'Rosa', 'telefone' => '4191', 'email' => 'rosa@ui.test', 'whatsapp_optout' => true]);
 
     $comp = Livewire::test(OptOut::class)
-        ->call('confirmarRemocao', $cli->id)
+        ->call('confirmarLiberacao', $cli->id, 'geral')
         ->assertSet('confirmarId', $cli->id)
         ->assertSet('confirmarNome', 'Rosa');
 
-    $comp->call('desmarcar', $cli->id)->assertSet('confirmarId', null);
+    $comp->call('liberar', $cli->id, 'geral')->assertSet('confirmarId', null);
 
     expect(Cliente::find($cli->id)->whatsapp_optout)->toBeFalse();
 });

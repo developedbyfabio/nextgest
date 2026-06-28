@@ -155,6 +155,15 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
   mantido. **Correção:** o salvar global passou a fazer merge e **não apaga mais** a janela própria
   por automação (D83). Lógica de envio intacta.
 
+## Consentimento de marketing (D86) — base do broadcast
+- **Dois opt-outs independentes** no cliente: `whatsapp_optout` (geral/transacional, D83 — bloqueia
+  tudo) e `whatsapp_marketing_optout` (novo — só broadcast). Sair do marketing **não** tira lembrete/
+  avaliação (os comandos D79/D81 seguem olhando só o geral).
+- `Cliente::aceitaMarketing()` (`!geral && !marketing`) + escopo `aceitamMarketing()` — prontos p/ a
+  Fatia 2 (seleção em massa), **sem disparar** nada aqui.
+- **Tela Opt-out** agora gerencia os **dois** consentimentos por cliente (colunas Tudo/Marketing),
+  bloquear imediato e liberar com confirmação (D65). 6 testes (`MarketingOptoutTest`).
+
 ## Próximas fatias
 - **Conversas tipo WhatsApp Web:** **recebimento** via webhook Evolution exposto (o maior; exige a
   decisão de exposição/produção da Evolution). Hoje **nada é recebido**.
