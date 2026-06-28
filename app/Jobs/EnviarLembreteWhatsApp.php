@@ -7,8 +7,11 @@ namespace App\Jobs;
 use App\Enums\AutomacaoWhatsapp;
 use App\Models\Agendamento;
 use App\Models\LembreteServico;
+use App\Models\MensagemWhatsapp;
 use App\Models\Tenant;
 use App\Models\WhatsappConfig;
+use App\Services\WhatsApp\JanelaEnvio;
+use App\Services\WhatsApp\RegistroMensagem;
 use App\Services\WhatsApp\RenderizadorTemplate;
 use App\Services\WhatsApp\WhatsAppException;
 use App\Services\WhatsApp\WhatsAppService;
@@ -63,7 +66,41 @@ class EnviarLembreteWhatsApp implements ShouldQueue
                 || ! ($aut['ativo'] ?? false);
 
             if ($invalido) {
-                $rec->update(['status' => LembreteServico::FALHOU]);
+                $rec->update(['status' => LembreteServico::FALHOU, 'agendado_para' => null]);
+                RegistroMensagem::registrar([
+                    'automacao' => 'lembrete_servico',
+                    'agendamento_id' => $ag?->id,
+                    'cliente_id' => $ag?->cliente?->id,
+                    'telefone' => $ag?->cliente?->telefone,
+                    'status' => MensagemWhatsapp::DESCARTADO,
+                    'motivo' => 'condição mudou antes do envio',
+                ]);
+
+                return;
+            }
+
+            // Janela de horário (D83): decidida NO ENVIO (servidor). Fora da janela: se o
+            // atendimento já teria começado no próximo horário válido → DESCARTA (lembrete
+            // sem sentido); senão → ADIA (o comando re-despacha quando vencer). Fuso APP_TIMEZONE.
+            $janela = app(JanelaEnvio::class)->paraAutomacao('lembrete_servico', $cfg);
+            if (! app(JanelaEnvio::class)->aberta($janela)) {
+                $proxima = app(JanelaEnvio::class)->proximaAbertura($janela);
+
+                if ($ag->data_hora_inicio->lte($proxima)) {
+                    $rec->update(['status' => LembreteServico::FALHOU, 'agendado_para' => null]);
+                    RegistroMensagem::registrar([
+                        'automacao' => 'lembrete_servico',
+                        'agendamento_id' => $ag->id,
+                        'cliente_id' => $ag->cliente->id,
+                        'telefone' => $ag->cliente->telefone,
+                        'status' => MensagemWhatsapp::DESCARTADO,
+                        'motivo' => 'fora da janela: o atendimento já teria começado',
+                    ]);
+
+                    return;
+                }
+
+                $rec->update(['status' => LembreteServico::ENFILEIRADO, 'agendado_para' => $proxima]);
 
                 return;
             }
@@ -82,9 +119,27 @@ class EnviarLembreteWhatsApp implements ShouldQueue
 
             try {
                 app(WhatsAppService::class)->enviarTexto((string) $ag->cliente->telefone, $texto);
-                $rec->update(['status' => LembreteServico::ENVIADO, 'enviado_em' => now()]);
+                $rec->update(['status' => LembreteServico::ENVIADO, 'agendado_para' => null, 'enviado_em' => now()]);
+                RegistroMensagem::registrar([
+                    'automacao' => 'lembrete_servico',
+                    'agendamento_id' => $ag->id,
+                    'cliente_id' => $ag->cliente->id,
+                    'telefone' => $ag->cliente->telefone,
+                    'status' => MensagemWhatsapp::ENVIADO,
+                    'conteudo' => $texto,
+                    'enviado_em' => now(),
+                ]);
             } catch (WhatsAppException) {
-                $rec->update(['status' => LembreteServico::FALHOU]); // sem retry (anti-ban)
+                $rec->update(['status' => LembreteServico::FALHOU, 'agendado_para' => null]); // sem retry (anti-ban)
+                RegistroMensagem::registrar([
+                    'automacao' => 'lembrete_servico',
+                    'agendamento_id' => $ag->id,
+                    'cliente_id' => $ag->cliente->id,
+                    'telefone' => $ag->cliente->telefone,
+                    'status' => MensagemWhatsapp::FALHOU,
+                    'motivo' => 'falha no envio',
+                    'conteudo' => $texto,
+                ]);
             }
         });
     }

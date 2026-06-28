@@ -69,38 +69,61 @@ class EnviarAvaliacoes extends Command
                 }
 
                 $lote = min($limiteMin, $restanteDia);
-                $apos = (int) ($aut['apos_min'] ?? $aposPadrao);
-                $ate = now()->copy()->subMinutes($apos);
-                $de = $ate->copy()->subMinutes($buffer);
+                $agora = now();
+                $enfileirados = 0;
 
-                $elegiveis = Agendamento::query()
-                    ->where('status', 'concluido')
-                    ->whereBetween('data_hora_fim', [$de, $ate])
-                    ->whereDoesntHave('pedidoAvaliacao') // ainda não pedido (idempotência)
-                    ->whereDoesntHave('avaliacao')       // ainda não avaliado (D51)
-                    ->whereHas('cliente', fn ($c) => $c->where('whatsapp_optout', false)->whereNotNull('telefone')->where('telefone', '!=', ''))
-                    ->orderBy('data_hora_fim')
+                // 1) Represados pela JANELA de horário (D83) que já venceram — re-despacha
+                //    primeiro. O registro é criado já na 1ª elegibilidade, então o adiamento
+                //    NÃO perde atendimentos quando a janela de elegibilidade abaixo "anda".
+                $represados = PedidoAvaliacao::query()
+                    ->where('status', PedidoAvaliacao::ENFILEIRADO)
+                    ->whereNotNull('agendado_para')
+                    ->where('agendado_para', '<=', $agora)
+                    ->orderBy('agendado_para')
                     ->limit($lote)
                     ->get();
 
-                $i = 0;
-                foreach ($elegiveis as $ag) {
-                    $rec = PedidoAvaliacao::firstOrCreate(
-                        ['agendamento_id' => $ag->id],
-                        ['status' => PedidoAvaliacao::ENFILEIRADO, 'enfileirado_em' => now()],
-                    );
-
-                    if (! $rec->wasRecentlyCreated) {
-                        continue;
-                    }
-
-                    EnviarAvaliacaoWhatsApp::dispatch($tenant->getKey(), $ag->id)
-                        ->delay(now()->copy()->addSeconds($i * $intervalo));
-
-                    $i++;
+                foreach ($represados as $rec) {
+                    $rec->update(['agendado_para' => null]);
+                    EnviarAvaliacaoWhatsApp::dispatch($tenant->getKey(), $rec->agendamento_id)
+                        ->delay($agora->copy()->addSeconds($enfileirados * $intervalo));
+                    $enfileirados++;
                 }
 
-                return $i;
+                // 2) Novos elegíveis (até completar o lote).
+                if ($enfileirados < $lote) {
+                    $apos = (int) ($aut['apos_min'] ?? $aposPadrao);
+                    $ate = $agora->copy()->subMinutes($apos);
+                    $de = $ate->copy()->subMinutes($buffer);
+
+                    $elegiveis = Agendamento::query()
+                        ->where('status', 'concluido')
+                        ->whereBetween('data_hora_fim', [$de, $ate])
+                        ->whereDoesntHave('pedidoAvaliacao') // ainda não pedido (idempotência)
+                        ->whereDoesntHave('avaliacao')       // ainda não avaliado (D51)
+                        ->whereHas('cliente', fn ($c) => $c->where('whatsapp_optout', false)->whereNotNull('telefone')->where('telefone', '!=', ''))
+                        ->orderBy('data_hora_fim')
+                        ->limit($lote - $enfileirados)
+                        ->get();
+
+                    foreach ($elegiveis as $ag) {
+                        $rec = PedidoAvaliacao::firstOrCreate(
+                            ['agendamento_id' => $ag->id],
+                            ['status' => PedidoAvaliacao::ENFILEIRADO, 'enfileirado_em' => now()],
+                        );
+
+                        if (! $rec->wasRecentlyCreated) {
+                            continue;
+                        }
+
+                        EnviarAvaliacaoWhatsApp::dispatch($tenant->getKey(), $ag->id)
+                            ->delay($agora->copy()->addSeconds($enfileirados * $intervalo));
+
+                        $enfileirados++;
+                    }
+                }
+
+                return $enfileirados;
             });
         }
 

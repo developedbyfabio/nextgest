@@ -26,6 +26,7 @@ class WhatsappConfig extends Model
         'conectado_em',
         'numero_conectado',
         'aquecimento',
+        'janela',
         'automacoes',
         'termo_aceito_em',
         'termo_aceito_por',
@@ -54,6 +55,8 @@ class WhatsappConfig extends Model
             // Modo Aquecimento (D82): marco do dia 1 + curva (override dos defaults do config).
             'conectado_em' => 'datetime',
             'aquecimento' => 'array',
+            // Janela de horário permitido — override GLOBAL (D83). Default em config('whatsapp.janela').
+            'janela' => 'array',
             'termo_aceito_em' => 'datetime',
             'verificado' => 'boolean',
             'ativo' => 'boolean',

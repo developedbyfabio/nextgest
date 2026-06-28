@@ -121,8 +121,26 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
   **20**, 7–13 **40**, 14–21 **80**, 22+ normal. **Tela "Aquecimento"** (3ª aba, gated, validada).
 - 6 testes (`AquecimentoTest`). Não dispara nada novo.
 
+## Controle de mensagens (D83) — histórico + janela de horário + opt-out
+- **Log `mensagens_whatsapp`** (tenant): metadados (automação, cliente/telefone, status, quando) +
+  **conteúdo**. Gravado pelos jobs D79/D81 e pelo "testar" manual, via `Services\WhatsApp\RegistroMensagem`
+  (mascara links — o **link assinado** da avaliação não vira credencial viva no log). **Expurgo**
+  automático do conteúdo (`nextgest:whatsapp-expurgar-conteudo`, diário; `historico.expurgo_dias`=**90**,
+  mantém metadados).
+- **Janela de horário** (`Services\WhatsApp\JanelaEnvio`): **global** (`config('whatsapp.janela')`
+  08:00–20:00 → override em `whatsapp_config.janela`) + **override por automação**
+  (`automacoes[chave].janela`). Decidida **no envio (job)**, fuso `APP_TIMEZONE`. Fora da janela:
+  **lembrete** descarta se o atendimento já teria começado, senão **adia**; **avaliação** sempre
+  **adia**. Represamento via `*.agendado_para` (sem mexer no enum); o comando **re-despacha** os
+  vencidos antes dos novos (sem recursão em fila `sync`).
+- **Telas (gated):** **Janela**, **Histórico** (filtros), **Opt-out** (marca/desmarca
+  `clientes.whatsapp_optout`). Área WhatsApp agora com 6 abas.
+- **Anonimato (D51):** histórico = ENVIO, nunca o resultado da avaliação (não cruza com `avaliacoes`;
+  só Dono/Gerente). 13 testes (`ControleMensagensTest`). **Não recebe mensagem.**
+
 ## Próximas fatias
-- **Controle de mensagens:** histórico/log de envios + janela de horário permitido + gestão de opt-out.
-- **Fatia 5:** avaliação pós-serviço (liga na avaliação D51, respeitando anonimato).
-- **Depois:** cobrança do clube (G2/G3 do gateway), contatos, caixa de conversas, broadcast real.
+- **Conversas tipo WhatsApp Web:** **recebimento** via webhook Evolution exposto (o maior; exige a
+  decisão de exposição/produção da Evolution). Hoje **nada é recebido**.
+- **Broadcast real:** sender de massa respeitando opt-in/LGPD + `broadcastLiberado()` do aquecimento.
+- **Cobrança do clube** (G2/G3 do gateway) e **contatos**.
 - **Evolution em produção** (exposição/segurança blindada à parte).

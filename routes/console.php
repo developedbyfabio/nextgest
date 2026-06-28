@@ -19,3 +19,7 @@ Schedule::command('nextgest:enviar-lembretes')->everyMinute()->withoutOverlappin
 // Avaliação pós-serviço por WhatsApp (D81): a cada minuto, enfileira o link de avaliação
 // dos atendimentos concluídos na janela. Mesmos freios/idempotência do lembrete.
 Schedule::command('nextgest:enviar-avaliacoes')->everyMinute()->withoutOverlapping();
+
+// Expurgo do conteúdo do log de WhatsApp (D83): diário. Apaga o texto antigo após o prazo
+// (config), mantendo os metadados (LGPD/minimização). UPDATE sempre com WHERE.
+Schedule::command('nextgest:whatsapp-expurgar-conteudo')->dailyAt('03:30')->withoutOverlapping();

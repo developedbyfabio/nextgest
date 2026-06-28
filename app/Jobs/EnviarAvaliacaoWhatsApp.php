@@ -6,9 +6,12 @@ namespace App\Jobs;
 
 use App\Enums\AutomacaoWhatsapp;
 use App\Models\Agendamento;
+use App\Models\MensagemWhatsapp;
 use App\Models\PedidoAvaliacao;
 use App\Models\Tenant;
 use App\Models\WhatsappConfig;
+use App\Services\WhatsApp\JanelaEnvio;
+use App\Services\WhatsApp\RegistroMensagem;
 use App\Services\WhatsApp\RenderizadorTemplate;
 use App\Services\WhatsApp\WhatsAppException;
 use App\Services\WhatsApp\WhatsAppService;
@@ -63,7 +66,28 @@ class EnviarAvaliacaoWhatsApp implements ShouldQueue
                 || ! ($aut['ativo'] ?? false);
 
             if ($invalido) {
-                $rec->update(['status' => PedidoAvaliacao::FALHOU]);
+                $rec->update(['status' => PedidoAvaliacao::FALHOU, 'agendado_para' => null]);
+                RegistroMensagem::registrar([
+                    'automacao' => 'avaliacao_pos_servico',
+                    'agendamento_id' => $ag?->id,
+                    'cliente_id' => $ag?->cliente?->id,
+                    'telefone' => $ag?->cliente?->telefone,
+                    'status' => MensagemWhatsapp::DESCARTADO,
+                    'motivo' => 'condição mudou antes do envio',
+                ]);
+
+                return;
+            }
+
+            // Janela de horário (D83): decidida NO ENVIO. O atendimento já ocorreu, então
+            // pedir a avaliação no próximo horário válido continua fazendo sentido → sempre
+            // ADIA (nunca descarta por "evento passou"). O comando re-despacha ao vencer.
+            $janela = app(JanelaEnvio::class)->paraAutomacao('avaliacao_pos_servico', $cfg);
+            if (! app(JanelaEnvio::class)->aberta($janela)) {
+                $rec->update([
+                    'status' => PedidoAvaliacao::ENFILEIRADO,
+                    'agendado_para' => app(JanelaEnvio::class)->proximaAbertura($janela),
+                ]);
 
                 return;
             }
@@ -89,9 +113,27 @@ class EnviarAvaliacaoWhatsApp implements ShouldQueue
 
             try {
                 app(WhatsAppService::class)->enviarTexto((string) $ag->cliente->telefone, $texto);
-                $rec->update(['status' => PedidoAvaliacao::ENVIADO, 'enviado_em' => now()]);
+                $rec->update(['status' => PedidoAvaliacao::ENVIADO, 'agendado_para' => null, 'enviado_em' => now()]);
+                RegistroMensagem::registrar([
+                    'automacao' => 'avaliacao_pos_servico',
+                    'agendamento_id' => $ag->id,
+                    'cliente_id' => $ag->cliente->id,
+                    'telefone' => $ag->cliente->telefone,
+                    'status' => MensagemWhatsapp::ENVIADO,
+                    'conteudo' => $texto, // o link assinado é mascarado no registro
+                    'enviado_em' => now(),
+                ]);
             } catch (WhatsAppException) {
-                $rec->update(['status' => PedidoAvaliacao::FALHOU]);
+                $rec->update(['status' => PedidoAvaliacao::FALHOU, 'agendado_para' => null]);
+                RegistroMensagem::registrar([
+                    'automacao' => 'avaliacao_pos_servico',
+                    'agendamento_id' => $ag->id,
+                    'cliente_id' => $ag->cliente->id,
+                    'telefone' => $ag->cliente->telefone,
+                    'status' => MensagemWhatsapp::FALHOU,
+                    'motivo' => 'falha no envio',
+                    'conteudo' => $texto,
+                ]);
             }
         });
     }

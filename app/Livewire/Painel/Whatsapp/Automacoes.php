@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Livewire\Painel\Whatsapp;
 
 use App\Enums\AutomacaoWhatsapp;
+use App\Models\MensagemWhatsapp;
 use App\Models\WhatsappConfig;
+use App\Services\WhatsApp\RegistroMensagem;
 use App\Services\WhatsApp\RenderizadorTemplate;
 use App\Services\WhatsApp\WhatsAppException;
 use App\Services\WhatsApp\WhatsAppService;
@@ -149,8 +151,23 @@ class Automacoes extends Component
 
         try {
             app(WhatsAppService::class)->enviarTexto($this->numeroTeste, $texto);
+            RegistroMensagem::registrar([
+                'automacao' => 'teste',
+                'telefone' => $this->numeroTeste,
+                'status' => MensagemWhatsapp::ENVIADO,
+                'motivo' => 'teste manual ('.$chave.')',
+                'conteudo' => $texto,
+                'enviado_em' => now(),
+            ]);
             Flux::toast('Mensagem de teste enviada.', variant: 'success');
         } catch (WhatsAppException $e) {
+            RegistroMensagem::registrar([
+                'automacao' => 'teste',
+                'telefone' => $this->numeroTeste,
+                'status' => MensagemWhatsapp::FALHOU,
+                'motivo' => 'teste manual ('.$chave.'): falha no envio',
+                'conteudo' => $texto,
+            ]);
             Flux::toast($e->getMessage(), variant: 'danger');
         }
     }

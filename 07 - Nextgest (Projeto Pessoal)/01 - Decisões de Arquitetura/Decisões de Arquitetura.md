@@ -1558,3 +1558,40 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   (14 elegíveis, dia 1 → **10**, abaixo do per-minute 20); troca de número reinicia / mesmo número
   mantém. Suíte **626/626**. Print: aba Aquecimento (dia 2 · teto 10/dia · broadcast bloqueado).
   **Não dispara nada novo. Sem deploy.**
+
+## D83 — WhatsApp Controle de mensagens: histórico + janela de horário + opt-out
+> **Governança** das automações: **log de envios** (metadados + conteúdo, com **expurgo** automático
+> do texto), **janela de horário permitido** (global + override por automação) decidida **no servidor**
+> (adia/descarta), e **tela de opt-out**. **Não recebe mensagem** (sem webhook — fica para a fatia de
+> Conversas). Anonimato **D51 preservado** (envio ≠ avaliação). Ver [[WhatsApp (Evolution) no Nextgest]].
+- **Log `mensagens_whatsapp`** (tenant, aditiva): automação, agendamento/cliente (nullOnDelete),
+  telefone (metadado), status (`enviado|falhou|descartado`, string — sem enum no DB), motivo, conteúdo
+  (expurgável), `conteudo_expurgado_em`, `enviado_em`. Gravado pelos jobs D79/D81 e pelo "testar"
+  manual (`automacao=teste`), via `Services\WhatsApp\RegistroMensagem`, que **mascara links** — o
+  link **assinado** da avaliação **não** é persistido como credencial viva (`[link]`).
+- **Expurgo** (`nextgest:whatsapp-expurgar-conteudo`, diário 03:30): após
+  `config('whatsapp.historico.expurgo_dias')` (**90**, `0` desliga) apaga o **conteúdo**, mantém os
+  **metadados**. `UPDATE` sempre com `WHERE` (prazo + conteúdo ≠ null).
+- **Janela de horário** (`Services\WhatsApp\JanelaEnvio`): resolução **override-automação >
+  override-global (`whatsapp_config.janela`) > defaults (`config('whatsapp.janela')`, 08:00–20:00)**.
+  `ativa=false` = sem restrição. **Decidida no ENVIO (no job)**, fuso `APP_TIMEZONE`. Fora da janela:
+  **lembrete** → **descarta** se o atendimento já teria começado na próxima abertura (log
+  `descartado`), senão **adia** (`agendado_para`); **avaliação** (evento já ocorreu) → **sempre adia**.
+  O **registro é criado já na 1ª elegibilidade** (claim), então o adiamento **não perde** atendimentos
+  quando a janela de elegibilidade móvel da avaliação "anda".
+- **Represamento sem mexer no enum:** `lembretes_servico.agendado_para` / `pedidos_avaliacao.agendado_para`
+  (aditivo). `enfileirado` + `agendado_para` futuro = **adiado**; os comandos D79/D81 **re-despacham**
+  os vencidos (`agendado_para <= now`, status `enfileirado`) **antes** dos novos, dentro do mesmo teto.
+  Sem re-dispatch dentro do job → **sem recursão** em fila `sync` (dev) e idêntico em `async` (prod).
+- **Telas (3 abas novas, gated `recurso:whatsapp` + `can:gerenciar_whatsapp`):** **Janela** (global +
+  override por automação, prévia "aberta agora"), **Histórico** (filtros automação/status/período;
+  conteúdo expurgado sinalizado), **Opt-out** (lista + busca p/ marcar/desmarcar `clientes.whatsapp_optout`
+  do D79). Total da área WhatsApp = 6 abas (Conexão, Automações, Aquecimento, Janela, Histórico, Opt-out).
+- **Anonimato (D51):** o histórico registra **ENVIO** (gated a Dono/Gerente, nunca ao profissional) e
+  **não consulta `avaliacoes`** — saber "pedi avaliação ao cliente X" ≠ "o que o X avaliou". Teste prova
+  que a nota/comentário **não vaza** no histórico.
+- **Verificação:** `ControleMensagensTest` (13) — log enviado/falhou; link mascarado; expurgo (limpa
+  conteúdo, mantém metadados); janela (dentro→envia, fora+futuro→adia, fora+evento passou→descarta,
+  fuso); avaliação sempre adia; override por automação; re-despacho de represados; opt-out pela tela
+  bloqueia/libera; gating 403 (Profissional) × 200 (Dono); anonimato (não vaza a nota). Suíte
+  **639/639**. **Não recebe mensagem. Sem deploy.**

@@ -37,6 +37,9 @@ use App\Livewire\Painel\Vendas\Index as VendasIndex;
 use App\Livewire\Painel\Whatsapp\Aquecimento as WhatsappAquecimento;
 use App\Livewire\Painel\Whatsapp\Automacoes as WhatsappAutomacoes;
 use App\Livewire\Painel\Whatsapp\Conexao as WhatsappConexao;
+use App\Livewire\Painel\Whatsapp\Historico as WhatsappHistorico;
+use App\Livewire\Painel\Whatsapp\Janela as WhatsappJanela;
+use App\Livewire\Painel\Whatsapp\OptOut as WhatsappOptOut;
 use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\AvaliacaoPublica as PortalAvaliacaoPublica;
 use App\Livewire\Portal\Home as PortalHome;
@@ -248,6 +251,19 @@ Route::middleware(['tenant'])
                 Route::get('whatsapp/aquecimento', WhatsappAquecimento::class)
                     ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
                     ->name('whatsapp.aquecimento');
+
+                // Controle de mensagens (D83): janela de horário, histórico e opt-out. Mesmo gating.
+                Route::get('whatsapp/janela', WhatsappJanela::class)
+                    ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
+                    ->name('whatsapp.janela');
+
+                Route::get('whatsapp/historico', WhatsappHistorico::class)
+                    ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
+                    ->name('whatsapp.historico');
+
+                Route::get('whatsapp/optout', WhatsappOptOut::class)
+                    ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
+                    ->name('whatsapp.optout');
             });
         });
     });

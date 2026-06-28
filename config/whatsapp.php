@@ -83,4 +83,25 @@ return [
         'janela_buffer_min' => (int) env('WA_AVALIACAO_BUFFER_MIN', 60),
         'link_validade_dias' => (int) env('WA_AVALIACAO_LINK_DIAS', 7),
     ],
+
+    /*
+    | Controle de mensagens (D83) — janela de horário permitido (global). DEFAULTS; o
+    | tenant sobrescreve o global em whatsapp_config.janela e por automação em
+    | whatsapp_config.automacoes[chave].janela. Decidida NO ENVIO (servidor), fuso
+    | APP_TIMEZONE. `ativa=false` → sem restrição (envia a qualquer hora). Fora da janela:
+    | ADIA pro próximo horário válido; DESCARTA se o evento já teria passado (lembrete).
+    */
+    'janela' => [
+        'ativa' => (bool) env('WA_JANELA_ATIVA', true),
+        'inicio' => env('WA_JANELA_INICIO', '08:00'),
+        'fim' => env('WA_JANELA_FIM', '20:00'),
+    ],
+
+    /*
+    | Histórico/log de envios (D83) — `expurgo_dias`: após esse prazo o CONTEÚDO da
+    | mensagem é apagado (metadados permanecem). LGPD/minimização. 0 = nunca expurgar.
+    */
+    'historico' => [
+        'expurgo_dias' => (int) env('WA_HISTORICO_EXPURGO_DIAS', 90),
+    ],
 ];

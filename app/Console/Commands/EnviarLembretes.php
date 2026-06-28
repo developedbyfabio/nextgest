@@ -69,38 +69,59 @@ class EnviarLembretes extends Command
                 }
 
                 $lote = min($limiteMin, $restanteDia);
-                $antecedencia = (int) ($aut['antecedencia_min'] ?? $antecedenciaPadrao);
                 $agora = now();
+                $enfileirados = 0;
 
-                $elegiveis = Agendamento::query()
-                    ->whereNotIn('status', ['concluido', 'cancelado', 'nao_compareceu'])
-                    ->whereBetween('data_hora_inicio', [$agora, $agora->copy()->addMinutes($antecedencia)])
-                    ->whereDoesntHave('lembreteServico') // ainda não avisado (idempotência)
-                    ->whereHas('cliente', fn ($c) => $c->where('whatsapp_optout', false)->whereNotNull('telefone')->where('telefone', '!=', ''))
-                    ->orderBy('data_hora_inicio')
+                // 1) Represados pela JANELA de horário (D83) que já venceram — re-despacha
+                //    primeiro (esperaram). A janela é reconferida no job ao enviar.
+                $represados = LembreteServico::query()
+                    ->where('status', LembreteServico::ENFILEIRADO)
+                    ->whereNotNull('agendado_para')
+                    ->where('agendado_para', '<=', $agora)
+                    ->orderBy('agendado_para')
                     ->limit($lote)
                     ->get();
 
-                $i = 0;
-                foreach ($elegiveis as $ag) {
-                    // Cria o registro (agendamento_id único) — guarda contra corrida/duplo.
-                    $rec = LembreteServico::firstOrCreate(
-                        ['agendamento_id' => $ag->id],
-                        ['status' => LembreteServico::ENFILEIRADO, 'enfileirado_em' => now()],
-                    );
-
-                    if (! $rec->wasRecentlyCreated) {
-                        continue; // já existia
-                    }
-
-                    // Espaçamento intra-minuto (vale com fila assíncrona; no-op em sync).
-                    EnviarLembreteWhatsApp::dispatch($tenant->getKey(), $ag->id)
-                        ->delay($agora->copy()->addSeconds($i * $intervalo));
-
-                    $i++;
+                foreach ($represados as $rec) {
+                    $rec->update(['agendado_para' => null]); // reclama o slot (não re-pega no próximo minuto)
+                    EnviarLembreteWhatsApp::dispatch($tenant->getKey(), $rec->agendamento_id)
+                        ->delay($agora->copy()->addSeconds($enfileirados * $intervalo));
+                    $enfileirados++;
                 }
 
-                return $i;
+                // 2) Novos elegíveis (até completar o lote).
+                if ($enfileirados < $lote) {
+                    $antecedencia = (int) ($aut['antecedencia_min'] ?? $antecedenciaPadrao);
+
+                    $elegiveis = Agendamento::query()
+                        ->whereNotIn('status', ['concluido', 'cancelado', 'nao_compareceu'])
+                        ->whereBetween('data_hora_inicio', [$agora, $agora->copy()->addMinutes($antecedencia)])
+                        ->whereDoesntHave('lembreteServico') // ainda não avisado (idempotência)
+                        ->whereHas('cliente', fn ($c) => $c->where('whatsapp_optout', false)->whereNotNull('telefone')->where('telefone', '!=', ''))
+                        ->orderBy('data_hora_inicio')
+                        ->limit($lote - $enfileirados)
+                        ->get();
+
+                    foreach ($elegiveis as $ag) {
+                        // Cria o registro (agendamento_id único) — guarda contra corrida/duplo.
+                        $rec = LembreteServico::firstOrCreate(
+                            ['agendamento_id' => $ag->id],
+                            ['status' => LembreteServico::ENFILEIRADO, 'enfileirado_em' => now()],
+                        );
+
+                        if (! $rec->wasRecentlyCreated) {
+                            continue; // já existia
+                        }
+
+                        // Espaçamento intra-minuto (vale com fila assíncrona; no-op em sync).
+                        EnviarLembreteWhatsApp::dispatch($tenant->getKey(), $ag->id)
+                            ->delay($agora->copy()->addSeconds($enfileirados * $intervalo));
+
+                        $enfileirados++;
+                    }
+                }
+
+                return $enfileirados;
             });
 
             $totalEnfileirados += $enfileirados;

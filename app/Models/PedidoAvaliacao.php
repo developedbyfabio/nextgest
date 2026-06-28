@@ -27,6 +27,7 @@ class PedidoAvaliacao extends Model
         'agendamento_id',
         'status',
         'enfileirado_em',
+        'agendado_para',
         'enviado_em',
     ];
 
@@ -34,6 +35,9 @@ class PedidoAvaliacao extends Model
     {
         return [
             'enfileirado_em' => 'datetime',
+            // Represamento pela janela de horário (D83): enfileirado + agendado_para no
+            // futuro = adiado; o comando re-despacha quando vence. Fuso APP_TIMEZONE.
+            'agendado_para' => 'datetime',
             'enviado_em' => 'datetime',
         ];
     }
