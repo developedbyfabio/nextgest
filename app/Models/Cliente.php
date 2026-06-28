@@ -27,6 +27,7 @@ class Cliente extends Authenticatable
         'nome',
         'email',
         'telefone',
+        'whatsapp_optout',
         'password',
     ];
 
@@ -39,6 +40,7 @@ class Cliente extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'whatsapp_optout' => 'boolean',
         ];
     }
 

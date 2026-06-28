@@ -31,4 +31,22 @@ return [
     // Prefixo do nome da instância por tenant (garante unicidade na Evolution
     // compartilhada — ex.: ng_barbeariateste).
     'prefixo_instancia' => env('EVOLUTION_PREFIXO_INSTANCIA', 'ng_'),
+
+    /*
+    | Lembrete de serviço (D79) — automação real, com freios ANTI-BAN conservadores.
+    | Tudo configurável por .env (não cravado). O teto por minuto/dia é o freio
+    | primário (vale em fila sync OU async); o intervalo só espaça de fato com fila
+    | ASSÍNCRONA (em produção, QUEUE_CONNECTION=database/redis + worker). Conservador
+    | de propósito: WhatsApp não-oficial bane com rajada/volume.
+    */
+    'lembretes' => [
+        // Antecedência padrão (min) — o dono pode sobrescrever por automação (D77).
+        'antecedencia_min_padrao' => (int) env('WA_LEMBRETE_ANTECEDENCIA_MIN', 120),
+        // Teto de envios ENFILEIRADOS por execução do comando (roda a cada minuto).
+        'limite_por_minuto' => (int) env('WA_LEMBRETE_LIMITE_MINUTO', 4),
+        // Espaçamento entre mensagens dentro do minuto (segundos) — fila assíncrona.
+        'intervalo_segundos' => (int) env('WA_LEMBRETE_INTERVALO_SEG', 15),
+        // Teto diário por tenant.
+        'limite_por_dia' => (int) env('WA_LEMBRETE_LIMITE_DIA', 150),
+    ],
 ];

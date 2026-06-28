@@ -12,6 +12,12 @@
     <flux:textarea wire:model="template.{{ $a->value }}" rows="3"
         label="Mensagem" placeholder="Escreva a mensagem usando as variáveis abaixo…" />
 
+    {{-- Antecedência: só o lembrete de serviço (D79). --}}
+    @if ($a->value === 'lembrete_servico')
+        <flux:input type="number" wire:model="antecedenciaLembrete" min="5" max="1440"
+            label="Enviar quantos minutos antes" class="max-w-xs" />
+    @endif
+
     {{-- Variáveis disponíveis nesta automação (placeholders). --}}
     <div class="flex flex-wrap items-center gap-1.5">
         <flux:text class="text-xs" style="color: var(--cor-texto-suave);">Variáveis:</flux:text>

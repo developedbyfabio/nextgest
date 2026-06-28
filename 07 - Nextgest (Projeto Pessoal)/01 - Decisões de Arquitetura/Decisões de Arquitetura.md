@@ -1442,3 +1442,36 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **PENDENTE (esperado, não é falha):** o "conectar de verdade" depende do Fabio **registrar o app no
   Mercado Pago** (OAuth habilitado + Redirect URI = a rota de callback) e pôr `client_id`/`secret` no
   `.env`. **Não cobra nada. Sem deploy.**
+
+---
+
+## D79 — WhatsApp Fatia 4: lembrete de serviço (1ª automação real, anti-ban)
+> Primeira automação que **dispara para cliente real**: lembrete X min antes do atendimento. Lê a
+> agenda (**não toca o `MotorDisponibilidade`**), fuso `APP_TIMEZONE`, **idempotente**, **opt-out**
+> respeitado e **freios anti-ban conservadores**. Reusa config/template (D77) + envio (D75).
+> Ver [[WhatsApp (Evolution) no Nextgest]].
+- **Comando** `nextgest:enviar-lembretes` no scheduler (`->everyMinute()->withoutOverlapping()`).
+  Por tenant com `lembrete_servico` **ligada** + WhatsApp **conectado** (checa `status()` ao vivo):
+  acha agendamentos a-atender com `data_hora_inicio ∈ (now, now+antecedência]`, cliente **não
+  opt-out** e **ainda não avisado**, e **enfileira** o job. SÓ LÊ a agenda.
+- **Idempotência:** tabela `lembretes_servico` (tenant) com `agendamento_id` **único**
+  (`firstOrCreate` + `whereDoesntHave`) → **um** lembrete por agendamento; re-run/remarcação/restart
+  não duplica.
+- **Anti-ban (conservador, configurável via `.env`/`config('whatsapp.lembretes')`):** teto **por
+  minuto** (`limite_por_minuto=4`) e **por dia** (`limite_por_dia=150`) por tenant; excedente do
+  minuto fica pro próximo (a janela segura). Espaçamento intra-minuto via `delay()` do job — **vale
+  com fila ASSÍNCRONA**; em dev a fila é `sync` (envia na hora), então o teto/minuto é o freio
+  efetivo. WhatsApp **caído → não enfileira** (vencidos na queda saem da janela, **não acumulam**).
+  Tabela `jobs` (central) criada p/ a fila `database`.
+- **Job** `EnviarLembreteWhatsApp` (`tries=1`, sem retry = anti-storm): reinicializa a tenancy,
+  **revalida** (status/futuro/opt-out/automação/telefone), renderiza o template (D77) com os dados
+  reais (cliente/data/hora/serviço/profissional/salão) e envia via D75; marca `enviado`/`falhou`.
+- **Aditivo:** `clientes.whatsapp_optout`; antecedência editável no card do lembrete (D77 →
+  `automacoes['lembrete_servico']['antecedencia_min']`, fallback `antecedencia_min_padrao=120`).
+- **Verificação:** `LembreteServicoTest` (10, Evolution mockada) — janela/fuso; idempotência (2x → 1);
+  fora da janela; automação off; desconectado (não enfileira/não acumula); opt-out e status encerrado;
+  **teto/minuto** (6 elegíveis, limite 4 → 4); job renderiza+envia+marca; job não reenvia; opt-out no
+  job → falhou sem enviar. Suíte **603/603**.
+- **PENDENTE (esperado):** disparo **real** validado pelo Fabio com **número de teste** (em dev a fila
+  é `sync` → `php artisan nextgest:enviar-lembretes` envia na hora; produção precisa de
+  `QUEUE_CONNECTION=database` + worker p/ o espaçamento). **Sem deploy.**

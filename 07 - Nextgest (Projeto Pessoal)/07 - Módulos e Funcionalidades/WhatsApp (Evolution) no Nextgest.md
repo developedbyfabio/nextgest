@@ -76,8 +76,21 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
   renderiza com **dados de exemplo** e envia via D75. **NADA dispara automaticamente** (sem job/gatilho).
 - 10 testes (`WhatsAppAutomacoesTest`).
 
+## Fatia 4 (D79) — lembrete de serviço (1ª automação real, anti-ban)
+- **Comando** `nextgest:enviar-lembretes` (scheduler, a cada minuto) lê a agenda — janela
+  `(now, now+antecedência]`, status a-atender, fuso `APP_TIMEZONE` — **sem tocar o motor**. Enfileira
+  o job `EnviarLembreteWhatsApp` por agendamento elegível.
+- **Idempotente:** `lembretes_servico.agendamento_id` único (1 por agendamento; re-run não duplica).
+- **Anti-ban (config `whatsapp.lembretes`):** teto por minuto (4) e por dia (150); espaçamento via
+  `delay()` (fila assíncrona); WhatsApp caído → não enfileira (não acumula). Tabela `jobs` central.
+- **Job** (`tries=1`): revalida (status/futuro/opt-out/automação), renderiza o template (D77) com
+  dados reais e envia via D75; marca enviado/falhou.
+- **Opt-out:** `clientes.whatsapp_optout` (respeitado). **Antecedência** editável no card do lembrete.
+- **Produção:** `QUEUE_CONNECTION=database` + worker (em dev a fila é `sync` → envia na hora).
+- 10 testes (`LembreteServicoTest`).
+
 ## Próximas fatias
-- **Item "Gateway de pagamento"** (fatia curta): mover/criar item apontando para a tela de cobrança.
-- **Fatia 4:** lembrete de serviço (1ª automação REAL) — job agendado, opt-in, idempotente, fuso.
-- **Depois:** avaliação pós-serviço, cobrança do clube, contatos, caixa de conversas, broadcast real.
+- **Controle de mensagens:** histórico/log de envios + janela de horário permitido + gestão de opt-out.
+- **Fatia 5:** avaliação pós-serviço (liga na avaliação D51, respeitando anonimato).
+- **Depois:** cobrança do clube (G2/G3 do gateway), contatos, caixa de conversas, broadcast real.
 - **Evolution em produção** (exposição/segurança blindada à parte).

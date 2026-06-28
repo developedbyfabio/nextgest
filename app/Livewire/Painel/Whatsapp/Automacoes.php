@@ -37,6 +37,9 @@ class Automacoes extends Component
     /** Número usado pelo botão "testar" (não toca a base de clientes). */
     public string $numeroTeste = '';
 
+    /** Antecedência do lembrete de serviço (minutos antes), D79. */
+    public int $antecedenciaLembrete = 120;
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
@@ -47,6 +50,9 @@ class Automacoes extends Component
             $this->ativo[$a->value] = (bool) ($salvos[$a->value]['ativo'] ?? false); // broadcast/tudo off por padrão
             $this->template[$a->value] = (string) ($salvos[$a->value]['template'] ?? $a->templatePadrao());
         }
+
+        $this->antecedenciaLembrete = (int) ($salvos['lembrete_servico']['antecedencia_min']
+            ?? config('whatsapp.lembretes.antecedencia_min_padrao', 120));
     }
 
     public function salvar(): void
@@ -64,6 +70,8 @@ class Automacoes extends Component
                 'template' => trim((string) ($this->template[$a->value] ?? '')),
             ];
         }
+        // Antecedência (min) só faz sentido no lembrete de serviço (D79).
+        $map['lembrete_servico']['antecedencia_min'] = max(5, (int) $this->antecedenciaLembrete);
 
         $cfg->automacoes = $map;
         $cfg->save();
@@ -102,10 +110,10 @@ class Automacoes extends Component
         }
     }
 
-    /** @return array<string, array<int, string>> */
+    /** @return array<string, array<int, string|int>> */
     protected function rules(): array
     {
-        $regras = [];
+        $regras = ['antecedenciaLembrete' => ['required', 'integer', 'min:5', 'max:1440']];
         foreach (AutomacaoWhatsapp::cases() as $a) {
             $regras['ativo.'.$a->value] = ['boolean'];
             $regras['template.'.$a->value] = ['nullable', 'string', 'max:2000'];

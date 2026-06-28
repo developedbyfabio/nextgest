@@ -79,6 +79,12 @@ class Agendamento extends Model
         return $this->hasOne(Avaliacao::class);
     }
 
+    /** Controle do lembrete de serviço por WhatsApp (idempotência, D79). */
+    public function lembreteServico(): HasOne
+    {
+        return $this->hasOne(LembreteServico::class);
+    }
+
     /**
      * Agendamentos que ocupam a agenda (exclui cancelado/nao_compareceu).
      */
