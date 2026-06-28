@@ -6,7 +6,8 @@
             <flux:heading size="sm" style="color: var(--cor-texto);">{{ $a->rotulo() }}</flux:heading>
             <flux:text class="text-sm" style="color: var(--cor-texto-suave);">{{ $a->descricao() }}</flux:text>
         </div>
-        <flux:switch wire:model="ativo.{{ $a->value }}" />
+        {{-- Sem o termo de risco aceito (D80), o toggle fica bloqueado (trava também no servidor). --}}
+        <flux:switch wire:model="ativo.{{ $a->value }}" :disabled="! $termoAceito" />
     </div>
 
     <flux:textarea wire:model="template.{{ $a->value }}" rows="3"

@@ -54,6 +54,7 @@ it('defaults: tudo desligado (broadcast off) e templates = padrão', function ()
 
 it('salvar persiste on/off + template no JSON whatsapp_config.automacoes', function () {
     Livewire::test(Automacoes::class)
+        ->call('aceitarTermo') // D80: aceite libera a ativação
         ->set('ativo.lembrete_servico', true)
         ->set('template.lembrete_servico', 'Olá {cliente}!')
         ->call('salvar');

@@ -40,11 +40,16 @@ class Automacoes extends Component
     /** Antecedência do lembrete de serviço (minutos antes), D79. */
     public int $antecedenciaLembrete = 120;
 
+    /** Termo de risco aceito (na versão atual)? Trava a ativação até ser aceito (D80). */
+    public bool $termoAceito = false;
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
 
-        $salvos = WhatsappConfig::query()->first()?->automacoes ?? [];
+        $cfg = WhatsappConfig::query()->first();
+        $salvos = $cfg?->automacoes ?? [];
+        $this->termoAceito = (bool) $cfg?->termoAceito();
 
         foreach (AutomacaoWhatsapp::cases() as $a) {
             $this->ativo[$a->value] = (bool) ($salvos[$a->value]['ativo'] ?? false); // broadcast/tudo off por padrão
@@ -55,6 +60,21 @@ class Automacoes extends Component
             ?? config('whatsapp.lembretes.antecedencia_min_padrao', 120));
     }
 
+    /** Registra o aceite do termo de risco (quem/quando/versão) — libera os toggles. */
+    public function aceitarTermo(): void
+    {
+        abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+
+        $cfg = WhatsappConfig::query()->first() ?? new WhatsappConfig;
+        $cfg->termo_aceito_em = now();
+        $cfg->termo_aceito_por = (string) (auth('web')->user()?->name ?? '');
+        $cfg->termo_versao = (string) config('whatsapp.termo_versao');
+        $cfg->save();
+
+        $this->termoAceito = true;
+        Flux::toast('Termo aceito. As automações já podem ser ligadas.', variant: 'success');
+    }
+
     public function salvar(): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
@@ -63,10 +83,18 @@ class Automacoes extends Component
 
         $cfg = WhatsappConfig::query()->first() ?? new WhatsappConfig;
 
+        // TRAVA (servidor): sem o termo aceito, NENHUMA automação liga — força tudo off,
+        // mesmo que o request tente ligar (não basta esconder o toggle).
+        $aceito = $cfg->termoAceito();
+        $tentouLigar = collect($this->ativo)->contains(true);
+        if (! $aceito && $tentouLigar) {
+            Flux::toast('Aceite o termo de risco para ligar as automações.', variant: 'danger');
+        }
+
         $map = [];
         foreach (AutomacaoWhatsapp::cases() as $a) {
             $map[$a->value] = [
-                'ativo' => (bool) ($this->ativo[$a->value] ?? false),
+                'ativo' => $aceito ? (bool) ($this->ativo[$a->value] ?? false) : false,
                 'template' => trim((string) ($this->template[$a->value] ?? '')),
             ];
         }
@@ -76,7 +104,16 @@ class Automacoes extends Component
         $cfg->automacoes = $map;
         $cfg->save();
 
-        Flux::toast('Automações salvas.', variant: 'success');
+        // Reflete na tela o que de fato foi salvo (se travado, voltam desligadas).
+        if (! $aceito) {
+            foreach (AutomacaoWhatsapp::cases() as $a) {
+                $this->ativo[$a->value] = false;
+            }
+        }
+
+        if ($aceito || ! $tentouLigar) {
+            Flux::toast('Automações salvas.', variant: 'success');
+        }
     }
 
     /** Renderiza o template com DADOS DE EXEMPLO e envia para o número informado (D75). */

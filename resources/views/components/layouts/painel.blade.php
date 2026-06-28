@@ -84,6 +84,12 @@
         </div>
     @endif
 
+    {{-- Aviso de queda do WhatsApp (D80): condicional (recurso + já conectou + caído),
+         só p/ quem gerencia WhatsApp. O componente decide se aparece (wire:init). --}}
+    @if (auth('web')->user()?->can('gerenciar_whatsapp'))
+        <livewire:painel.aviso-whatsapp-conexao />
+    @endif
+
     {{-- Sidebar do painel (D36). Colapsável (reaproveita o Flux nativo): no DESKTOP recolhe
          para uma faixa só com ícones e o conteúdo ao lado se alarga (grid `min-content`);
          no MOBILE vira um drawer sobreposto com overlay. Cabeçalho e rodapé FIXOS — só a

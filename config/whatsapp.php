@@ -32,6 +32,9 @@ return [
     // compartilhada — ex.: ng_barbeariateste).
     'prefixo_instancia' => env('EVOLUTION_PREFIXO_INSTANCIA', 'ng_'),
 
+    // Versão do termo de risco (D80). Bump = re-exige aceite de todos os tenants.
+    'termo_versao' => env('WA_TERMO_VERSAO', '1'),
+
     /*
     | Lembrete de serviço (D79) — automação real, com freios ANTI-BAN conservadores.
     | Tudo configurável por .env (não cravado). O teto por minuto/dia é o freio

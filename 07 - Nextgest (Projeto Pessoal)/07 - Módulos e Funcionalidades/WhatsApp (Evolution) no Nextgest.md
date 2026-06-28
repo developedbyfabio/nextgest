@@ -89,7 +89,18 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
 - **Produção:** `QUEUE_CONNECTION=database` + worker (em dev a fila é `sync` → envia na hora).
 - 10 testes (`LembreteServicoTest`).
 
+## Fatia 4.5 (D80) — número dedicado + termo de risco (trava) + detecção de queda
+- **Número dedicado:** aviso na tela de Conexão (usar número secundário, não o principal).
+- **Termo de risco (trava no servidor):** `whatsapp_config.termo_aceito_em/por/versao`. Sem aceite,
+  `Automacoes::salvar()` **força tudo off** (não basta esconder o toggle); `aceitarTermo()` registra
+  quem/quando/versão; bump de `config('whatsapp.termo_versao')` re-exige aceite.
+- **Detecção de queda:** estado `caiu` na tela (D76) + **banner no topo do painel**
+  (`Painel\AvisoWhatsappConexao`, `wire:init` → `status()`), condicional: recurso + permissão + já
+  conectou + status ≠ open; Evolution fora → não alarma. Link "Reconectar".
+- 8 testes (`TermoEAvisoTest`). Não dispara nada.
+
 ## Próximas fatias
+- **Modo aquecimento:** volume baixo e gradual para número recém-conectado.
 - **Controle de mensagens:** histórico/log de envios + janela de horário permitido + gestão de opt-out.
 - **Fatia 5:** avaliação pós-serviço (liga na avaliação D51, respeitando anonimato).
 - **Depois:** cobrança do clube (G2/G3 do gateway), contatos, caixa de conversas, broadcast real.

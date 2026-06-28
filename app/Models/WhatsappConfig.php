@@ -24,6 +24,9 @@ class WhatsappConfig extends Model
         'instancia_token',
         'status_conexao',
         'automacoes',
+        'termo_aceito_em',
+        'termo_aceito_por',
+        'termo_versao',
         'telefone',
         'phone_number_id',
         'business_account_id',
@@ -45,8 +48,19 @@ class WhatsappConfig extends Model
             'instancia_token' => 'encrypted',
             // Overrides das automações por tenant: {chave: {ativo, template}}. Catálogo no enum.
             'automacoes' => 'array',
+            'termo_aceito_em' => 'datetime',
             'verificado' => 'boolean',
             'ativo' => 'boolean',
         ];
+    }
+
+    /**
+     * Termo de risco aceito E na versão ATUAL? (D80) Bump da versão re-exige aceite.
+     * Sem isso, nenhuma automação liga (trava no servidor).
+     */
+    public function termoAceito(): bool
+    {
+        return $this->termo_aceito_em !== null
+            && (string) $this->termo_versao === (string) config('whatsapp.termo_versao');
     }
 }

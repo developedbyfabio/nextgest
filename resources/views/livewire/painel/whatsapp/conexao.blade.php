@@ -4,6 +4,14 @@
 
     @include('livewire.painel.whatsapp._abas')
 
+    {{-- Aviso de número dedicado (D80): reduz o risco de bloqueio. --}}
+    <div class="mx-auto flex w-full max-w-xl items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+        <flux:icon name="exclamation-triangle" class="mt-0.5 size-5 shrink-0" />
+        <span>Use um <strong>número dedicado/secundário</strong> para o WhatsApp do sistema — <strong>não o
+            número principal</strong> do salão. O envio automático pelo WhatsApp não-oficial tem risco de
+            <strong>bloqueio</strong>; um número à parte protege o seu contato principal.</span>
+    </div>
+
     <div class="ng-surface mx-auto flex w-full max-w-xl flex-col items-center gap-5 p-6 text-center">
 
         {{-- CONECTADO (poll lento detecta queda → "caiu") --}}

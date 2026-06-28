@@ -7,6 +7,30 @@
 
     @include('livewire.painel.whatsapp._abas')
 
+    {{-- TERMO DE RISCO (D80): trava a ativação até o aceite (também no servidor). --}}
+    @unless ($termoAceito)
+        <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+            <div class="flex items-start gap-3">
+                <flux:icon name="shield-exclamation" class="mt-0.5 size-6 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <flux:heading size="sm" class="text-amber-900 dark:text-amber-200">Antes de ligar qualquer automação, leia e aceite</flux:heading>
+                        <flux:text class="mt-1 text-sm text-amber-800 dark:text-amber-300">
+                            O envio automático pelo WhatsApp <strong>não-oficial</strong> pode levar ao
+                            <strong>bloqueio/banimento do número</strong>. Use um <strong>número dedicado</strong>
+                            (não o principal do salão), só envie a clientes que esperam o contato (consentimento/LGPD)
+                            e mantenha volume baixo. Você é responsável pelo uso. As automações ficam
+                            <strong>bloqueadas</strong> até o aceite.
+                        </flux:text>
+                    </div>
+                    <div>
+                        <flux:button wire:click="aceitarTermo" variant="primary" icon="check-badge">Li e aceito o risco</flux:button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endunless
+
     {{-- Número usado só pelo botão "testar" (dados de exemplo; não toca a base de clientes). --}}
     <div class="ng-surface flex flex-col gap-2 p-4 sm:flex-row sm:items-end sm:gap-4">
         <flux:input wire:model="numeroTeste" label="Número para teste" placeholder="(41) 99999-9999"

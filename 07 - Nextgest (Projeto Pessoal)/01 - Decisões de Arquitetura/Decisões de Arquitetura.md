@@ -1475,3 +1475,30 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **PENDENTE (esperado):** disparo **real** validado pelo Fabio com **número de teste** (em dev a fila
   é `sync` → `php artisan nextgest:enviar-lembretes` envia na hora; produção precisa de
   `QUEUE_CONNECTION=database` + worker p/ o espaçamento). **Sem deploy.**
+  > **Validado (28/06/2026):** lembrete real entregue ao número de teste (status `enviado`);
+  > 2ª execução não reenviou (idempotência). Achado: a sessão do WhatsApp **caía** entre usos → motivou
+  > a detecção de queda (D80).
+
+---
+
+## D80 — WhatsApp Fatia 4.5: número dedicado + termo de risco (trava) + detecção de queda
+> Três proteções de UI/monitoramento — **não dispara nada**. Reusa o status ao vivo (D76) e a config
+> de automações (D77). Ver [[WhatsApp (Evolution) no Nextgest]].
+- **Aviso de número dedicado:** banner na tela de **Conexão** — usar um número **secundário/dedicado**
+  (não o principal), risco de bloqueio.
+- **Termo de risco que TRAVA (servidor):** `whatsapp_config` ganha `termo_aceito_em`/`termo_aceito_por`/
+  `termo_versao` (aditivo). `WhatsappConfig::termoAceito()` = aceito **na versão atual**
+  (`config('whatsapp.termo_versao')`; bump re-exige aceite). Em `Automacoes::salvar()`, **sem aceite
+  nenhuma automação liga** — força todas `ativo=false` mesmo via request forjado (+ toast); ação
+  `aceitarTermo()` registra quem/quando/versão. Toggles desabilitados no front até aceitar (defesa em
+  profundidade; a trava real é no servidor).
+- **Detecção de queda (2 lugares):** estado `caiu` já existia na tela (D76). **Banner no topo do
+  painel** via componente `Painel\AvisoWhatsappConexao` embutido no layout (padrão do D69): `wire:init`
+  chama `status()`; aparece **só** se recurso `whatsapp` + `can('gerenciar_whatsapp')` + **já conectou**
+  (`instancia` setada) + status ≠ `open`. Evolution fora do ar (erro) → **não alarma** (é infra, não
+  queda de sessão). Link "Reconectar". Condicional estrito (não polui quem não usa WhatsApp / nunca
+  conectou).
+- **Verificação:** `TermoEAvisoTest` (8) — trava (salvar não liga sem aceite, mesmo forjado), aceite
+  registra+libera, bump de versão re-exige, aviso caiu/open/nunca-conectou/sem-permissão. Suíte
+  **610/610**. Prints (Playwright): termo bloqueando os toggles, aviso de número dedicado.
+  **Não dispara mensagem. Sem deploy.**
