@@ -2,6 +2,8 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8" wire:init="sincronizar">
     <x-ng.page-header title="WhatsApp" subtitle="Conecte o WhatsApp do seu estabelecimento" />
 
+    @include('livewire.painel.whatsapp._abas')
+
     <div class="ng-surface mx-auto flex w-full max-w-xl flex-col items-center gap-5 p-6 text-center">
 
         {{-- CONECTADO (poll lento detecta queda → "caiu") --}}

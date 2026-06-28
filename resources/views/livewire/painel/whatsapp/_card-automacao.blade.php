@@ -1,0 +1,27 @@
+{{-- Card de uma automação: toggle + template editável + variáveis + testar. Recebe $a
+     (App\Enums\AutomacaoWhatsapp); usa $ativo/$template/$numeroTeste do componente. --}}
+<div class="ng-surface flex flex-col gap-3 p-4">
+    <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+            <flux:heading size="sm" style="color: var(--cor-texto);">{{ $a->rotulo() }}</flux:heading>
+            <flux:text class="text-sm" style="color: var(--cor-texto-suave);">{{ $a->descricao() }}</flux:text>
+        </div>
+        <flux:switch wire:model="ativo.{{ $a->value }}" />
+    </div>
+
+    <flux:textarea wire:model="template.{{ $a->value }}" rows="3"
+        label="Mensagem" placeholder="Escreva a mensagem usando as variáveis abaixo…" />
+
+    {{-- Variáveis disponíveis nesta automação (placeholders). --}}
+    <div class="flex flex-wrap items-center gap-1.5">
+        <flux:text class="text-xs" style="color: var(--cor-texto-suave);">Variáveis:</flux:text>
+        @foreach ($a->variaveis() as $v)
+            <code class="rounded px-1.5 py-0.5 text-xs" style="background-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); color: var(--cor-texto);">{{ '{'.$v.'}' }}</code>
+        @endforeach
+    </div>
+
+    <div class="flex justify-end">
+        <flux:button wire:click="testar('{{ $a->value }}')" size="sm" variant="outline" icon="paper-airplane"
+            wire:loading.attr="disabled" wire:target="testar('{{ $a->value }}')">Testar</flux:button>
+    </div>
+</div>

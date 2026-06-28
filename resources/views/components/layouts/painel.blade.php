@@ -9,7 +9,7 @@
     // D47 (grupos fechados no load); só adiciona a exceção do grupo da página atual.
     $rotasGrupo = [
         'operacao' => ['painel.agenda', 'painel.avaliacoes', 'painel.servicos', 'painel.produtos', 'painel.vendas*', 'painel.bloqueios', 'painel.funcionamento', 'painel.kanban'],
-        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.integracoes*', 'painel.whatsapp'],
+        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.integracoes*', 'painel.whatsapp*'],
         'financeiro' => ['painel.financeiro'],
     ];
     $grupoAtivo = null;
@@ -184,7 +184,7 @@
                 {{-- WhatsApp: item próprio (D76), gated por recurso `whatsapp` + permissão. --}}
                 @recurso('whatsapp')
                     @can('gerenciar_whatsapp')
-                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('painel.whatsapp', ['tenant' => $tenantId])" :current="request()->routeIs('painel.whatsapp')" wire:navigate>WhatsApp</flux:navlist.item>
+                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('painel.whatsapp', ['tenant' => $tenantId])" :current="request()->routeIs('painel.whatsapp*')" wire:navigate>WhatsApp</flux:navlist.item>
                     @endcan
                 @endrecurso
             </flux:sidebar.group>

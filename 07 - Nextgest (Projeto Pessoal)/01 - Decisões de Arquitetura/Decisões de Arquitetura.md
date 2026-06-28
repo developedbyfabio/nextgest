@@ -1373,3 +1373,36 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   Status ao vivo confirmado contra a Evolution real (`ng_barbeariateste` = `open` → tela "conectado").
   Screenshot via browser não capturado nesta rodada (cache do Playwright foi limpo + isolamento de
   loopback do navegador no sandbox — infra, não a feature). **Sem deploy.**
+
+---
+
+## D77 — WhatsApp Fatia 3: painel de configuração de automações (on/off + templates + testar)
+> Painel de controle das automações (liga/desliga + template editável com variáveis por automação),
+> em **transacionais** e **broadcast**, + botão **testar**. **NADA dispara automaticamente** — só
+> config e teste manual. Reusa D75 (envio) e D76 (conexão/menu/permissão). Ver
+> [[WhatsApp (Evolution) no Nextgest]].
+- **Dados (aditivo, sem clash):** coluna JSON **`whatsapp_config.automacoes`** (cast `array`) com os
+  OVERRIDES por tenant `{chave: {ativo, template}}`. O **catálogo** (categoria, variáveis, template
+  padrão, rótulo) vive no enum **`App\Enums\AutomacaoWhatsapp`** (fonte da verdade). Escolhi JSON na
+  config (singleton) em vez de tabela para evitar colidir com a legada `whatsapp_automacoes` (era API
+  Cloud, sem uso) e manter 100% aditivo.
+- **Catálogo (6):** transacionais — `lembrete_servico`, `cobranca_clube`, `avaliacao_pos_servico`;
+  broadcast — `noticias`, `funcionamento`, `avisos_gerais`. Cada uma com suas variáveis
+  (`{cliente}`/`{data}`/`{hora}`/`{servico}`/`{profissional}`/`{salao}`/`{plano}`/`{valor}`/
+  `{vencimento}`/`{link}`) e template padrão.
+- **Broadcast = sensível:** disparo em massa no WhatsApp não-oficial → risco de **ban**; exige opt-in/
+  LGPD. Off por padrão + banner de aviso na tela. (Disparo em massa real, com throttle/opt-in, é fatia
+  própria — aqui **não** dispara.)
+- **Template seguro:** `RenderizadorTemplate::render()` é só `str_replace` (sem eval) — variável
+  conhecida vira valor; **`{xpto}` desconhecida fica literal** (nunca quebra); valores têm caracteres
+  de controle removidos (sem injeção).
+- **Tela** `App\Livewire\Painel\Whatsapp\Automacoes` (rota `painel.whatsapp.automacoes`, mesmo gating
+  `recurso:whatsapp` + `can:gerenciar_whatsapp`): aba (Conexão | Automações) na área WhatsApp; cards
+  agrupados com toggle + editor + chips de variáveis; banner no broadcast; campo "número para teste";
+  botão **Testar** = renderiza com **dados de exemplo** (`{salao}` = nome do tenant) e envia via D75.
+  Erro/timeout vira aviso (sem 500). **Nenhum job/gatilho novo.**
+- **Verificação:** `WhatsAppAutomacoesTest` (10) — catálogo (3+3), renderizador (literal/sem injeção),
+  defaults off, persistência JSON, broadcast off, testar (variável inválida literal + envio), exige
+  número, erro tratado, gating recurso (on→200/off→404). Suíte **592/592**. Print por HTTP/Playwright
+  (servidor + navegador no mesmo shell p/ compartilhar o namespace de rede): tela com transacionais,
+  broadcast (aviso), variáveis e abas. **Sem deploy.**

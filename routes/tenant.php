@@ -35,6 +35,7 @@ use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Painel\Vendas\Detalhe as VendasDetalhe;
 use App\Livewire\Painel\Vendas\Index as VendasIndex;
+use App\Livewire\Painel\Whatsapp\Automacoes as WhatsappAutomacoes;
 use App\Livewire\Painel\Whatsapp\Conexao as WhatsappConexao;
 use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\Home as PortalHome;
@@ -233,6 +234,11 @@ Route::middleware(['tenant'])
                 Route::get('whatsapp', WhatsappConexao::class)
                     ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
                     ->name('whatsapp');
+
+                // Automações de WhatsApp (D77): config on/off + templates. Mesmo gating.
+                Route::get('whatsapp/automacoes', WhatsappAutomacoes::class)
+                    ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
+                    ->name('whatsapp.automacoes');
             });
         });
     });

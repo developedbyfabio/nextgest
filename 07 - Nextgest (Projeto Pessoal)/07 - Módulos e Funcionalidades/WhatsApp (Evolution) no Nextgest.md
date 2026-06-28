@@ -63,7 +63,21 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
   renovável, desconectar/reconectar. Reusa `WhatsAppService` (D75) + `desconectar()` (logout da
   instância). Erros tratados, sem expor segredo. 9 testes (`WhatsAppConexaoTest`).
 
+## Fatia 3 (D77) — configuração de automações
+- **Dados:** JSON `whatsapp_config.automacoes` (`{chave: {ativo, template}}`, overrides por tenant). O
+  **catálogo** (categoria, variáveis, template padrão) está no enum `App\Enums\AutomacaoWhatsapp`.
+- **Catálogo:** transacionais (`lembrete_servico`, `cobranca_clube`, `avaliacao_pos_servico`) e
+  broadcast (`noticias`, `funcionamento`, `avisos_gerais`). Broadcast é **sensível** (massa → risco de
+  ban; opt-in/LGPD): **off por padrão** + aviso na tela.
+- **Template:** `RenderizadorTemplate` troca `{var}` conhecidas; `{xpto}` desconhecida fica **literal**
+  (nunca quebra); sem injeção (só `str_replace`, valores sem caracteres de controle).
+- **Tela** `Painel\Whatsapp\Automacoes` (rota `painel.whatsapp.automacoes`, aba ao lado de Conexão):
+  toggle + editor + chips de variáveis por automação; "número para teste" + botão **Testar** que
+  renderiza com **dados de exemplo** e envia via D75. **NADA dispara automaticamente** (sem job/gatilho).
+- 10 testes (`WhatsAppAutomacoesTest`).
+
 ## Próximas fatias
 - **Item "Gateway de pagamento"** (fatia curta): mover/criar item apontando para a tela de cobrança.
-- **Fatia 3:** lembrete antes do horário (job agendado, opt-in, idempotente, fuso correto).
-- **Depois:** Evolution em produção (exposição/segurança blindada à parte).
+- **Fatia 4:** lembrete de serviço (1ª automação REAL) — job agendado, opt-in, idempotente, fuso.
+- **Depois:** avaliação pós-serviço, cobrança do clube, contatos, caixa de conversas, broadcast real.
+- **Evolution em produção** (exposição/segurança blindada à parte).

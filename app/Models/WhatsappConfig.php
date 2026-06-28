@@ -23,6 +23,7 @@ class WhatsappConfig extends Model
         'instancia',
         'instancia_token',
         'status_conexao',
+        'automacoes',
         'telefone',
         'phone_number_id',
         'business_account_id',
@@ -42,6 +43,8 @@ class WhatsappConfig extends Model
             'token' => 'encrypted',
             // Token DAQUELA instância (Evolution) — cifrado; nunca em texto/serialização/log.
             'instancia_token' => 'encrypted',
+            // Overrides das automações por tenant: {chave: {ativo, template}}. Catálogo no enum.
+            'automacoes' => 'array',
             'verificado' => 'boolean',
             'ativo' => 'boolean',
         ];
