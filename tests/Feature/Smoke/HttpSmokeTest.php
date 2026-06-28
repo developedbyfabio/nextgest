@@ -25,6 +25,7 @@ it('todas as rotas GET respondem 200 ou 302 (nunca 404/500)', function () {
         '/lojaum/painel/login', '/lojaum/painel',
         '/lojaum/painel/unidades', '/lojaum/painel/servicos', '/lojaum/painel/equipe',
         '/lojaum/painel/bloqueios', '/lojaum/painel/papeis', '/lojaum/painel/agenda',
+        '/lojaum/painel/clientes',
     ];
 
     foreach ($rotas as $rota) {

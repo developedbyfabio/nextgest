@@ -9,7 +9,7 @@
     // D47 (grupos fechados no load); só adiciona a exceção do grupo da página atual.
     $rotasGrupo = [
         'operacao' => ['painel.agenda', 'painel.avaliacoes', 'painel.servicos', 'painel.produtos', 'painel.vendas*', 'painel.bloqueios', 'painel.funcionamento', 'painel.kanban'],
-        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.pagamentos', 'painel.whatsapp*'],
+        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.clientes', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.pagamentos', 'painel.whatsapp*'],
         'financeiro' => ['painel.financeiro'],
     ];
     $grupoAtivo = null;
@@ -166,6 +166,9 @@
                 @endcan
                 @can('editar_usuario')
                     <flux:navlist.item icon="identification" :href="route('painel.equipe', ['tenant' => $tenantId])" :current="request()->routeIs('painel.equipe') || request()->routeIs('painel.equipe.horarios')" wire:navigate>Equipe</flux:navlist.item>
+                @endcan
+                @can('ver_clientes')
+                    <flux:navlist.item icon="users" :href="route('painel.clientes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.clientes')" wire:navigate>Clientes</flux:navlist.item>
                 @endcan
                 @can('ver_financeiro')
                     <flux:navlist.item icon="wallet" :href="route('painel.comissoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.comissoes')" wire:navigate>Comissões</flux:navlist.item>

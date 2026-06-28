@@ -1655,3 +1655,35 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   de marketing **não** bloqueia o transacional; opt-out geral bloqueia (D83); a tela mexe em cada flag de
   forma independente; tipo inválido é no-op. Sem regressão (opt-out geral D83). Suíte **654/654**. Print:
   tela com os dois consentimentos. **Não dispara nada. Sem deploy.**
+
+## D87 — Clientes (CRM) Fatia 1: aba "Clientes" em Gestão (só leitura)
+> Primeira fatia do CRM: uma **tela** para ver a base de clientes do tenant. **Só visualização** —
+> sem editar, resetar senha, enviar WhatsApp ou campanha (fatias seguintes). Ver [[Clientes (CRM)]].
+- **Aba "Clientes"** no grupo **Gestão**, rota `painel.clientes`. Componente `Painel\Clientes\Index`
+  (casca de leitura) + view. Reaproveita `Vendas\Index` (molde de lista+busca+filtros+paginação) e os
+  rótulos/cores de status de `Agenda\Index::STATUS_LABEL`/`STATUS_COR` (não duplica).
+- **Acesso (decisão do Fabio):** gate por **`ver_clientes`** (`can()`, nunca `hasRole`) — Dono,
+  Gerente **e Recepção** (a Recepção já tinha a permissão e lida com clientes no balcão). Profissional
+  **não** acessa. Confirmado em auditoria que `ver_clientes` é a permissão semanticamente correta;
+  optou-se por reusá-la em vez de restringir só a Dono+Gerente.
+- **"Última visita" = último atendimento CONCLUÍDO** (`agendamentos.status='concluido'`,
+  `MAX(data_hora_inicio)`) — mesmo critério da agenda (D70). ⚠️ **Difere** do motor de Indicadores
+  (Fase I), que define "visita" = **comanda paga** (`vendas`). São conceitos distintos de propósito:
+  Indicadores mede hábito de consumo (faturamento); a aba Clientes mostra presença/comparecimento.
+- **Selo "Assinante" (decisão do Fabio):** titular **OU** dependente **com conta** de uma assinatura
+  **ativa** — via `beneficiarios_assinatura ⋈ assinaturas_clube (status='ativa')` (a tabela já inclui
+  o titular como beneficiário). Coluna/filtro do Clube só aparecem com o **recurso `clube` ligado**
+  (`tenant_tem_recurso`).
+- **Performance (sem N+1):** última visita e assinante vêm de **subconsultas agregadas** (`GROUP BY`)
+  anexadas via `leftJoinSub` — **uma** query para a lista inteira, **paginada** (15/pág). Mesmo estilo
+  set-based de `IndicadoresClientes`. O detalhe é **uma** query extra, só do cliente expandido.
+- **Busca** por nome (server-side, `LIKE`, índice em `clientes.nome`). **Filtros:** faixa de última
+  visita (até 30 / 31–90 / +90 dias / nunca) sobre a coluna agregada, e Clube (assinantes / sem Clube).
+  **Detalhe** expansível: últimos 8 agendamentos (data, serviço, profissional, status) — só leitura.
+- **Gotcha (Blade do projeto):** o projeto **não compila** bloco `@php … @endphp` multilinha (sai
+  literal e quebra o `@foreach` externo). Convenção: usar `@php(…)` de **uma linha** (ou mover a lógica
+  para o componente). Lógica com closure (`fn`) vai para o componente, não para `@php(…)`.
+- **Verificação:** `ClientesTest` (11) — gate (Dono/Gerente/Recepção 200; Profissional 403); última
+  visita usa concluído e ignora cancelado/"nunca"; busca; faixas de visita; selo do Clube cobre
+  titular **e** dependente, cancelada não conta, sem recurso não aparece; detalhe abre/fecha; isolamento
+  por tenant; sem ações. Smoke HTTP cobre a rota. Suíte **665/665**; build ok. **Só leitura. Sem deploy.**

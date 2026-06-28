@@ -383,3 +383,16 @@ central de dev estava VAZIO** (`tenants`/`admins`/`estabelecimentos`/`assinatura
   (INSERT em `tenants` — sem `Tenant::create`, que tentaria recriar o banco já existente), recriar o
   super-admin (`php artisan` de criação) e re-provisionar assinaturas (comando idempotente). O `data`
   (segmento/recursos/plano) e `estabelecimentos`/`faturas` são reconstruídos por melhor-esforço/UI.
+
+## ⚠️ Bloco `@php … @endphp` multilinha NÃO compila nas views → use `@php(…)` de uma linha
+- **Sintoma:** ao usar um bloco `@php … @endphp` dentro de uma view (ex.: dentro de um `@foreach`), o
+  `@php` sai **literal** no Blade compilado e o `@endphp` vira `?>` — desbalanceando tudo. O erro
+  estoura como `ParseError: syntax error, unexpected token "endforeach"` (o `@foreach` externo perde o
+  par). Custou um ciclo de depuração no D87 (aba Clientes).
+- **Causa provável:** algo no pipeline de compilação do projeto (Livewire/Flux + ordem de diretivas)
+  não trata o bloco multilinha. Empiricamente, **nenhuma** view do projeto usa o bloco — a convenção é
+  `@php(…)` de **uma linha**.
+- **Regra:** para cálculos por linha/iteração, use vários `@php(…)` de uma linha. Para lógica mais
+  pesada — sobretudo com **closures** (`fn (...) => ...`, que também quebram o `@php(…)` inline por
+  causa dos parênteses internos) — **mova para o componente** e passe pronto para a view (ex.: achatar
+  uma coleção em array). A view fica sem lógica de negócio (bônus de qualidade).

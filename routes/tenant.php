@@ -17,6 +17,7 @@ use App\Livewire\Painel\Agenda\Index as AgendaIndex;
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Avaliacoes\Index as AvaliacoesIndex;
 use App\Livewire\Painel\Bloqueios\Index as BloqueiosIndex;
+use App\Livewire\Painel\Clientes\Index as ClientesIndex;
 use App\Livewire\Painel\Clube\Index as ClubeIndex;
 use App\Livewire\Painel\Comissoes\Index as ComissoesIndex;
 use App\Livewire\Painel\Dashboard as PainelDashboard;
@@ -186,6 +187,13 @@ Route::middleware(['tenant'])
                 Route::get('financeiro', FinanceiroIndex::class)
                     ->middleware('can:ver_financeiro')
                     ->name('financeiro');
+
+                // Clientes (CRM Fatia 1 — só leitura): lista paginada da base do tenant
+                // com última visita (último atendimento concluído) e selo do Clube. Gate
+                // por ver_clientes (Dono/Gerente/Recepção). Nenhuma ação aqui.
+                Route::get('clientes', ClientesIndex::class)
+                    ->middleware('can:ver_clientes')
+                    ->name('clientes');
 
                 // Indicadores (Fase II): aba que consome o motor IndicadoresClientes (Fase I).
                 // Gate por permissão (Dono+Gerente). Não é módulo de flag — sem recurso:.
