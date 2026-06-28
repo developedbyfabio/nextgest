@@ -84,3 +84,69 @@ it('opt-out: confirmarRemocao prepara o modal e desmarcar tira do opt-out', func
 
     expect(Cliente::find($cli->id)->whatsapp_optout)->toBeFalse();
 });
+
+/** Termo de risco aceito (libera ligar os toggles). */
+function aceitarTermoUi(): void
+{
+    WhatsappConfig::first()->update([
+        'termo_aceito_em' => now(),
+        'termo_versao' => config('whatsapp.termo_versao'),
+    ]);
+}
+
+it('salvarCard (D85) persiste só aquele card e não afeta os outros', function () {
+    aceitarTermoUi();
+
+    Livewire::test(Automacoes::class)
+        ->set('ativo.lembrete_servico', true)
+        ->set('template.lembrete_servico', 'Novo lembrete {cliente}')
+        ->set('template.avaliacao_pos_servico', 'NAO DEVE SALVAR') // editado, mas não salvo
+        ->call('salvarCard', 'lembrete_servico');
+
+    $auto = WhatsappConfig::first()->automacoes;
+    expect($auto['lembrete_servico']['template'])->toBe('Novo lembrete {cliente}')
+        ->and($auto['lembrete_servico']['ativo'])->toBeTrue()
+        ->and($auto['avaliacao_pos_servico'] ?? null)->toBeNull(); // o outro card não foi tocado
+});
+
+it('salvarCard (D85) preserva a janela própria do card (D83)', function () {
+    aceitarTermoUi();
+    WhatsappConfig::first()->update(['automacoes' => [
+        'lembrete_servico' => ['ativo' => true, 'template' => 'antigo', 'janela' => ['ativa' => true, 'inicio' => '09:00', 'fim' => '10:00']],
+    ]]);
+
+    Livewire::test(Automacoes::class)
+        ->set('template.lembrete_servico', 'novo texto')
+        ->call('salvarCard', 'lembrete_servico');
+
+    $card = WhatsappConfig::first()->automacoes['lembrete_servico'];
+    expect($card['template'])->toBe('novo texto')
+        ->and($card['janela']['inicio'])->toBe('09:00'); // override da Janela (D83) intacto
+});
+
+it('salvarCard (D85) inválido não salva e dispara o foco (D84)', function () {
+    aceitarTermoUi();
+
+    Livewire::test(Automacoes::class)
+        ->set('antecedenciaLembrete', 2) // < min 5
+        ->call('salvarCard', 'lembrete_servico')
+        ->assertHasErrors('antecedenciaLembrete')
+        ->assertDispatched('wa-erro-validacao');
+
+    expect(WhatsappConfig::first()->automacoes ?? null)->toBeNull(); // nada salvo
+});
+
+it('salvar global (D85) também preserva a janela própria por automação (D83)', function () {
+    aceitarTermoUi();
+    WhatsappConfig::first()->update(['automacoes' => [
+        'lembrete_servico' => ['ativo' => true, 'template' => 'x', 'janela' => ['ativa' => true, 'inicio' => '08:30', 'fim' => '12:00']],
+    ]]);
+
+    Livewire::test(Automacoes::class)
+        ->set('template.lembrete_servico', 'editado no global')
+        ->call('salvar');
+
+    $card = WhatsappConfig::first()->automacoes['lembrete_servico'];
+    expect($card['template'])->toBe('editado no global')
+        ->and($card['janela']['inicio'])->toBe('08:30'); // não apaga mais a janela
+});

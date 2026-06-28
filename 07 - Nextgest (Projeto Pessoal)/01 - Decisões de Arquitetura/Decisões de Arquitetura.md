@@ -1618,3 +1618,19 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `confirmarRemocao` → modal e `desmarcar` tira do opt-out. Sem regressão (Automações D77 intacto).
   Suíte **644/644**. Prints: aba marcada (inclusive após erro, com toast+foco), modal no opt-out,
   número persistido. **Só UI. Sem deploy.**
+
+## D85 — WhatsApp: botão "Salvar" por card (aba Automações)
+> Só **UX/persistência** da aba Automações (D77). Cada card de automação ganha o **próprio "Salvar"**
+> (o global do rodapé continua). Lógica de envio/disparo **intacta**. Ver [[WhatsApp (Evolution) no Nextgest]].
+- **`salvarCard($chave)`** persiste **só** aquela automação: faz **merge** na entrada do card em
+  `whatsapp_config.automacoes[chave]`, deixando os demais cards e as subchaves intactos. Reusa a trava
+  do termo (D80) e o toast+foco (D84); toast "<automação> salvo.".
+- **Helper `entradaCard()`** (usado pelo por-card e pelo global): monta ativo/template + o campo extra
+  da automação (`antecedencia_min`/`apos_min`) **preservando** o que já existia.
+- **Correção de quebra (perda de dado):** o **salvar global** reconstruía o `automacoes` do zero e
+  **apagava a janela própria** por automação (D83). Agora ele faz **merge** (via `entradaCard`), então
+  salvar tudo de uma vez **não apaga** mais os overrides de janela.
+- **Verificação:** `MelhoriasUiTest` (+4) — `salvarCard` persiste só o card e não toca os outros;
+  preserva a janela própria (D83); inválido não salva e dispara o foco (D84); o salvar global também
+  preserva a janela. Sem regressão (Automações D77). Suíte **648/648**. Prints: cards com "Testar" +
+  "Salvar" próprios; toast "Lembrete de serviço salvo.". **Só UI. Sem deploy.**

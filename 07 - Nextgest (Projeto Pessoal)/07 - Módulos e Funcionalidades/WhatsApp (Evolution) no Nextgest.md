@@ -149,6 +149,12 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
 - **Número de teste persistente por tenant** (`whatsapp_config.numero_teste`). 5 testes
   (`MelhoriasUiTest`). Só UI — lógica intacta.
 
+## Salvar por card (D85)
+- Cada card da aba **Automações** tem o **próprio "Salvar"** (`salvarCard`), que grava só aquela
+  automação (merge em `automacoes[chave]`, isolado), reusa termo (D80) + toast/foco (D84). Global
+  mantido. **Correção:** o salvar global passou a fazer merge e **não apaga mais** a janela própria
+  por automação (D83). Lógica de envio intacta.
+
 ## Próximas fatias
 - **Conversas tipo WhatsApp Web:** **recebimento** via webhook Evolution exposto (o maior; exige a
   decisão de exposição/produção da Evolution). Hoje **nada é recebido**.

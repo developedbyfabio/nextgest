@@ -33,8 +33,10 @@
         @endforeach
     </div>
 
-    <div class="flex justify-end">
+    <div class="flex justify-end gap-2">
         <flux:button wire:click="testar('{{ $a->value }}')" size="sm" variant="outline" icon="paper-airplane"
             wire:loading.attr="disabled" wire:target="testar('{{ $a->value }}')">Testar</flux:button>
+        <flux:button wire:click="salvarCard('{{ $a->value }}')" size="sm" variant="primary" icon="check"
+            wire:loading.attr="disabled" wire:target="salvarCard('{{ $a->value }}')">Salvar</flux:button>
     </div>
 </div>

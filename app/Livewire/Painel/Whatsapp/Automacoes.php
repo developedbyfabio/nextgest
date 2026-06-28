@@ -105,19 +105,14 @@ class Automacoes extends Component
             Flux::toast('Aceite o termo de risco para ligar as automações.', variant: 'danger');
         }
 
-        $map = [];
+        // Merge sobre o que já existe — preserva subchaves de cada card (ex.: a janela
+        // própria gravada pela aba Janela, D83). Antes reconstruía do zero e apagava.
+        $automacoes = $cfg->automacoes ?? [];
         foreach (AutomacaoWhatsapp::cases() as $a) {
-            $map[$a->value] = [
-                'ativo' => $aceito ? (bool) ($this->ativo[$a->value] ?? false) : false,
-                'template' => trim((string) ($this->template[$a->value] ?? '')),
-            ];
+            $automacoes[$a->value] = $this->entradaCard($a->value, $aceito, $automacoes[$a->value] ?? []);
         }
-        // Antecedência (min) só faz sentido no lembrete de serviço (D79).
-        $map['lembrete_servico']['antecedencia_min'] = max(5, (int) $this->antecedenciaLembrete);
-        // Tempo após a conclusão (min) só faz sentido na avaliação pós-serviço (D81).
-        $map['avaliacao_pos_servico']['apos_min'] = max(5, (int) $this->aposAvaliacao);
 
-        $cfg->automacoes = $map;
+        $cfg->automacoes = $automacoes;
         $cfg->numero_teste = trim($this->numeroTeste) ?: null; // persiste por tenant (D84)
         $cfg->save();
 
@@ -131,6 +126,83 @@ class Automacoes extends Component
         if ($aceito || ! $tentouLigar) {
             Flux::toast('Automações salvas.', variant: 'success');
         }
+    }
+
+    /**
+     * Salva SÓ um card (D85). Mesma persistência do global (`whatsapp_config.automacoes`),
+     * mas mexe apenas naquela automação — os demais cards e suas subchaves (ex.: janela
+     * própria, D83) ficam intactos. Reusa a trava do termo (D80) e o toast+foco (D84).
+     */
+    public function salvarCard(string $chave): void
+    {
+        abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+
+        $a = AutomacaoWhatsapp::tryFrom($chave);
+        if (! $a) {
+            return;
+        }
+
+        // Valida só os campos DESTE card (toast + foco no inválido, D84).
+        $regras = [
+            'ativo.'.$chave => ['boolean'],
+            'template.'.$chave => ['nullable', 'string', 'max:2000'],
+        ];
+        if ($chave === 'lembrete_servico') {
+            $regras['antecedenciaLembrete'] = ['required', 'integer', 'min:5', 'max:1440'];
+        }
+        if ($chave === 'avaliacao_pos_servico') {
+            $regras['aposAvaliacao'] = ['required', 'integer', 'min:5', 'max:10080'];
+        }
+        if ($this->validarOuFocar($regras) === null) {
+            return;
+        }
+
+        $cfg = WhatsappConfig::query()->first() ?? new WhatsappConfig;
+
+        // TRAVA (servidor): sem termo aceito, este card não liga (não basta o toggle).
+        $aceito = $cfg->termoAceito();
+        $querLigar = (bool) ($this->ativo[$chave] ?? false);
+        if (! $aceito && $querLigar) {
+            Flux::toast('Aceite o termo de risco para ligar as automações.', variant: 'danger');
+        }
+
+        $automacoes = $cfg->automacoes ?? [];
+        $automacoes[$chave] = $this->entradaCard($chave, $aceito, $automacoes[$chave] ?? []);
+        $cfg->automacoes = $automacoes;
+        $cfg->save();
+
+        if (! $aceito && $querLigar) {
+            $this->ativo[$chave] = false; // reflete a trava na tela
+        }
+
+        if ($aceito || ! $querLigar) {
+            Flux::toast($a->rotulo().' salvo.', variant: 'success');
+        }
+    }
+
+    /**
+     * Monta a entrada de UM card preservando o que já estava salvo (ex.: a janela própria
+     * da automação, D83). Só atualiza ativo/template e o campo extra de cada automação.
+     *
+     * @param  array<string, mixed>  $existente
+     * @return array<string, mixed>
+     */
+    private function entradaCard(string $chave, bool $aceito, array $existente): array
+    {
+        $entrada = $existente;
+        $entrada['ativo'] = $aceito ? (bool) ($this->ativo[$chave] ?? false) : false;
+        $entrada['template'] = trim((string) ($this->template[$chave] ?? ''));
+
+        // Antecedência (min) só faz sentido no lembrete de serviço (D79).
+        if ($chave === 'lembrete_servico') {
+            $entrada['antecedencia_min'] = max(5, (int) $this->antecedenciaLembrete);
+        }
+        // Tempo após a conclusão (min) só faz sentido na avaliação pós-serviço (D81).
+        if ($chave === 'avaliacao_pos_servico') {
+            $entrada['apos_min'] = max(5, (int) $this->aposAvaliacao);
+        }
+
+        return $entrada;
     }
 
     /** Renderiza o template com DADOS DE EXEMPLO e envia para o número informado (D75). */
