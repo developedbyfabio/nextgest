@@ -164,12 +164,12 @@ it('B1: VerificaRecurso é persistent middleware do Livewire (vale nas ações /
     expect(Livewire::getPersistentMiddleware())->toContain(VerificaRecurso::class);
 });
 
-it('B1: a rota gated (clube) tem o VerificaRecurso; uma sem gate (integracoes) não', function () {
+it('B1: a rota gated (clube) tem o VerificaRecurso; uma sem gate (produtos) não', function () {
     $router = app('router');
 
     $gated = $router->gatherRouteMiddleware($router->getRoutes()->getByName('painel.clube'));
     expect($gated)->toContain('App\Http\Middleware\VerificaRecurso:clube');
 
-    $semGate = $router->gatherRouteMiddleware($router->getRoutes()->getByName('painel.integracoes'));
+    $semGate = $router->gatherRouteMiddleware($router->getRoutes()->getByName('painel.produtos'));
     expect(collect($semGate)->contains(fn ($m) => str_starts_with($m, VerificaRecurso::class)))->toBeFalse();
 });

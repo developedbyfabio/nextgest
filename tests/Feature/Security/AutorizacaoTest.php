@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Livewire\Painel\Integracoes\MercadoPago;
+use App\Livewire\Painel\Pagamentos\Gateway;
+use App\Models\GatewayPagamento;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Venda;
@@ -55,24 +56,27 @@ it('[T2] VendaPolicy: Profissional só gere a PRÓPRIA comanda de atendimento', 
 
 // ---- T3: Livewire reavalia no servidor (não só esconde botão) ----
 
-it('[T3] Gerente é barrado no editor de pagamento mesmo com a flag ligada (403 no servidor)', function () {
+it('[T3] Gerente é barrado no gateway de pagamento mesmo com a flag ligada (403 no servidor)', function () {
     $t = Tenant::find('segaut');
     $t->recursos = ['gateway'];
     $t->save(); // isola a checagem de PERMISSÃO (não a flag)
 
     $this->actingAs(usuarioComPapel('Gerente'), 'web')
-        ->get('/segaut/painel/integracoes/mercadopago')->assertForbidden();
+        ->get('/segaut/painel/pagamentos')->assertForbidden();
 });
 
-it('[T3] snapshot do Livewire não expõe o segredo (token só mascarado)', function () {
+it('[T3] a tela do gateway nunca expõe o token (só a conta pública)', function () {
     $this->actingAs(usuarioComPapel('Dono'), 'web');
 
-    Livewire::test(MercadoPago::class)
-        ->set('access_token', 'SEGREDO-SNAP-9876')->call('salvar')->assertHasNoErrors();
+    GatewayPagamento::create([
+        'provedor' => 'mercadopago', 'ativo' => true, 'padrao' => true,
+        'conta_externa_id' => '99', 'conta_externa_nome' => 'Salão Conectado',
+        'credenciais' => ['access_token' => 'SEGREDO-SNAP-9876'],
+    ]);
 
-    Livewire::test(MercadoPago::class)
-        ->assertSet('access_token', '')
-        ->assertDontSee('SEGREDO-SNAP-9876');
+    Livewire::test(Gateway::class)
+        ->assertSee('Salão Conectado')        // conta pública aparece
+        ->assertDontSee('SEGREDO-SNAP-9876');  // token nunca
 });
 
 // ---- T6: mass assignment ----

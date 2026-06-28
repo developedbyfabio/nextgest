@@ -24,6 +24,7 @@ return [
         'logout',
         'register',
         'webhooks',
+        'oauth', // callback OAuth do gateway do tenant (D78)
         'assets',
         'storage',
         'vendor',

@@ -20,36 +20,31 @@ beforeEach(function () {
     $t->save();
 });
 
-it('Dono acessa credenciais de pagamento (200) e whatsapp (200)', function () {
+it('Dono acessa o gateway de pagamento (200) e whatsapp (200)', function () {
     $dono = $this->tenant->run(fn () => usuarioComPapel('Dono', ['email' => 'dono@lojaum.com']));
 
-    $this->actingAs($dono, 'web')->get('/lojaum/painel/integracoes/mercadopago')->assertOk();
+    $this->actingAs($dono, 'web')->get('/lojaum/painel/pagamentos')->assertOk();
     $this->actingAs($dono, 'web')->get('/lojaum/painel/whatsapp')->assertOk();
 });
 
-it('Gerente: whatsapp 200, pagamento 403; Integrações (só pagamento) agora exige gerenciar_pagamentos', function () {
+it('Gerente: whatsapp 200, gateway de pagamento 403 (sem gerenciar_pagamentos)', function () {
     $ger = $this->tenant->run(fn () => usuarioComPapel('Gerente', ['email' => 'ger@lojaum.com']));
 
-    // WhatsApp saiu de Integrações (D76): vira item próprio, acessível ao Gerente.
     $this->actingAs($ger, 'web')->get('/lojaum/painel/whatsapp')->assertOk();
-    $this->actingAs($ger, 'web')->get('/lojaum/painel/integracoes/mercadopago')->assertForbidden();
-
-    // Integrações agora só tem pagamento → Gerente (sem gerenciar_pagamentos) não acessa o hub.
-    $this->actingAs($ger, 'web')->get('/lojaum/painel/integracoes')->assertForbidden();
+    $this->actingAs($ger, 'web')->get('/lojaum/painel/pagamentos')->assertForbidden();
 });
 
-it('Recepção: 403 em pagamento, whatsapp e no índice', function () {
+it('Recepção: 403 em pagamento e whatsapp', function () {
     $rec = $this->tenant->run(fn () => usuarioComPapel('Recepção', ['email' => 'rec@lojaum.com']));
 
-    $this->actingAs($rec, 'web')->get('/lojaum/painel/integracoes/mercadopago')->assertForbidden();
+    $this->actingAs($rec, 'web')->get('/lojaum/painel/pagamentos')->assertForbidden();
     $this->actingAs($rec, 'web')->get('/lojaum/painel/whatsapp')->assertForbidden();
-    $this->actingAs($rec, 'web')->get('/lojaum/painel/integracoes')->assertForbidden();
 });
 
 it('Profissional puro: 403 em pagamento e whatsapp', function () {
     $prof = $this->tenant->run(fn () => usuarioComPapel('Profissional', ['email' => 'prof@lojaum.com', 'e_profissional' => true]));
 
-    $this->actingAs($prof, 'web')->get('/lojaum/painel/integracoes/mercadopago')->assertForbidden();
+    $this->actingAs($prof, 'web')->get('/lojaum/painel/pagamentos')->assertForbidden();
     $this->actingAs($prof, 'web')->get('/lojaum/painel/whatsapp')->assertForbidden();
 });
 
@@ -62,7 +57,7 @@ it('Dono + Profissional (mesma pessoa): acessa pagamento e whatsapp E é agendá
     });
 
     // Acesso de Dono (superset) mantém-se com o papel extra de Profissional.
-    $this->actingAs($u, 'web')->get('/lojaum/painel/integracoes/mercadopago')->assertOk();
+    $this->actingAs($u, 'web')->get('/lojaum/painel/pagamentos')->assertOk();
     $this->actingAs($u, 'web')->get('/lojaum/painel/whatsapp')->assertOk();
 
     // Agendável independe do papel: depende de e_profissional (query padrão de agendáveis).

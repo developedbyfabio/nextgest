@@ -25,9 +25,8 @@ use App\Livewire\Painel\Equipe\Index as EquipeIndex;
 use App\Livewire\Painel\Financeiro\Index as FinanceiroIndex;
 use App\Livewire\Painel\Funcionamento\Index as FuncionamentoIndex;
 use App\Livewire\Painel\Indicadores as IndicadoresIndex;
-use App\Livewire\Painel\Integracoes\Index as IntegracoesIndex;
-use App\Livewire\Painel\Integracoes\MercadoPago as IntegracaoMercadoPago;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
+use App\Livewire\Painel\Pagamentos\Gateway as PagamentosGateway;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
 use App\Livewire\Painel\Seguranca\DoisFatores as SegurancaDoisFatores;
@@ -218,16 +217,13 @@ Route::middleware(['tenant'])
                     ->middleware('can:gerir_aparencia')
                     ->name('aparencia');
 
-                // Integrações (credenciais cifradas por tenant — Fase 0b). O índice
-                // lista só os cards disponíveis (flag 0a ligada + permissão). Cada
-                // EDITOR é gated pelo recurso (middleware da 0a) + a permissão dele:
-                // recurso desligado → 404 (o recurso "nem existe" para o tenant).
-                Route::get('integracoes', IntegracoesIndex::class)
-                    ->name('integracoes');
-
-                Route::get('integracoes/mercadopago', IntegracaoMercadoPago::class)
+                // Gateway de pagamento do tenant — Modelo A (direto pro dono), D78. O dono
+                // conecta a PRÓPRIA conta Mercado Pago via OAuth. Gated por recurso `gateway`
+                // + permissão `gerenciar_pagamentos`. (O editor manual antigo de "colar token"
+                // foi aposentado — o hub de Integrações deixou de existir.)
+                Route::get('pagamentos', PagamentosGateway::class)
                     ->middleware(['can:gerenciar_pagamentos', 'recurso:gateway'])
-                    ->name('integracoes.mercadopago');
+                    ->name('pagamentos');
 
                 // WhatsApp (D76): item próprio (saiu de Integrações). Tela de conexão
                 // (Evolution) gated por recurso `whatsapp` + permissão `gerenciar_whatsapp`.

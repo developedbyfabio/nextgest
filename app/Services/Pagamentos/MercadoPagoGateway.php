@@ -20,14 +20,13 @@ use RuntimeException;
 class MercadoPagoGateway implements GatewayPagamento
 {
     /**
-     * @param  array   $credenciais  ex.: ['access_token' => '...']
-     * @param  string  $modo         'sandbox' | 'producao'
+     * @param  array  $credenciais  ex.: ['access_token' => '...']
+     * @param  string  $modo  'sandbox' | 'producao'
      */
     public function __construct(
         protected array $credenciais = [],
         protected string $modo = 'sandbox',
-    ) {
-    }
+    ) {}
 
     public function cobrar(array $dados): array
     {

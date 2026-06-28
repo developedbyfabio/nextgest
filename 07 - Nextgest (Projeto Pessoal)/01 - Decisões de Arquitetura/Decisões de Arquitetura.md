@@ -1406,3 +1406,39 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   número, erro tratado, gating recurso (on→200/off→404). Suíte **592/592**. Print por HTTP/Playwright
   (servidor + navegador no mesmo shell p/ compartilhar o namespace de rede): tela com transacionais,
   broadcast (aviso), variáveis e abas. **Sem deploy.**
+
+---
+
+## D78 — Gateway de pagamento do tenant (Modelo A, direto pro dono) — Fatia G1: conexão OAuth
+> O salão pluga a **própria** conta Mercado Pago via **OAuth**; o dinheiro cai nele, o Nextgest
+> **orquestra mas não toca no dinheiro** (sem split/marketplace). Esta fatia faz **só conectar** —
+> **não cobra** (G2). Ver [[Gateway de pagamento do tenant (Modelo A)]]. **Separado** da cobrança SaaS
+> do admin ([[Cobrança da Assinatura SaaS]], Preapproval — dinheiro salão→Nextgest).
+- **Decisão de unificação:** o editor manual antigo (*Integrações → Mercado Pago*, "colar token") foi
+  **aposentado** e o **hub de Integrações deixou de existir** (WhatsApp já saíra no D76; só restava o
+  MP). Removidos `Enums\Integracao`, `Integracoes\{Index,MercadoPago}` + views + rotas. Nada consumia
+  o token manual (o adapter de cobrança é stub) → sem perda de função. MP do tenant agora é **só** via
+  OAuth.
+- **Credenciais (separação):** `client_id`/`client_secret`/`redirect_uri` do **app Nextgest** só no
+  `.env` → `config/pagamentos.php` (placeholders; o Fabio registra o app no MP depois). **Nunca** no
+  banco/log. O **token do salão** fica **cifrado** no cofre `gateways_pagamento.credenciais`
+  (`encrypted:array`, `hidden`); colunas **públicas** aditivas p/ exibir: `conta_externa_id`,
+  `conta_externa_nome`, `conectado_em`.
+- **Abstração:** reusa o cofre + a interface `Services\Pagamentos\GatewayPagamento`/`GatewayResolver`
+  (cobrança, stub). OAuth é uma peça à parte: `MercadoPagoOAuth` (URL de autorização + troca de code +
+  `/users/me`) + `ConexaoGatewayMercadoPago` (orquestra state/sessão e gravação).
+- **OAuth seguro:** "Conectar" gera `nonce` na **sessão** + `state = base64(tenant|nonce)` → redireciona
+  ao MP. **Callback CENTRAL** `GET /oauth/mercadopago/callback` (slug `oauth` reservado; grupo `web`
+  com sessão) valida o `state` contra a sessão (anti-CSRF de login — rejeita ausente/divergente),
+  troca o code, grava no cofre do tenant e volta à tela. Token nunca logado.
+- **Tela + menu:** item próprio **"Gateway de pagamento"** (Gestão), rota `painel.pagamentos`, gated
+  `@recurso('gateway')` + `can('gerenciar_pagamentos')` (Dono). Estados desconectado/conectado (mostra
+  só a conta pública) + conectar/desconectar.
+- **Verificação:** `GatewayOAuthTest` (9, MP mockado) — state anti-CSRF (rejeita forjado, não troca),
+  troca + token **cifrado** no cofre (cru no banco ≠ texto), desconectar limpa, callback HTTP
+  conecta/rejeita, pendência de credenciais (não inventa), gating 404. `CredenciaisPermissaoTest` e
+  `AutorizacaoTest` repontados para `/pagamentos`. Suíte **593/593**. Print (Playwright): tela
+  desconectada + item de menu; estado conectado não vaza o token.
+- **PENDENTE (esperado, não é falha):** o "conectar de verdade" depende do Fabio **registrar o app no
+  Mercado Pago** (OAuth habilitado + Redirect URI = a rota de callback) e pôr `client_id`/`secret` no
+  `.env`. **Não cobra nada. Sem deploy.**

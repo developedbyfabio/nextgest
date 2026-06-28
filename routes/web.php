@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Pagamentos\MercadoPagoOAuthController;
 use App\Http\Controllers\Webhooks\WebhookPagamentoController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\EstabelecimentoDados;
@@ -77,3 +78,9 @@ Route::prefix('webhooks')->name('webhooks.')->group(function () {
     Route::post('/pagamentos/{gateway}', [WebhookPagamentoController::class, 'handle'])
         ->name('pagamentos');
 });
+
+// Callback OAuth do gateway do tenant (Modelo A, D78). Central, fixo (redirect_uri
+// único do app MP). Sem tenant na URL — o tenant vem do `state` (validado contra a
+// sessão no controller). `web` = sessão disponível p/ o anti-CSRF do state.
+Route::get('oauth/mercadopago/callback', [MercadoPagoOAuthController::class, 'callback'])
+    ->name('oauth.mercadopago.callback');

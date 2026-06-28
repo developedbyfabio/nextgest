@@ -24,15 +24,15 @@ interface GatewayPagamento
      * Cria uma cobrança (pix, cartão, etc.).
      *
      * @param  array  $dados  valor, método, descrição, cliente, token de cartão...
-     * @return array  status, gateway_transacao_id, pix_copia_cola, link_pagamento...
+     * @return array status, gateway_transacao_id, pix_copia_cola, link_pagamento...
      */
     public function cobrar(array $dados): array;
 
     /**
      * Estorna (total ou parcial) uma transação aprovada.
      *
-     * @param  string      $transacaoId  id da transação no gateway
-     * @param  float|null  $valor        null = estorno total
+     * @param  string  $transacaoId  id da transação no gateway
+     * @param  float|null  $valor  null = estorno total
      */
     public function estornar(string $transacaoId, ?float $valor = null): array;
 
@@ -40,7 +40,7 @@ interface GatewayPagamento
      * Cria uma assinatura recorrente (mensalidade do clube).
      *
      * @param  array  $dados  plano, valor, cartão tokenizado, periodicidade...
-     * @return array  gateway_assinatura_id, status...
+     * @return array gateway_assinatura_id, status...
      */
     public function criarAssinaturaRecorrente(array $dados): array;
 

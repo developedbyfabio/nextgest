@@ -20,6 +20,9 @@ class GatewayPagamento extends Model
 
     protected $fillable = [
         'provedor',
+        'conta_externa_id',
+        'conta_externa_nome',
+        'conectado_em',
         'apelido',
         'credenciais',
         'modo',
@@ -35,6 +38,7 @@ class GatewayPagamento extends Model
     {
         return [
             'credenciais' => 'encrypted:array',
+            'conectado_em' => 'datetime',
             'ativo' => 'boolean',
             'padrao' => 'boolean',
         ];

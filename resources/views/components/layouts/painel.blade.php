@@ -9,7 +9,7 @@
     // D47 (grupos fechados no load); só adiciona a exceção do grupo da página atual.
     $rotasGrupo = [
         'operacao' => ['painel.agenda', 'painel.avaliacoes', 'painel.servicos', 'painel.produtos', 'painel.vendas*', 'painel.bloqueios', 'painel.funcionamento', 'painel.kanban'],
-        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.integracoes*', 'painel.whatsapp*'],
+        'gestao' => ['painel.unidades', 'painel.equipe*', 'painel.comissoes', 'painel.indicadores', 'painel.clube', 'painel.papeis', 'painel.aparencia', 'painel.pagamentos', 'painel.whatsapp*'],
         'financeiro' => ['painel.financeiro'],
     ];
     $grupoAtivo = null;
@@ -178,9 +178,13 @@
                 @can('gerir_aparencia')
                     <flux:navlist.item icon="paint-brush" :href="route('painel.aparencia', ['tenant' => $tenantId])" :current="request()->routeIs('painel.aparencia')" wire:navigate>Aparência</flux:navlist.item>
                 @endcan
-                @if (auth('web')->user()?->hasAnyPermission(\App\Enums\Integracao::permissoes()))
-                    <flux:navlist.item icon="puzzle-piece" :href="route('painel.integracoes', ['tenant' => $tenantId])" :current="request()->routeIs('painel.integracoes*')" wire:navigate>Integrações</flux:navlist.item>
-                @endif
+                {{-- Gateway de pagamento (D78): item próprio (aposentou o hub de Integrações),
+                     gated por recurso `gateway` + permissão `gerenciar_pagamentos`. --}}
+                @recurso('gateway')
+                    @can('gerenciar_pagamentos')
+                        <flux:navlist.item icon="credit-card" :href="route('painel.pagamentos', ['tenant' => $tenantId])" :current="request()->routeIs('painel.pagamentos')" wire:navigate>Gateway de pagamento</flux:navlist.item>
+                    @endcan
+                @endrecurso
                 {{-- WhatsApp: item próprio (D76), gated por recurso `whatsapp` + permissão. --}}
                 @recurso('whatsapp')
                     @can('gerenciar_whatsapp')
