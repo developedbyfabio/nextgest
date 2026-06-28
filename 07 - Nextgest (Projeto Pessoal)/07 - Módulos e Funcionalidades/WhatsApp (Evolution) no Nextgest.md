@@ -1,7 +1,7 @@
 ---
 projeto: Nextgest
 tipo: módulo
-status: Fatia 1 (envio de teste manual) — dev
+status: Fatia 1 validada ponta a ponta (envio de teste manual) — dev
 criado: 2026-06-27
 tags: [nextgest, whatsapp, evolution, tenant, integracao]
 ---
@@ -44,9 +44,12 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
 
 ## Validação
 - 8 testes (`WhatsAppFatia1Test`, Evolution mockada) — suíte verde (575/575).
-- Ponta a ponta real **até o QR**: `nextgest:whatsapp-conectar barbeariateste` criou `ng_barbeariateste`
-  e gerou o QR (config persistida, token cifrado). A **entrega da mensagem** é validada conectando um
-  número de teste e rodando o `whatsapp-teste`.
+- Ponta a ponta real **validado (28/06/2026)**: `ng_barbeariateste` conectada (state `open`),
+  `whatsapp-teste` enviou e a mensagem **chegou** no destinatário. Sessão persiste ao recriar o
+  container (creds no volume → reconecta sozinha).
+- **Gotcha (WhatsApp):** "Não é possível conectar novos dispositivos no momento / tente mais tarde" =
+  throttle do WhatsApp no número após vários scans seguidos (não é bug da Evolution). Esperar uns
+  minutos e tentar **uma** vez; manter o app do WhatsApp atualizado.
 
 ## Próximas fatias
 - **Fatia 2:** tela de QR no painel (gated `whatsapp`) + monitorar sessão (queda → avisar).

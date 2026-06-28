@@ -1337,5 +1337,7 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   tenant; token da instância vs global; normalização; erro tratado; gating; segredo cifrado/sem vazar
   + key global fora do banco. Suíte **575/575**. **Ponta a ponta real** (até o QR) contra a Evolution
   viva: `nextgest:whatsapp-conectar barbeariateste` criou `ng_barbeariateste`, persistiu a config e
-  gerou o QR; **entrega da mensagem** depende do Fabio conectar um número de teste (escanear o QR) e
-  rodar o `whatsapp-teste`. **Sem deploy.**
+  gerou o QR. **Entrega validada (28/06/2026):** número de teste conectado (state `open`),
+  `whatsapp-teste` enviou e a mensagem **chegou** no destinatário. Gotcha: o WhatsApp pode dar
+  "não é possível conectar novos dispositivos no momento" após vários scans seguidos (throttle do
+  WhatsApp, não da Evolution — esperar e tentar 1 vez). **Sem deploy.**
