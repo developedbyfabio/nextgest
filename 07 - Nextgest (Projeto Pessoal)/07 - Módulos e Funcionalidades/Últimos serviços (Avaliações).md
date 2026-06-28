@@ -48,6 +48,14 @@ anônimo; Recepção 403); anonimato real (a rota não traz o nome do cliente p/
 select não renderiza p/ profissional, e **SEGURANÇA**: profissional forçando outro `profissional_id`
 segue só com os dele e anônimo. Suíte verde (550/550).
 
+## Avaliação por link de WhatsApp (D81) — anonimato preservado
+A automação "avaliação pós-serviço" (WhatsApp Fatia 5) envia um **link** para uma página pública
+`Portal\AvaliacaoPublica` (rota `tenant.avaliar`, **URL assinada** `signed`: HMAC + expira, sem login,
+sem dado pessoal na URL — só o id do agendamento). Essa página **reusa a mesma criação de `Avaliacao`**
+(agendamento/cliente/profissional/unidade + nota/comentário). **Não fura o anonimato:** a avaliação
+acontece na web e o painel aqui continua escondendo o cliente do profissional (regra server-side
+inalterada). Detalhes: [[Decisões de Arquitetura]] (D81) e [[WhatsApp (Evolution) no Nextgest]].
+
 ## Limites
 Só leitura/apresentação + filtros. Não toca `MotorDisponibilidade`, fluxo de atendimento, faturamento
 nem cobrança. **Dev — sem deploy** nesta fatia.

@@ -1502,3 +1502,30 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   registra+libera, bump de versão re-exige, aviso caiu/open/nunca-conectou/sem-permissão. Suíte
   **610/610**. Prints (Playwright): termo bloqueando os toggles, aviso de número dedicado.
   **Não dispara mensagem. Sem deploy.**
+
+---
+
+## D81 — WhatsApp Fatia 5: avaliação pós-serviço (link assinado p/ a avaliação D51)
+> Envia, **X min após a conclusão** (configurável), uma mensagem com **link** para a tela de avaliação
+> que já existe (D51). **Não recebe resposta** no WhatsApp (Fatia 8). Reusa envio (D75), config/
+> template (D77), anti-ban/idempotência (D79) e o termo (D80). Ver
+> [[WhatsApp (Evolution) no Nextgest]] e [[Últimos serviços (Avaliações)]].
+- **Anonimato preservado (auditado):** a avaliação acontece **na web**, onde o anonimato já é forçado
+  (o painel esconde o cliente do profissional, D51/D67). O **link** é uma **URL ASSINADA**
+  (`URL::temporarySignedRoute('tenant.avaliar', validade, [tenant, agendamento])`, middleware `signed`)
+  → **não-adivinhável** (HMAC do APP_KEY), **expira**, e **não expõe dado pessoal** (só o id do
+  agendamento + assinatura). Não dá p/ avaliar o atendimento de outro (assinatura de um não vale no
+  outro → 403). Página pública `Portal\AvaliacaoPublica` (sem login) **reusa** a criação de `Avaliacao`
+  (mesmos campos) — não duplica a avaliação nem o anonimato.
+- **Job/comando espelham o D79:** `nextgest:enviar-avaliacoes` (scheduler, a cada minuto) por tenant
+  com `avaliacao_pos_servico` **ligada** + **termo aceito (D80)** + **conectado**: acha **concluídos**
+  com `data_hora_fim ∈ (now-apos-buffer, now-apos]` (fuso), **não avaliados** e **não pedidos**,
+  cliente não opt-out → enfileira o `EnviarAvaliacaoWhatsApp` (espaçado, tetos). SÓ LÊ a agenda.
+- **Idempotência:** `pedidos_avaliacao.agendamento_id` único (1 pedido por atendimento). `apos_min`
+  editável no card (D77); `janela_buffer_min` evita inundar atendimentos antigos; `link_validade_dias`
+  na config.
+- **Verificação:** `AvaliacaoPosServicoTest` (10) — link assinado abre (200) / sem assinatura ou de
+  outro atendimento → 403 / URL sem dado pessoal; tela cria a `Avaliacao` (anonimato no painel intacto);
+  indisponível se já avaliado; janela/idempotência/filtros (não-concluído/opt-out/já-avaliado/sem-termo);
+  teto/minuto; job envia o link assinado + marca. Suíte **620/620**. Print (Playwright): página pública
+  da avaliação abrindo por link assinado. **Não recebe nada pelo WhatsApp. Sem deploy.**

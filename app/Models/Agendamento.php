@@ -85,6 +85,12 @@ class Agendamento extends Model
         return $this->hasOne(LembreteServico::class);
     }
 
+    /** Controle do pedido de avaliação pós-serviço por WhatsApp (idempotência, D81). */
+    public function pedidoAvaliacao(): HasOne
+    {
+        return $this->hasOne(PedidoAvaliacao::class);
+    }
+
     /**
      * Agendamentos que ocupam a agenda (exclui cancelado/nao_compareceu).
      */

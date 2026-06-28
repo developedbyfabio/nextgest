@@ -52,4 +52,16 @@ return [
         // Teto diário por tenant.
         'limite_por_dia' => (int) env('WA_LEMBRETE_LIMITE_DIA', 150),
     ],
+
+    /*
+    | Avaliação pós-serviço (D81) — envia link da avaliação X min após a conclusão.
+    | Reusa os freios anti-ban dos lembretes (mesmos tetos/intervalo). `janela_buffer_min`
+    | evita inundar atendimentos antigos quando a automação é ligada. `link_validade_dias`:
+    | validade do link assinado da avaliação.
+    */
+    'avaliacao' => [
+        'apos_min_padrao' => (int) env('WA_AVALIACAO_APOS_MIN', 120),
+        'janela_buffer_min' => (int) env('WA_AVALIACAO_BUFFER_MIN', 60),
+        'link_validade_dias' => (int) env('WA_AVALIACAO_LINK_DIAS', 7),
+    ],
 ];

@@ -15,3 +15,7 @@ Schedule::command('nextgest:reconciliar-assinaturas')->dailyAt('03:10')->without
 // Lembrete de serviço por WhatsApp (D79): a cada minuto, enfileira o que entrou na
 // janela (anti-ban: tetos + espaçamento; idempotente). Em produção exige worker da fila.
 Schedule::command('nextgest:enviar-lembretes')->everyMinute()->withoutOverlapping();
+
+// Avaliação pós-serviço por WhatsApp (D81): a cada minuto, enfileira o link de avaliação
+// dos atendimentos concluídos na janela. Mesmos freios/idempotência do lembrete.
+Schedule::command('nextgest:enviar-avaliacoes')->everyMinute()->withoutOverlapping();

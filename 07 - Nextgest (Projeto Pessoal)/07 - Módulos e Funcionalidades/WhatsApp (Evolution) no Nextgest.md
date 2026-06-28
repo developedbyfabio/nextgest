@@ -99,6 +99,18 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
   conectou + status ≠ open; Evolution fora → não alarma. Link "Reconectar".
 - 8 testes (`TermoEAvisoTest`). Não dispara nada.
 
+## Fatia 5 (D81) — avaliação pós-serviço (link assinado)
+- **Comando** `nextgest:enviar-avaliacoes` (scheduler, a cada minuto): por tenant com
+  `avaliacao_pos_servico` ligada + termo aceito (D80) + conectado, acha **concluídos** que terminaram
+  há ~X min (`data_hora_fim ∈ (now-apos-buffer, now-apos]`), não avaliados/não pedidos, cliente não
+  opt-out → enfileira o link. Reusa freios/idempotência do D79 (`pedidos_avaliacao`).
+- **Link = URL ASSINADA** (`temporarySignedRoute('tenant.avaliar', …)`, middleware `signed`): página
+  pública `Portal\AvaliacaoPublica` (sem login) que **reusa** a criação de `Avaliacao` (D51).
+  Não-adivinhável, expira, sem dado pessoal na URL; não dá p/ avaliar o de outro. **Anonimato do D51
+  intacto** (avaliação na web; o painel esconde o cliente do profissional).
+- **NÃO recebe resposta** no WhatsApp (Fatia 8). `apos_min` editável no card (D77). 10 testes
+  (`AvaliacaoPosServicoTest`).
+
 ## Próximas fatias
 - **Modo aquecimento:** volume baixo e gradual para número recém-conectado.
 - **Controle de mensagens:** histórico/log de envios + janela de horário permitido + gestão de opt-out.

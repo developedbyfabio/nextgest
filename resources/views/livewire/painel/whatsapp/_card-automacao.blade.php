@@ -19,6 +19,12 @@
             label="Enviar quantos minutos antes" class="max-w-xs" />
     @endif
 
+    {{-- Tempo após a conclusão: só a avaliação pós-serviço (D81). --}}
+    @if ($a->value === 'avaliacao_pos_servico')
+        <flux:input type="number" wire:model="aposAvaliacao" min="5" max="10080"
+            label="Enviar quantos minutos após a conclusão" class="max-w-xs" />
+    @endif
+
     {{-- Variáveis disponíveis nesta automação (placeholders). --}}
     <div class="flex flex-wrap items-center gap-1.5">
         <flux:text class="text-xs" style="color: var(--cor-texto-suave);">Variáveis:</flux:text>

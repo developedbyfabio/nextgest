@@ -40,6 +40,9 @@ class Automacoes extends Component
     /** Antecedência do lembrete de serviço (minutos antes), D79. */
     public int $antecedenciaLembrete = 120;
 
+    /** Tempo após a conclusão para pedir avaliação (minutos), D81. */
+    public int $aposAvaliacao = 120;
+
     /** Termo de risco aceito (na versão atual)? Trava a ativação até ser aceito (D80). */
     public bool $termoAceito = false;
 
@@ -58,6 +61,9 @@ class Automacoes extends Component
 
         $this->antecedenciaLembrete = (int) ($salvos['lembrete_servico']['antecedencia_min']
             ?? config('whatsapp.lembretes.antecedencia_min_padrao', 120));
+
+        $this->aposAvaliacao = (int) ($salvos['avaliacao_pos_servico']['apos_min']
+            ?? config('whatsapp.avaliacao.apos_min_padrao', 120));
     }
 
     /** Registra o aceite do termo de risco (quem/quando/versão) — libera os toggles. */
@@ -100,6 +106,8 @@ class Automacoes extends Component
         }
         // Antecedência (min) só faz sentido no lembrete de serviço (D79).
         $map['lembrete_servico']['antecedencia_min'] = max(5, (int) $this->antecedenciaLembrete);
+        // Tempo após a conclusão (min) só faz sentido na avaliação pós-serviço (D81).
+        $map['avaliacao_pos_servico']['apos_min'] = max(5, (int) $this->aposAvaliacao);
 
         $cfg->automacoes = $map;
         $cfg->save();
@@ -150,7 +158,10 @@ class Automacoes extends Component
     /** @return array<string, array<int, string|int>> */
     protected function rules(): array
     {
-        $regras = ['antecedenciaLembrete' => ['required', 'integer', 'min:5', 'max:1440']];
+        $regras = [
+            'antecedenciaLembrete' => ['required', 'integer', 'min:5', 'max:1440'],
+            'aposAvaliacao' => ['required', 'integer', 'min:5', 'max:10080'],
+        ];
         foreach (AutomacaoWhatsapp::cases() as $a) {
             $regras['ativo.'.$a->value] = ['boolean'];
             $regras['template.'.$a->value] = ['nullable', 'string', 'max:2000'];

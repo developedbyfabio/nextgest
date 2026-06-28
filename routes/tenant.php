@@ -37,6 +37,7 @@ use App\Livewire\Painel\Vendas\Index as VendasIndex;
 use App\Livewire\Painel\Whatsapp\Automacoes as WhatsappAutomacoes;
 use App\Livewire\Painel\Whatsapp\Conexao as WhatsappConexao;
 use App\Livewire\Portal\Agendar as PortalAgendar;
+use App\Livewire\Portal\AvaliacaoPublica as PortalAvaliacaoPublica;
 use App\Livewire\Portal\Home as PortalHome;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
@@ -80,6 +81,12 @@ Route::middleware(['tenant'])
         Route::get('agendar', PortalAgendar::class)
             ->middleware('auth:cliente')
             ->name('cliente.agendar');
+
+        // Avaliação pós-serviço por LINK (D81): página PÚBLICA, sem login, protegida por
+        // URL ASSINADA (`signed`: HMAC + expira). Reusa a avaliação do D51; anonimato intacto.
+        Route::get('avaliar/{agendamento}', PortalAvaliacaoPublica::class)
+            ->middleware('signed')
+            ->name('tenant.avaliar');
 
         // Suporte (impersonação do super-admin): entra via token de uso único.
         Route::get('suporte/{token}', [SuporteController::class, 'entrar'])
