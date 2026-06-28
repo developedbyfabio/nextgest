@@ -137,6 +137,8 @@ class Conexao extends Component
 
         $this->estado = 'desconectado';
         $this->qr = null;
+        Flux::modal('desconectar-whatsapp')->close();
+        Flux::toast('WhatsApp desconectado.', variant: 'success');
     }
 
     public function render(): View

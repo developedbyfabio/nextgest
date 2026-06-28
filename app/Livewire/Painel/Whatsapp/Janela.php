@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Painel\Whatsapp;
 
 use App\Enums\AutomacaoWhatsapp;
+use App\Livewire\Painel\Whatsapp\Concerns\FocaPrimeiroErro;
 use App\Models\WhatsappConfig;
 use App\Services\WhatsApp\JanelaEnvio;
 use Flux\Flux;
@@ -23,6 +24,8 @@ use Livewire\Component;
 #[Title('WhatsApp · Janela de horário')]
 class Janela extends Component
 {
+    use FocaPrimeiroErro;
+
     public bool $globalAtiva = true;
 
     public string $globalInicio = '08:00';
@@ -58,7 +61,7 @@ class Janela extends Component
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
 
-        $this->validate([
+        $ok = $this->validarOuFocar([
             'globalAtiva' => ['boolean'],
             'globalInicio' => ['required', 'date_format:H:i'],
             'globalFim' => ['required', 'date_format:H:i', 'after:globalInicio'],
@@ -69,6 +72,9 @@ class Janela extends Component
             'globalInicio' => 'início (global)',
             'globalFim' => 'fim (global)',
         ]);
+        if ($ok === null) {
+            return; // erro → toast + foco no 1º campo inválido (D84)
+        }
 
         // Override habilitado precisa de fim > início (validação cruzada por automação).
         foreach ($this->overrides as $chave => $o) {

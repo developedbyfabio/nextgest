@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Painel\Whatsapp;
 
+use App\Livewire\Painel\Whatsapp\Concerns\FocaPrimeiroErro;
 use App\Models\WhatsappConfig;
 use App\Services\WhatsApp\Aquecimento as ServicoAquecimento;
 use Flux\Flux;
@@ -23,6 +24,8 @@ use Livewire\Component;
 #[Title('WhatsApp · Aquecimento')]
 class Aquecimento extends Component
 {
+    use FocaPrimeiroErro;
+
     public bool $ativo = true;
 
     public int $broadcastDia = 11;
@@ -49,13 +52,16 @@ class Aquecimento extends Component
 
         $normal = (int) config('whatsapp.lembretes.limite_por_dia', 150);
 
-        $this->validate([
+        $ok = $this->validarOuFocar([
             'ativo' => ['boolean'],
             'broadcastDia' => ['required', 'integer', 'min:1', 'max:90'],
             'fases' => ['required', 'array', 'min:1', 'max:8'],
             'fases.*.ate_dia' => ['required', 'integer', 'min:1', 'max:90'],
             'fases.*.limite_dia' => ['required', 'integer', 'min:1', 'max:'.$normal],
         ], attributes: ['broadcastDia' => 'dia de liberação do broadcast']);
+        if ($ok === null) {
+            return; // erro → toast + foco no 1º campo inválido (D84)
+        }
 
         // Sanidade da curva (não anular o aquecimento): dias crescentes, teto não
         // decrescente e 1ª fase pequena (número novo nasce apertado).

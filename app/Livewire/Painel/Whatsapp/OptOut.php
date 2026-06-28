@@ -27,9 +27,24 @@ class OptOut extends Component
     /** Busca p/ ADICIONAR ao opt-out (entre quem NÃO está marcado). */
     public string $busca = '';
 
+    /** Cliente em confirmação de "voltar a enviar" (modal D65). */
+    public ?int $confirmarId = null;
+
+    public string $confirmarNome = '';
+
     public function mount(): void
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+    }
+
+    /** Abre o modal de confirmação antes de tirar o cliente do opt-out (ação sensível). */
+    public function confirmarRemocao(int $clienteId): void
+    {
+        abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
+
+        $this->confirmarId = $clienteId;
+        $this->confirmarNome = (string) (Cliente::whereKey($clienteId)->value('nome') ?? '');
+        Flux::modal('optout-voltar')->show();
     }
 
     /** Marca o cliente como opt-out (não recebe mais mensagens). */
@@ -49,6 +64,9 @@ class OptOut extends Component
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
 
         Cliente::whereKey($clienteId)->update(['whatsapp_optout' => false]);
+        $this->confirmarId = null;
+        $this->confirmarNome = '';
+        Flux::modal('optout-voltar')->close();
         Flux::toast('Cliente removido do opt-out.', variant: 'success');
     }
 

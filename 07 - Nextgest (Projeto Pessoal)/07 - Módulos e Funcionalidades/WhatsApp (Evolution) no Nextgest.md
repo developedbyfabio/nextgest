@@ -138,6 +138,17 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
 - **Anonimato (D51):** histórico = ENVIO, nunca o resultado da avaliação (não cruza com `avaliacoes`;
   só Dono/Gerente). 13 testes (`ControleMensagensTest`). **Não recebe mensagem.**
 
+## Melhorias de UI/UX (D84)
+- **Confirmações nativas → modal D65** (`x-ng.confirmar`): Desconectar (Conexão) e "voltar a enviar"
+  (Opt-out). Sem `confirm()` do navegador na área.
+- **Erro de validação → toast + foco** no 1º campo inválido (trait `Concerns\FocaPrimeiroErro` +
+  Alpine `@wa-erro-validacao.window`), em Automações/Janela/Aquecimento.
+- **Indicador de aba ativa** (bug): deixou de depender de `request()->routeIs()` (sumia no
+  `/livewire/update`); agora vem por literal no `@include('_abas', ['ativa'=>...])` — persiste em
+  erro/re-render/`wire:navigate`; Conexão marcada ao abrir; abas com ícone+rótulo.
+- **Número de teste persistente por tenant** (`whatsapp_config.numero_teste`). 5 testes
+  (`MelhoriasUiTest`). Só UI — lógica intacta.
+
 ## Próximas fatias
 - **Conversas tipo WhatsApp Web:** **recebimento** via webhook Evolution exposto (o maior; exige a
   decisão de exposição/produção da Evolution). Hoje **nada é recebido**.

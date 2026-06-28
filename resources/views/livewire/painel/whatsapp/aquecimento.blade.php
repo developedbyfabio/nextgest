@@ -1,11 +1,12 @@
-<div class="flex flex-col gap-6 p-6 lg:p-8">
+<div class="flex flex-col gap-6 p-6 lg:p-8" x-data
+    @wa-erro-validacao.window="requestAnimationFrame(() => { const el = $root.querySelector('[data-invalid]'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus({ preventScroll: true }); } })">
     <x-ng.page-header title="WhatsApp" subtitle="Aquecimento do número (curva de volume)">
         <x-slot:actions>
             <flux:button wire:click="salvar" variant="primary" icon="check">Salvar</flux:button>
         </x-slot:actions>
     </x-ng.page-header>
 
-    @include('livewire.painel.whatsapp._abas')
+    @include('livewire.painel.whatsapp._abas', ['ativa' => 'aquecimento'])
 
     <div class="ng-surface flex flex-col gap-2 p-4 text-sm" style="color: var(--cor-texto-suave);">
         <p>Número novo no WhatsApp <strong>não-oficial</strong> é frágil: começar com volume alto leva a

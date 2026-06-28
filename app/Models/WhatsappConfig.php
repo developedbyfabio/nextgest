@@ -27,6 +27,7 @@ class WhatsappConfig extends Model
         'numero_conectado',
         'aquecimento',
         'janela',
+        'numero_teste',
         'automacoes',
         'termo_aceito_em',
         'termo_aceito_por',

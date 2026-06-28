@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Painel\Whatsapp;
 
 use App\Enums\AutomacaoWhatsapp;
+use App\Livewire\Painel\Whatsapp\Concerns\FocaPrimeiroErro;
 use App\Models\MensagemWhatsapp;
 use App\Models\WhatsappConfig;
 use App\Services\WhatsApp\RegistroMensagem;
@@ -30,6 +31,8 @@ use Livewire\Component;
 #[Title('WhatsApp · Automações')]
 class Automacoes extends Component
 {
+    use FocaPrimeiroErro;
+
     /** chave => bool */
     public array $ativo = [];
 
@@ -55,6 +58,7 @@ class Automacoes extends Component
         $cfg = WhatsappConfig::query()->first();
         $salvos = $cfg?->automacoes ?? [];
         $this->termoAceito = (bool) $cfg?->termoAceito();
+        $this->numeroTeste = (string) ($cfg?->numero_teste ?? ''); // persistente por tenant (D84)
 
         foreach (AutomacaoWhatsapp::cases() as $a) {
             $this->ativo[$a->value] = (bool) ($salvos[$a->value]['ativo'] ?? false); // broadcast/tudo off por padrão
@@ -87,7 +91,9 @@ class Automacoes extends Component
     {
         abort_unless(auth('web')->user()?->can('gerenciar_whatsapp'), 403);
 
-        $this->validate($this->rules());
+        if ($this->validarOuFocar($this->rules()) === null) {
+            return; // erro → toast + foco no 1º campo inválido (D84)
+        }
 
         $cfg = WhatsappConfig::query()->first() ?? new WhatsappConfig;
 
@@ -112,6 +118,7 @@ class Automacoes extends Component
         $map['avaliacao_pos_servico']['apos_min'] = max(5, (int) $this->aposAvaliacao);
 
         $cfg->automacoes = $map;
+        $cfg->numero_teste = trim($this->numeroTeste) ?: null; // persiste por tenant (D84)
         $cfg->save();
 
         // Reflete na tela o que de fato foi salvo (se travado, voltam desligadas).
@@ -136,10 +143,17 @@ class Automacoes extends Component
             return;
         }
 
-        $this->validate(
+        if ($this->validarOuFocar(
             ['numeroTeste' => ['required', 'string', 'min:8', 'max:30']],
             attributes: ['numeroTeste' => 'número de teste'],
-        );
+        ) === null) {
+            return; // erro → toast + foco no campo (D84)
+        }
+
+        // Lembra o número testado por tenant (D84) — não precisa redigitar depois.
+        $cfg = WhatsappConfig::query()->first() ?? new WhatsappConfig;
+        $cfg->numero_teste = trim($this->numeroTeste) ?: null;
+        $cfg->save();
 
         $vars = AutomacaoWhatsapp::exemplos();
         $vars['salao'] = (string) (tenant('nome') ?? $vars['salao']); // {salao} = nome do tenant

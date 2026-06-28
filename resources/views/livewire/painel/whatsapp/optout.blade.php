@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
     <x-ng.page-header title="WhatsApp" subtitle="Opt-out (não enviar)" />
 
-    @include('livewire.painel.whatsapp._abas')
+    @include('livewire.painel.whatsapp._abas', ['ativa' => 'optout'])
 
     <div class="ng-surface p-4 text-sm" style="color: var(--cor-texto-suave);">
         Clientes marcados aqui <strong>não recebem</strong> nenhuma mensagem automática (lembrete,
@@ -50,7 +50,7 @@
                         <flux:table.cell variant="strong">{{ $c->nome }}</flux:table.cell>
                         <flux:table.cell>{{ $c->telefone ?: '—' }}</flux:table.cell>
                         <flux:table.cell class="text-right">
-                            <flux:button wire:click="desmarcar({{ $c->id }})" size="sm" variant="ghost" icon="arrow-uturn-left">Voltar a enviar</flux:button>
+                            <flux:button wire:click="confirmarRemocao({{ $c->id }})" size="sm" variant="ghost" icon="arrow-uturn-left">Voltar a enviar</flux:button>
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach
@@ -59,4 +59,13 @@
 
         <div>{{ $optouts->links() }}</div>
     @endif
+
+    {{-- Confirmação de risco (D65): tirar do opt-out = volta a receber (consentimento). --}}
+    <x-ng.confirmar name="optout-voltar" tom="amber" icone="arrow-uturn-left"
+        titulo="Voltar a enviar para este cliente?"
+        :texto="($confirmarNome ? $confirmarNome.' ' : 'O cliente ').'voltará a receber as mensagens automáticas (lembrete, avaliação etc.).'">
+        @if ($confirmarId)
+            <flux:button wire:click="desmarcar({{ $confirmarId }})" variant="primary" icon="arrow-uturn-left">Voltar a enviar</flux:button>
+        @endif
+    </x-ng.confirmar>
 </div>

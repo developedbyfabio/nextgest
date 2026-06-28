@@ -2,7 +2,7 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8" wire:init="sincronizar">
     <x-ng.page-header title="WhatsApp" subtitle="Conecte o WhatsApp do seu estabelecimento" />
 
-    @include('livewire.painel.whatsapp._abas')
+    @include('livewire.painel.whatsapp._abas', ['ativa' => 'conexao'])
 
     {{-- Aviso de número dedicado (D80): reduz o risco de bloqueio. --}}
     <div class="mx-auto flex w-full max-w-xl items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
@@ -26,8 +26,9 @@
                         As mensagens do estabelecimento sairão por este número.
                     </flux:text>
                 </div>
-                <flux:button wire:click="desconectar" variant="danger" icon="arrow-right-start-on-rectangle"
-                    wire:confirm="Desconectar o WhatsApp deste estabelecimento?">Desconectar</flux:button>
+                <flux:modal.trigger name="desconectar-whatsapp">
+                    <flux:button variant="danger" icon="arrow-right-start-on-rectangle">Desconectar</flux:button>
+                </flux:modal.trigger>
             </div>
 
         {{-- AGUARDANDO LEITURA DO QR (poll curto que PARA ao conectar) --}}
@@ -100,4 +101,11 @@
             </flux:button>
         @endif
     </div>
+
+    {{-- Confirmação de risco (D65) no lugar do confirm() nativo (D84). --}}
+    <x-ng.confirmar name="desconectar-whatsapp" tom="red" icone="arrow-right-start-on-rectangle"
+        titulo="Desconectar o WhatsApp?"
+        texto="As mensagens automáticas param até você reconectar um número.">
+        <flux:button wire:click="desconectar" variant="danger" icon="arrow-right-start-on-rectangle">Desconectar</flux:button>
+    </x-ng.confirmar>
 </div>

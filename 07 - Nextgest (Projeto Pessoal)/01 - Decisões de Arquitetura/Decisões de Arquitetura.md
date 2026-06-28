@@ -1595,3 +1595,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   fuso); avaliação sempre adia; override por automação; re-despacho de represados; opt-out pela tela
   bloqueia/libera; gating 403 (Profissional) × 200 (Dono); anonimato (não vaza a nota). Suíte
   **639/639**. **Não recebe mensagem. Sem deploy.**
+
+## D84 — WhatsApp melhorias de UI/UX da aba
+> Só **UI/UX** da área WhatsApp (6 abas). **Lógica intacta** (D75/D77/D79/D81/D82/D83) — comportamento
+> funcional idêntico. Reusa o modal `x-ng.confirmar` (D65) e o toast. Ver [[WhatsApp (Evolution) no Nextgest]].
+- **Confirmações nativas → modal (D65):** `wire:confirm` do **Desconectar** (Conexão) e o **"voltar a
+  enviar"** do Opt-out (re-habilita envio = consentimento) viram `x-ng.confirmar` (Desconectar tom red;
+  opt-out tom amber, com o nome do cliente). Sem `confirm()` do navegador na área.
+- **Erro de validação → toast + foco:** trait `Concerns\FocaPrimeiroErro` (valida com `Validator::make`;
+  ao falhar → `setErrorBag` + `Flux::toast` + `dispatch('wa-erro-validacao')`). Um `@wa-erro-validacao.window`
+  (Alpine, no root das telas de form) **rola/foca** o 1º `[data-invalid]` (Flux marca o campo). Usado em
+  Automações/Janela/Aquecimento. *(Cada aba é rota/componente própria → o campo inválido está sempre na
+  aba atual; não há troca de aba a fazer.)*
+- **Indicador de aba ativa (bug — causa raiz):** `_abas` decidia a aba por `request()->routeIs()`, que é
+  falso no `/livewire/update` → o destaque **sumia no erro/re-render**. Agora cada tela passa um **literal**
+  `@include('_abas', ['ativa' => '...'])`; o destaque **persiste** em erro, re-render e `wire:navigate`, e
+  a **inicial (Conexão)** já vem marcada. Abas com **ícone + rótulo** consistentes nas 6.
+- **Número de teste persistente por tenant:** coluna aditiva `whatsapp_config.numero_teste` (não-secreta).
+  Automações pré-preenche no `mount` e salva no `salvar`/`testar`. Isolado por tenant (config do tenant).
+- **Verificação:** `MelhoriasUiTest` (5) — número persiste (salvar/testar) e pré-preenche; validação
+  inválida dispara `wa-erro-validacao` + erro e **não salva**; válida não dispara e salva; opt-out
+  `confirmarRemocao` → modal e `desmarcar` tira do opt-out. Sem regressão (Automações D77 intacto).
+  Suíte **644/644**. Prints: aba marcada (inclusive após erro, com toast+foco), modal no opt-out,
+  número persistido. **Só UI. Sem deploy.**

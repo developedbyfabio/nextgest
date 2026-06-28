@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
     <x-ng.page-header title="WhatsApp" subtitle="Histórico de envios" />
 
-    @include('livewire.painel.whatsapp._abas')
+    @include('livewire.painel.whatsapp._abas', ['ativa' => 'historico'])
 
     <div class="ng-surface p-4 text-sm" style="color: var(--cor-texto-suave);">
         Registro dos envios (metadados + conteúdo). O conteúdo é apagado automaticamente após

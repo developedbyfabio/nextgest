@@ -1,11 +1,12 @@
-<div class="flex flex-col gap-6 p-6 lg:p-8">
+<div class="flex flex-col gap-6 p-6 lg:p-8" x-data
+    @wa-erro-validacao.window="requestAnimationFrame(() => { const el = $root.querySelector('[data-invalid]'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus({ preventScroll: true }); } })">
     <x-ng.page-header title="WhatsApp" subtitle="Automações de mensagens">
         <x-slot:actions>
             <flux:button wire:click="salvar" variant="primary" icon="check">Salvar</flux:button>
         </x-slot:actions>
     </x-ng.page-header>
 
-    @include('livewire.painel.whatsapp._abas')
+    @include('livewire.painel.whatsapp._abas', ['ativa' => 'automacoes'])
 
     {{-- TERMO DE RISCO (D80): trava a ativação até o aceite (também no servidor). --}}
     @unless ($termoAceito)
