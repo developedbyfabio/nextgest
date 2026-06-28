@@ -31,6 +31,9 @@ interface WhatsAppGateway
     /** Estado da conexão da instância (ex.: open|connecting|close). */
     public function statusConexao(string $instancia): string;
 
+    /** Identificador da conta conectada (ownerJid) — null se indisponível. Detecta troca de número. */
+    public function donoConectado(string $instancia): ?string;
+
     /** Desconecta (logout) a instância — derruba o vínculo do WhatsApp, mantém a instância. */
     public function desconectar(string $instancia): void;
 

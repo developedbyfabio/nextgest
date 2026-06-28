@@ -34,6 +34,7 @@ use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Painel\Vendas\Detalhe as VendasDetalhe;
 use App\Livewire\Painel\Vendas\Index as VendasIndex;
+use App\Livewire\Painel\Whatsapp\Aquecimento as WhatsappAquecimento;
 use App\Livewire\Painel\Whatsapp\Automacoes as WhatsappAutomacoes;
 use App\Livewire\Painel\Whatsapp\Conexao as WhatsappConexao;
 use App\Livewire\Portal\Agendar as PortalAgendar;
@@ -242,6 +243,11 @@ Route::middleware(['tenant'])
                 Route::get('whatsapp/automacoes', WhatsappAutomacoes::class)
                     ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
                     ->name('whatsapp.automacoes');
+
+                // Modo Aquecimento (D82): curva de volume do número novo. Mesmo gating.
+                Route::get('whatsapp/aquecimento', WhatsappAquecimento::class)
+                    ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
+                    ->name('whatsapp.aquecimento');
             });
         });
     });

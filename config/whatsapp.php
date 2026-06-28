@@ -36,6 +36,25 @@ return [
     'termo_versao' => env('WA_TERMO_VERSAO', '1'),
 
     /*
+    | Modo Aquecimento (D82) — DEFAULTS conservadores da curva de volume p/ número novo.
+    | O teto efetivo do dia = min(teto normal, teto do aquecimento do dia). Conta a partir
+    | de `whatsapp_config.conectado_em` (dia 1 = dia da conexão). Cada fase: até o dia
+    | `ate_dia`, o teto diário é `limite_dia`. Passou a última fase → aquecimento concluído
+    | (vale o teto normal). Broadcast (envio em massa) só liberado a partir de
+    | `broadcast_a_partir_dia`. O tenant pode sobrescrever em whatsapp_config.aquecimento.
+    */
+    'aquecimento' => [
+        'ativo' => (bool) env('WA_AQUECIMENTO_ATIVO', true),
+        'broadcast_a_partir_dia' => (int) env('WA_AQUECIMENTO_BROADCAST_DIA', 11),
+        'fases' => [
+            ['ate_dia' => 2, 'limite_dia' => 10],
+            ['ate_dia' => 6, 'limite_dia' => 20],
+            ['ate_dia' => 13, 'limite_dia' => 40],
+            ['ate_dia' => 21, 'limite_dia' => 80],
+        ],
+    ],
+
+    /*
     | Lembrete de serviço (D79) — automação real, com freios ANTI-BAN conservadores.
     | Tudo configurável por .env (não cravado). O teto por minuto/dia é o freio
     | primário (vale em fila sync OU async); o intervalo só espaça de fato com fila

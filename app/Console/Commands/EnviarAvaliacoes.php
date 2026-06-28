@@ -9,6 +9,7 @@ use App\Models\Agendamento;
 use App\Models\PedidoAvaliacao;
 use App\Models\Tenant;
 use App\Models\WhatsappConfig;
+use App\Services\WhatsApp\Aquecimento;
 use App\Services\WhatsApp\WhatsAppException;
 use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Console\Command;
@@ -32,7 +33,6 @@ class EnviarAvaliacoes extends Command
     public function handle(): int
     {
         $limiteMin = (int) config('whatsapp.lembretes.limite_por_minuto', 4);
-        $limiteDia = (int) config('whatsapp.lembretes.limite_por_dia', 150);
         $intervalo = (int) config('whatsapp.lembretes.intervalo_segundos', 15);
         $aposPadrao = (int) config('whatsapp.avaliacao.apos_min_padrao', 120);
         $buffer = (int) config('whatsapp.avaliacao.janela_buffer_min', 60);
@@ -40,7 +40,7 @@ class EnviarAvaliacoes extends Command
         $total = 0;
 
         foreach (Tenant::all() as $tenant) {
-            $total += $tenant->run(function () use ($tenant, $limiteMin, $limiteDia, $intervalo, $aposPadrao, $buffer): int {
+            $total += $tenant->run(function () use ($tenant, $limiteMin, $intervalo, $aposPadrao, $buffer): int {
                 if (! $tenant->temRecurso('whatsapp')) {
                     return 0;
                 }
@@ -61,8 +61,9 @@ class EnviarAvaliacoes extends Command
                     return 0;
                 }
 
-                $hoje = PedidoAvaliacao::query()->whereDate('enfileirado_em', today())->count();
-                $restanteDia = $limiteDia - $hoje;
+                // Teto efetivo do dia = min(normal, aquecimento), consumo COMBINADO
+                // (lembrete + avaliação) — Modo Aquecimento (D82) por cima das travas D79.
+                $restanteDia = app(Aquecimento::class)->restanteHoje($cfg);
                 if ($restanteDia <= 0) {
                     return 0;
                 }

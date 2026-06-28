@@ -2,4 +2,5 @@
 <flux:navbar>
     <flux:navbar.item :href="route('painel.whatsapp', ['tenant' => tenant('id')])" :current="request()->routeIs('painel.whatsapp')" wire:navigate>Conexão</flux:navbar.item>
     <flux:navbar.item :href="route('painel.whatsapp.automacoes', ['tenant' => tenant('id')])" :current="request()->routeIs('painel.whatsapp.automacoes')" wire:navigate>Automações</flux:navbar.item>
+    <flux:navbar.item :href="route('painel.whatsapp.aquecimento', ['tenant' => tenant('id')])" :current="request()->routeIs('painel.whatsapp.aquecimento')" wire:navigate>Aquecimento</flux:navbar.item>
 </flux:navbar>

@@ -9,6 +9,7 @@ use App\Models\Agendamento;
 use App\Models\LembreteServico;
 use App\Models\Tenant;
 use App\Models\WhatsappConfig;
+use App\Services\WhatsApp\Aquecimento;
 use App\Services\WhatsApp\WhatsAppException;
 use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Console\Command;
@@ -33,14 +34,13 @@ class EnviarLembretes extends Command
     public function handle(): int
     {
         $limiteMin = (int) config('whatsapp.lembretes.limite_por_minuto', 4);
-        $limiteDia = (int) config('whatsapp.lembretes.limite_por_dia', 150);
         $intervalo = (int) config('whatsapp.lembretes.intervalo_segundos', 15);
         $antecedenciaPadrao = (int) config('whatsapp.lembretes.antecedencia_min_padrao', 120);
 
         $totalEnfileirados = 0;
 
         foreach (Tenant::all() as $tenant) {
-            $enfileirados = $tenant->run(function () use ($tenant, $limiteMin, $limiteDia, $intervalo, $antecedenciaPadrao): int {
+            $enfileirados = $tenant->run(function () use ($tenant, $limiteMin, $intervalo, $antecedenciaPadrao): int {
                 if (! $tenant->temRecurso('whatsapp')) {
                     return 0;
                 }
@@ -61,9 +61,9 @@ class EnviarLembretes extends Command
                     return 0;
                 }
 
-                // Teto diário (por tenant): conta o que já foi enfileirado hoje.
-                $hoje = LembreteServico::query()->whereDate('enfileirado_em', today())->count();
-                $restanteDia = $limiteDia - $hoje;
+                // Teto efetivo do dia = min(normal, aquecimento), consumo COMBINADO
+                // (lembrete + avaliação) — Modo Aquecimento (D82) por cima das travas D79.
+                $restanteDia = app(Aquecimento::class)->restanteHoje($cfg);
                 if ($restanteDia <= 0) {
                     return 0;
                 }

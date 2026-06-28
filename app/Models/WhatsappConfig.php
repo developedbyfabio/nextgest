@@ -23,6 +23,9 @@ class WhatsappConfig extends Model
         'instancia',
         'instancia_token',
         'status_conexao',
+        'conectado_em',
+        'numero_conectado',
+        'aquecimento',
         'automacoes',
         'termo_aceito_em',
         'termo_aceito_por',
@@ -48,6 +51,9 @@ class WhatsappConfig extends Model
             'instancia_token' => 'encrypted',
             // Overrides das automações por tenant: {chave: {ativo, template}}. Catálogo no enum.
             'automacoes' => 'array',
+            // Modo Aquecimento (D82): marco do dia 1 + curva (override dos defaults do config).
+            'conectado_em' => 'datetime',
+            'aquecimento' => 'array',
             'termo_aceito_em' => 'datetime',
             'verificado' => 'boolean',
             'ativo' => 'boolean',

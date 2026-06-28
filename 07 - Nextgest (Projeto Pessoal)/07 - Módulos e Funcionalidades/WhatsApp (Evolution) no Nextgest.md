@@ -111,8 +111,17 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
 - **NÃO recebe resposta** no WhatsApp (Fatia 8). `apos_min` editável no card (D77). 10 testes
   (`AvaliacaoPosServicoTest`).
 
+## Modo Aquecimento (D82) — curva de volume p/ número novo
+- **Teto efetivo do dia = `min(normal, curva do dia)`**, consumo **combinado** (lembrete + avaliação)
+  — orçamento diário único por número. Serviço `Services\WhatsApp\Aquecimento`, consumido pelos
+  comandos D79/D81. Dia 1 = `whatsapp_config.conectado_em` (capturado no `status()` ao conectar, fuso).
+- **Troca de número reinicia** a curva (compara `ownerJid` via `/instance/fetchInstances`); mesmo
+  número reconectado continua. **Broadcast** só a partir de `broadcast_a_partir_dia` (default 11).
+- **Defaults conservadores** (config; override em `whatsapp_config.aquecimento`): 1–2 **10**, 3–6
+  **20**, 7–13 **40**, 14–21 **80**, 22+ normal. **Tela "Aquecimento"** (3ª aba, gated, validada).
+- 6 testes (`AquecimentoTest`). Não dispara nada novo.
+
 ## Próximas fatias
-- **Modo aquecimento:** volume baixo e gradual para número recém-conectado.
 - **Controle de mensagens:** histórico/log de envios + janela de horário permitido + gestão de opt-out.
 - **Fatia 5:** avaliação pós-serviço (liga na avaliação D51, respeitando anonimato).
 - **Depois:** cobrança do clube (G2/G3 do gateway), contatos, caixa de conversas, broadcast real.

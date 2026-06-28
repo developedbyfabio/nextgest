@@ -63,6 +63,30 @@ class EvolutionGateway implements WhatsAppGateway
         return (string) (Arr::get($json, 'instance.state') ?? Arr::get($json, 'state') ?? 'desconhecido');
     }
 
+    public function donoConectado(string $instancia): ?string
+    {
+        try {
+            $resp = $this->http()->get('/instance/fetchInstances', ['instanceName' => $instancia]);
+        } catch (ConnectionException) {
+            return null;
+        }
+
+        if ($resp->failed()) {
+            return null;
+        }
+
+        $json = $resp->json();
+        // A Evolution devolve uma lista; pega o ownerJid da instância pedida.
+        $lista = is_array($json) ? (array_is_list($json) ? $json : [$json]) : [];
+        foreach ($lista as $item) {
+            if ((Arr::get($item, 'name') ?? Arr::get($item, 'instanceName')) === $instancia) {
+                return Arr::get($item, 'ownerJid');
+            }
+        }
+
+        return Arr::get($lista[0] ?? [], 'ownerJid');
+    }
+
     public function desconectar(string $instancia): void
     {
         $this->req(fn (PendingRequest $h) => $h->delete('/instance/logout/'.$instancia), $instancia, 'desconectar');

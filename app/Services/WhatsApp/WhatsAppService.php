@@ -81,8 +81,26 @@ class WhatsAppService
             return null;
         }
 
+        $anterior = $c->status_conexao;
         $estado = $this->gateway->statusConexao($c->instancia);
         $c->status_conexao = $estado;
+
+        // Modo Aquecimento (D82): ao ENTRAR em "open", reconcilia o marco do dia 1.
+        // Só na transição (evita chamar fetchInstances a cada status). Número TROCOU
+        // (ownerJid diferente) → reinicia a curva; número novo (1ª vez) → marca; mesmo
+        // número reconectado → mantém `conectado_em`.
+        if ($estado === 'open' && ($anterior !== 'open' || blank($c->conectado_em) || blank($c->numero_conectado))) {
+            $dono = $this->gateway->donoConectado($c->instancia);
+            if (filled($dono)) {
+                if ($c->numero_conectado !== $dono) {
+                    $c->numero_conectado = $dono;
+                    $c->conectado_em = now(); // número novo/trocado → recomeça o aquecimento
+                } elseif (blank($c->conectado_em)) {
+                    $c->conectado_em = now();
+                }
+            }
+        }
+
         $c->save();
 
         return $estado;

@@ -1529,3 +1529,32 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   indisponível se já avaliado; janela/idempotência/filtros (não-concluído/opt-out/já-avaliado/sem-termo);
   teto/minuto; job envia o link assinado + marca. Suíte **620/620**. Print (Playwright): página pública
   da avaliação abrindo por link assinado. **Não recebe nada pelo WhatsApp. Sem deploy.**
+  > **Validado (28/06/2026):** disparo real ao número de teste (status `enviado`); idempotente.
+
+---
+
+## D82 — WhatsApp Modo Aquecimento: curva de volume para número novo
+> Curva de volume **crescente (~21 dias, configurável)** **por cima** das travas anti-ban (D79/D81),
+> protegendo o número novo (não-oficial bane com volume). **Não dispara nada novo** — só **modula o
+> volume** do que já existe. Ver [[WhatsApp (Evolution) no Nextgest]].
+- **Teto efetivo do dia = `min(teto normal, teto da curva do dia)`**, e o consumo do dia passou a ser
+  **COMBINADO** (lembrete + avaliação) — o número tem um **orçamento diário único** (fecha de quebra a
+  brecha latente do teto separado D79/D81). Tudo no serviço `Services\WhatsApp\Aquecimento`
+  (`diaAtual`/`tetoEfetivoDia`/`consumoHoje`/`restanteHoje`/`broadcastLiberado`), consumido pelos
+  comandos D79/D81 no lugar do teto fixo.
+- **Dia 1 = `whatsapp_config.conectado_em`** (aditivo), capturado no `WhatsAppService::status()` ao
+  **entrar** em `open` (transição). Fuso `APP_TIMEZONE`.
+- **Troca de número reinicia a curva:** o `status()` busca o `ownerJid` (Evolution
+  `/instance/fetchInstances`) na transição; **mudou → reinicia** (`conectado_em=now`, novo
+  `numero_conectado`); **mesmo número reconectado → continua**.
+- **Broadcast no aquecimento:** `broadcastLiberado()` só a partir de `broadcast_a_partir_dia` (default
+  **11**) — política pronta p/ o futuro sender de broadcast (hoje não há sender).
+- **Defaults conservadores** (`config('whatsapp.aquecimento')`, override por
+  `whatsapp_config.aquecimento`): dias 1–2 **10/dia**, 3–6 **20**, 7–13 **40**, 14–21 **80**, 22+
+  **normal**. **Tela "Aquecimento"** (3ª aba, gated, **validada**: 1ª fase ≤ 30, ≤ normal, dias
+  crescentes, teto não-decrescente → não dá p/ anular o aquecimento) mostra o dia/teto atual.
+- **Verificação:** `AquecimentoTest` (6) — teto sobe pela curva e termina no normal; `min(normal,
+  curva)`; broadcast bloqueado até a fase; desligado → sem cap; comando aplica o teto do aquecimento
+  (14 elegíveis, dia 1 → **10**, abaixo do per-minute 20); troca de número reinicia / mesmo número
+  mantém. Suíte **626/626**. Print: aba Aquecimento (dia 2 · teto 10/dia · broadcast bloqueado).
+  **Não dispara nada novo. Sem deploy.**
