@@ -51,7 +51,19 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
   throttle do WhatsApp no número após vários scans seguidos (não é bug da Evolution). Esperar uns
   minutos e tentar **uma** vez; manter o app do WhatsApp atualizado.
 
+## Fatia 2 (D76) — item no menu + tela de conexão
+- **Item próprio "WhatsApp"** (grupo Gestão), gated por `@recurso('whatsapp')` +
+  `@can('gerenciar_whatsapp')`. Saiu de *Integrações* (o editor antigo da API Cloud da Meta foi
+  **aposentado**; o hub de Integrações ficou só com Pagamento).
+- **Permissão:** reusa a já existente **`gerenciar_whatsapp`** (Dono + Gerente). Sem permissão nova,
+  sem backfill.
+- **Tela** `App\Livewire\Painel\Whatsapp\Conexao` (rota `painel.whatsapp`): estados **desconectado /
+  aguardando / conectado / caiu / erro**. `wire:init=sincronizar` (estado real no load), `wire:poll.3s`
+  enquanto aguarda (para ao conectar), `wire:poll.20s` enquanto conectado (detecta queda → caiu), QR
+  renovável, desconectar/reconectar. Reusa `WhatsAppService` (D75) + `desconectar()` (logout da
+  instância). Erros tratados, sem expor segredo. 9 testes (`WhatsAppConexaoTest`).
+
 ## Próximas fatias
-- **Fatia 2:** tela de QR no painel (gated `whatsapp`) + monitorar sessão (queda → avisar).
+- **Item "Gateway de pagamento"** (fatia curta): mover/criar item apontando para a tela de cobrança.
 - **Fatia 3:** lembrete antes do horário (job agendado, opt-in, idempotente, fuso correto).
 - **Depois:** Evolution em produção (exposição/segurança blindada à parte).

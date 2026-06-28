@@ -3,11 +3,9 @@
 declare(strict_types=1);
 
 use App\Livewire\Painel\Integracoes\MercadoPago;
-use App\Livewire\Painel\Integracoes\Whatsapp;
 use App\Models\GatewayPagamento;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\WhatsappConfig;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
@@ -149,33 +147,6 @@ it('papel sem permissão de integração não acessa a tela nem o editor', funct
         ->assertForbidden();
 });
 
-it('WhatsApp: token salvo cifrado; config não-secreta volta preenchida; write-only', function () {
-    tenancy()->initialize(criarTenant('lojaum'));
-    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono@lojaum.com']), 'web');
-
-    Livewire::test(Whatsapp::class)
-        ->set('telefone', '+55 11 90000-0000')
-        ->set('phone_number_id', 'PN-123')
-        ->set('token', 'WTOKEN-SECRETO-4321')
-        ->set('ativo', true)
-        ->call('salvar')
-        ->assertHasNoErrors();
-
-    $c = WhatsappConfig::query()->first();
-    expect($c->token)->toBe('WTOKEN-SECRETO-4321')
-        ->and($c->phone_number_id)->toBe('PN-123');
-
-    $cru = DB::table('whatsapp_config')->value('token');
-    expect($cru)->not->toContain('WTOKEN-SECRETO-4321');
-
-    // Write-only: recarrega vazio; config não-secreta volta; salvar sem token mantém.
-    Livewire::test(Whatsapp::class)
-        ->assertSet('token', '')
-        ->assertSet('phone_number_id', 'PN-123')
-        ->assertDontSee('WTOKEN-SECRETO-4321')
-        ->set('telefone', '+55 11 91111-1111')
-        ->call('salvar');
-    expect(WhatsappConfig::query()->first()->token)->toBe('WTOKEN-SECRETO-4321');
-
-    tenancy()->end();
-});
+// O editor WhatsApp (API Cloud da Meta) foi aposentado na Fatia 2 (D76): WhatsApp virou
+// item próprio com tela de CONEXÃO (Evolution). O cofre cifrado é coberto agora pelo
+// `instancia_token` em tests/Feature/WhatsApp/WhatsAppFatia1Test.php.

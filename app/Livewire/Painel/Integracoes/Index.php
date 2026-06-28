@@ -6,7 +6,6 @@ namespace App\Livewire\Painel\Integracoes;
 
 use App\Enums\Integracao;
 use App\Models\GatewayPagamento;
-use App\Models\WhatsappConfig;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -58,7 +57,6 @@ class Index extends Component
             Integracao::MercadoPago => filled(
                 (GatewayPagamento::where('provedor', 'mercadopago')->first()?->credenciais ?? [])['access_token'] ?? null
             ),
-            Integracao::Whatsapp => filled(WhatsappConfig::query()->first()?->token),
         };
     }
 }

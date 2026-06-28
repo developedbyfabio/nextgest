@@ -27,7 +27,6 @@ use App\Livewire\Painel\Funcionamento\Index as FuncionamentoIndex;
 use App\Livewire\Painel\Indicadores as IndicadoresIndex;
 use App\Livewire\Painel\Integracoes\Index as IntegracoesIndex;
 use App\Livewire\Painel\Integracoes\MercadoPago as IntegracaoMercadoPago;
-use App\Livewire\Painel\Integracoes\Whatsapp as IntegracaoWhatsapp;
 use App\Livewire\Painel\Kanban\Index as KanbanIndex;
 use App\Livewire\Painel\Papeis\Index as PapeisIndex;
 use App\Livewire\Painel\Produtos\Index as ProdutosIndex;
@@ -36,6 +35,7 @@ use App\Livewire\Painel\Servicos\Index as ServicosIndex;
 use App\Livewire\Painel\Unidades\Index as UnidadesIndex;
 use App\Livewire\Painel\Vendas\Detalhe as VendasDetalhe;
 use App\Livewire\Painel\Vendas\Index as VendasIndex;
+use App\Livewire\Painel\Whatsapp\Conexao as WhatsappConexao;
 use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\Home as PortalHome;
 use Illuminate\Support\Facades\Route;
@@ -228,9 +228,11 @@ Route::middleware(['tenant'])
                     ->middleware(['can:gerenciar_pagamentos', 'recurso:gateway'])
                     ->name('integracoes.mercadopago');
 
-                Route::get('integracoes/whatsapp', IntegracaoWhatsapp::class)
+                // WhatsApp (D76): item próprio (saiu de Integrações). Tela de conexão
+                // (Evolution) gated por recurso `whatsapp` + permissão `gerenciar_whatsapp`.
+                Route::get('whatsapp', WhatsappConexao::class)
                     ->middleware(['can:gerenciar_whatsapp', 'recurso:whatsapp'])
-                    ->name('integracoes.whatsapp');
+                    ->name('whatsapp');
             });
         });
     });

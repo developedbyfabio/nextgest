@@ -1341,3 +1341,35 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `whatsapp-teste` enviou e a mensagem **chegou** no destinatário. Gotcha: o WhatsApp pode dar
   "não é possível conectar novos dispositivos no momento" após vários scans seguidos (throttle do
   WhatsApp, não da Evolution — esperar e tentar 1 vez). **Sem deploy.**
+
+---
+
+## D76 — WhatsApp Fatia 2: item próprio no menu + tela de conexão (QR ao vivo + status)
+> Tira a conexão do terminal e leva ao painel: item **"WhatsApp"** (saiu de Integrações) + tela de
+> conexão (QR que renova, status ao vivo, desconectar/reconectar). Reusa a fundação D75. **Sem
+> automação** (Fatia 3). Ver [[WhatsApp (Evolution) no Nextgest]] e [[Papéis e Permissões (RBAC)]].
+- **Permissão — reuso, sem nova:** a permissão já existia como **`gerenciar_whatsapp`** (no
+  `TenantDatabaseSeeder::PERMISSOES`, concedida ao Dono; Gerente mantém). **Não** criei `gerir_whatsapp`
+  (seria duplicar). Confirmado em tenant existente: permissão presente + Dono já a tem → **sem
+  mudança de seeder, sem backfill**. (O seeder já é aditivo/idempotente: `findOrCreate`/
+  `givePermissionTo`, nunca `syncPermissions`.)
+- **Editor antigo aposentado:** o editor *Integrações → WhatsApp* (API Cloud da Meta:
+  `phone_number_id`/`token`) foi **removido** (rota `integracoes.whatsapp` + componente + view) e o
+  WhatsApp **saiu do enum `Integracao`** (o hub de Integrações fica só com Pagamento → passa a exigir
+  `gerenciar_pagamentos`, logo Dono-only). Testes dos 3 arquivos repontados/enxugados (o cofre cifrado
+  agora é o `instancia_token` da Evolution, coberto na D75).
+- **Item de menu próprio "WhatsApp"** (grupo Gestão), gated por `@recurso('whatsapp')` +
+  `@can('gerenciar_whatsapp')`. Rota `painel.whatsapp` (`recurso:whatsapp` + `can:gerenciar_whatsapp`)
+  → `App\Livewire\Painel\Whatsapp\Conexao`.
+- **Tela (reusa WhatsAppService D75; + `desconectar()` no gateway/serviço = logout da instância):**
+  estados **desconectado / aguardando / conectado / caiu / erro**. `wire:init=sincronizar` confirma o
+  estado REAL no load (sem bloquear render, sem quebrar se a Evolution cair). `aguardando`:
+  `wire:poll.3s` que **para ao conectar**. `conectado`: `wire:poll.20s` detecta **queda** → `caiu`
+  (reconectar). QR renovável (expira ~1 min). Erros/timeout viram aviso amigável (sem 500, sem expor
+  segredo). Nada de token/key na tela.
+- **Verificação:** `WhatsAppConexaoTest` (9) — conectar/QR, status ao vivo (poll que para),
+  sincronizar (estado real no load), monitorar (queda→caiu), desconectar, erro tratado, gating de
+  recurso (on→200/off→404). `CredenciaisPermissaoTest` repontado para `/whatsapp`. Suíte **582/582**.
+  Status ao vivo confirmado contra a Evolution real (`ng_barbeariateste` = `open` → tela "conectado").
+  Screenshot via browser não capturado nesta rodada (cache do Playwright foi limpo + isolamento de
+  loopback do navegador no sandbox — infra, não a feature). **Sem deploy.**

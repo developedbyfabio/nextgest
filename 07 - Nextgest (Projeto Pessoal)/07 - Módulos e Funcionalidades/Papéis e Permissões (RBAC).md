@@ -54,3 +54,12 @@ funcionava e **não foi necessário** mexer no motor (zero regressão).
   Profissional puro 403; **Dono+Profissional** pag+wpp 200 **e** agendável).
 - `tests/Feature/Painel/EquipeTest.php`: multi-papel salvo; exige ≥1 papel; `editar` carrega
   papéis atuais; **não remove/inativa o último Dono**; remove Dono quando há outro Dono.
+
+## WhatsApp usa a permissão existente `gerenciar_whatsapp` (D76)
+A Fatia 2 do WhatsApp **reusou** a permissão **`gerenciar_whatsapp`** (já no
+`TenantDatabaseSeeder::PERMISSOES`, Dono + Gerente) — **não** criou permissão nova nem precisou de
+backfill (confirmado: já presente nos tenants existentes). O novo item/tela "WhatsApp"
+(`painel.whatsapp`) é gated por `can('gerenciar_whatsapp')` + recurso `whatsapp`. Reforço do padrão:
+permissões sempre **aditivas/idempotentes** (`findOrCreate`/`givePermissionTo`), **nunca**
+`syncPermissions` (apaga customizações dos tenants). O editor antigo da API Cloud (em Integrações) foi
+aposentado; o hub de Integrações ficou só com Pagamento (logo exige `gerenciar_pagamentos`).

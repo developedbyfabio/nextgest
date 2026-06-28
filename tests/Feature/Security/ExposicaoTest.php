@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 use App\Livewire\Painel\Aparencia\Editar as AparenciaEditar;
 use App\Livewire\Painel\Equipe\Index as EquipeIndex;
-use App\Livewire\Painel\Integracoes\Whatsapp;
-use App\Models\WhatsappConfig;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Livewire;
 
@@ -51,19 +48,6 @@ it('[T7] regras de upload da aparência rejeitam não-imagem e capam tamanho (an
         ->and($regraLogo)->toContain('max:5120');
 });
 
-it('[T8] token do WhatsApp é cifrado no banco e nunca aparece no HTML/snapshot', function () {
-    $this->actingAs(usuarioComPapel('Dono', ['email' => 'dono4@x.test']), 'web');
-
-    Livewire::test(Whatsapp::class)
-        ->set('token', 'WTOKEN-EXPO-5678')->set('ativo', true)->call('salvar')->assertHasNoErrors();
-
-    // Cru no banco: cifrado.
-    $cru = DB::table('whatsapp_config')->value('token');
-    expect($cru)->not->toContain('WTOKEN-EXPO-5678');
-    expect(WhatsappConfig::query()->first()->token)->toBe('WTOKEN-EXPO-5678'); // decifrado em memória
-
-    // Recarrega: write-only + nunca renderiza o segredo.
-    Livewire::test(Whatsapp::class)
-        ->assertSet('token', '')
-        ->assertDontSee('WTOKEN-EXPO-5678');
-});
+// [T8] O segredo cifrado do WhatsApp agora é o `instancia_token` (Evolution), coberto em
+// tests/Feature/WhatsApp/WhatsAppFatia1Test.php (cifrado no banco + $hidden, sem vazar).
+// O antigo editor Cloud da Meta foi aposentado na Fatia 2 (D76).

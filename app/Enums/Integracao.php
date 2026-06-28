@@ -18,14 +18,15 @@ namespace App\Enums;
 enum Integracao: string
 {
     case MercadoPago = 'mercadopago';
-    case Whatsapp = 'whatsapp';
+
+    // WhatsApp saiu daqui (D76): virou item próprio no menu, com tela de conexão
+    // (Evolution) gated por recurso `whatsapp` + permissão `gerenciar_whatsapp`.
 
     /** Recurso (flag 0a) que controla a disponibilidade desta integração. */
     public function recurso(): Recurso
     {
         return match ($this) {
             self::MercadoPago => Recurso::Gateway,
-            self::Whatsapp => Recurso::Whatsapp,
         };
     }
 
@@ -34,7 +35,6 @@ enum Integracao: string
     {
         return match ($this) {
             self::MercadoPago => 'gerenciar_pagamentos',
-            self::Whatsapp => 'gerenciar_whatsapp',
         };
     }
 
@@ -42,7 +42,6 @@ enum Integracao: string
     {
         return match ($this) {
             self::MercadoPago => 'Mercado Pago',
-            self::Whatsapp => 'WhatsApp',
         };
     }
 
@@ -50,7 +49,6 @@ enum Integracao: string
     {
         return match ($this) {
             self::MercadoPago => 'Pagamento online: cole o Access Token da conta Mercado Pago.',
-            self::Whatsapp => 'Lembretes e mensagens automáticas via WhatsApp Cloud API.',
         };
     }
 
@@ -58,7 +56,6 @@ enum Integracao: string
     {
         return match ($this) {
             self::MercadoPago => 'credit-card',
-            self::Whatsapp => 'chat-bubble-left-right',
         };
     }
 

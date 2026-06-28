@@ -88,6 +88,20 @@ class WhatsAppService
         return $estado;
     }
 
+    /** Desconecta (logout) a instância do salão e marca o estado como `close`. */
+    public function desconectar(): void
+    {
+        $c = $this->config();
+
+        if (blank($c->instancia)) {
+            return;
+        }
+
+        $this->gateway->desconectar($c->instancia);
+        $c->status_conexao = 'close';
+        $c->save();
+    }
+
     /**
      * Envia uma mensagem de texto pelo número informado, usando a instância DESTE
      * tenant e o token dela (escopo limitado). Exige a instância já configurada.

@@ -63,6 +63,11 @@ class EvolutionGateway implements WhatsAppGateway
         return (string) (Arr::get($json, 'instance.state') ?? Arr::get($json, 'state') ?? 'desconhecido');
     }
 
+    public function desconectar(string $instancia): void
+    {
+        $this->req(fn (PendingRequest $h) => $h->delete('/instance/logout/'.$instancia), $instancia, 'desconectar');
+    }
+
     public function enviarTexto(string $instancia, string $numero, string $texto, ?string $token = null): array
     {
         $resp = $this->req(

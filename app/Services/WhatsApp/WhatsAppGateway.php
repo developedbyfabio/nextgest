@@ -31,6 +31,9 @@ interface WhatsAppGateway
     /** Estado da conexão da instância (ex.: open|connecting|close). */
     public function statusConexao(string $instancia): string;
 
+    /** Desconecta (logout) a instância — derruba o vínculo do WhatsApp, mantém a instância. */
+    public function desconectar(string $instancia): void;
+
     /**
      * Envia uma mensagem de texto. `$token` é o token DAQUELA instância (escopo
      * limitado); se null, usa a key global de infra.
