@@ -1719,3 +1719,28 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   falha grava `falhou`; sem recurso não renderiza o botão. `ClientesTest` ajustado (a aba agora TEM
   editar/WhatsApp; segue sem reset/campanha). Sem regressão (D75/D79/D82/D83/D87). Suíte **676/676**;
   build ok. **Dev. Sem deploy.**
+
+## D89 — Clientes (CRM) Fatia 2.5: cards de resumo + filtro de inatividade unificado
+> Resumo gerencial no topo da aba Clientes (D87): total, inatividade (clicável) e Clube. Só
+> UI/contagem. Ver [[Clientes (CRM)]].
+- **Cards (contagem agregada, sem N+1):** **Total** de clientes; **Inatividade** (faixas
+  **cumulativas** clicáveis: +15/+30/+60/+90 dias, +6 meses, +1 ano — "sem visita há mais de X");
+  **Clube** (assinantes vs avulsos), só com o recurso `clube`. Tudo numa **única** query agregada
+  (`DB::query()->fromSub(...)` com `COUNT(*)` + `SUM(CASE WHEN ultima_visita < ?)` por faixa +
+  `SUM(assinante)`) — mesmo padrão set-based de `IndicadoresClientes::frequencia`.
+- **Coerência card↔tabela (CRÍTICO):** o número do card **bate** com as linhas que a tabela lista ao
+  clicar, porque ambos usam a **mesma régua** — o helper `limiteFaixa()` (`today − X dias`) e o mesmo
+  critério de última visita do D87 (último atendimento `concluido`). **Não** há lógica de filtragem
+  paralela.
+- **Filtro ÚNICO (unificado):** o `visitaFiltro` passou para o modelo **cumulativo**
+  (`todos|mais15|mais30|mais60|mais90|mais180|mais365|nunca`), movido pelo **dropdown E pelos cards**
+  (o card chama `selecionarFaixa()`, que alterna; reclicar/`limparVisita()` volta a `todos`). Substituiu
+  os buckets contíguos antigos do D87 (`ate30`/`de31a90`), que eram de *atividade*, não de inatividade.
+- **"Nunca veio"** fica **fora** das faixas (sem última visita → comparação SQL com NULL é falsa);
+  continua como opção própria do filtro.
+- **Cards independem da busca/filtro** (resumo global da base). Botão **"Ver"** uniformizado com
+  Editar/WhatsApp (ícone `eye`/`eye-slash` no lugar do chevron).
+- **Verificação:** `ClientesTest` — filtro cumulativo (+90 pega 120 e 400 dias; +1 ano só 400; nunca à
+  parte); **cards do agregado** (`assertViewHas('resumo', …)`); **coerência card↔tabela** (clicar filtra
+  pros mesmos; reclicar limpa); card Clube (assinantes+avulsos = total). 25 testes nos 2 arquivos de
+  Clientes. Sem regressão (D87/D88). Suíte **679/679**; build ok. **Só UI. Sem deploy.**

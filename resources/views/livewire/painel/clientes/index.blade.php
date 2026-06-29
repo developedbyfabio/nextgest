@@ -3,14 +3,59 @@
 <div class="flex flex-col gap-6 p-6 lg:p-8">
     <x-ng.page-header title="Clientes" subtitle="Base de clientes do estabelecimento — última visita, contato e Clube" />
 
+    {{-- Cards de resumo (contagens agregadas). As faixas de inatividade são clicáveis e
+         acionam o MESMO filtro do dropdown (coerência card↔tabela). --}}
+    <div class="grid gap-4 sm:grid-cols-2">
+        <x-ng.indicador titulo="Total de clientes" :valor="number_format($resumo['total'], 0, ',', '.')" icone="users" />
+
+        @if ($clubeAtivo)
+            <div class="ng-surface flex flex-col gap-3 p-5">
+                <flux:text class="text-sm font-medium" style="color: var(--cor-texto-suave);">Clube</flux:text>
+                <div class="flex items-end gap-8">
+                    <div>
+                        <div class="text-3xl font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['assinantes'] }}</div>
+                        <flux:text class="text-xs" style="color: var(--cor-texto-suave);">assinantes</flux:text>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['avulsos'] }}</div>
+                        <flux:text class="text-xs" style="color: var(--cor-texto-suave);">avulsos (sem Clube)</flux:text>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+
+    {{-- Inatividade: faixas CUMULATIVAS ("sem visita há mais de X"). Clicar filtra a tabela. --}}
+    <div class="ng-surface flex flex-col gap-3 p-5">
+        <div class="flex items-center justify-between gap-2">
+            <flux:text class="text-sm font-medium" style="color: var(--cor-texto-suave);">Sem visita há mais de</flux:text>
+            @if (array_key_exists($visitaFiltro, $faixas))
+                <flux:button wire:click="limparVisita" size="xs" variant="ghost" icon="x-mark">Limpar</flux:button>
+            @endif
+        </div>
+        <div class="flex flex-wrap gap-2">
+            @foreach ($faixas as $chave => $f)
+                @php($ativo = $visitaFiltro === $chave)
+                <button type="button" wire:click="selecionarFaixa('{{ $chave }}')"
+                    class="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition hover:opacity-90"
+                    style="{{ $ativo
+                        ? 'border-color: var(--cor-principal); background-color: color-mix(in srgb, var(--cor-principal) 12%, transparent);'
+                        : 'border-color: transparent; background-color: color-mix(in srgb, var(--cor-texto) 5%, transparent);' }}">
+                    <span style="color: var(--cor-texto-suave);">{{ $f['rotulo'] }}</span>
+                    <span class="font-bold tabular-nums" style="color: var(--cor-texto);">{{ $resumo['bandas'][$chave] }}</span>
+                </button>
+            @endforeach
+        </div>
+    </div>
+
     {{-- Busca + filtros (server-side) --}}
     <div class="flex flex-wrap items-end gap-3">
         <flux:input wire:model.live.debounce.300ms="busca" icon="magnifying-glass" placeholder="Buscar por nome" class="min-w-52 flex-1" />
-        <flux:select wire:model.live="visitaFiltro" label="Última visita" class="min-w-44">
-            <flux:select.option value="todos">Todas</flux:select.option>
-            <flux:select.option value="ate30">Até 30 dias</flux:select.option>
-            <flux:select.option value="de31a90">31 a 90 dias</flux:select.option>
-            <flux:select.option value="mais90">Mais de 90 dias</flux:select.option>
+        <flux:select wire:model.live="visitaFiltro" label="Sem visita há" class="min-w-44">
+            <flux:select.option value="todos">Qualquer tempo</flux:select.option>
+            @foreach ($faixas as $chave => $f)
+                <flux:select.option value="{{ $chave }}">{{ $f['rotulo'] }}</flux:select.option>
+            @endforeach
             <flux:select.option value="nunca">Nunca veio</flux:select.option>
         </flux:select>
         @if ($clubeAtivo)
@@ -84,7 +129,7 @@
                                         <flux:button wire:click="abrirWhatsapp({{ $cliente->id }})" size="sm" variant="ghost" icon="chat-bubble-left-right">WhatsApp</flux:button>
                                     @endif
                                     <flux:button wire:click="alternarDetalhe({{ $cliente->id }})" size="sm" variant="ghost"
-                                        :icon="$aberto ? 'chevron-up' : 'chevron-down'">{{ $aberto ? 'Fechar' : 'Ver' }}</flux:button>
+                                        :icon="$aberto ? 'eye-slash' : 'eye'">{{ $aberto ? 'Fechar' : 'Ver' }}</flux:button>
                                 </div>
                             </flux:table.cell>
                         </flux:table.row>

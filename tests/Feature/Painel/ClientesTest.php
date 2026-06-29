@@ -110,30 +110,92 @@ it('busca por nome filtra server-side', function () {
         ->assertDontSee('Joao Pereira');
 });
 
-// ---- Filtros de faixa de última visita -----------------------------------
+// ---- Filtro de inatividade (faixas cumulativas, D89) ----------------------
 
-it('filtro de faixa de última visita combina com a recência', function () {
+it('filtro de inatividade é cumulativo (+X = sem visita há mais de X)', function () {
     $dono = usuarioComPapel('Dono', ['email' => 'dono@cli.test']);
     $this->actingAs($dono, 'web');
 
     $recente = clienteCli('Recente Costa');
-    agendamentoCli($recente->id, 5, 'concluido');     // até 30 dias
+    agendamentoCli($recente->id, 5, 'concluido');      // veio há 5 dias (ativo)
     $sumido = clienteCli('Sumido Lima');
-    agendamentoCli($sumido->id, 120, 'concluido');    // mais de 90 dias
-    $nunca = clienteCli('Novato Souza');               // nenhum concluído
+    agendamentoCli($sumido->id, 120, 'concluido');     // há 120 dias
+    $antigo = clienteCli('Antigo Reis');
+    agendamentoCli($antigo->id, 400, 'concluido');     // há 400 dias
+    $nunca = clienteCli('Novato Souza');                // nunca veio
 
     Livewire::test(Index::class)
-        ->set('visitaFiltro', 'ate30')
-        ->assertSee('Recente Costa')
-        ->assertDontSee('Sumido Lima')
-        ->assertDontSee('Novato Souza')
+        // +90 dias: pega o de 120 e o de 400 (cumulativo); não pega o recente nem "nunca".
         ->set('visitaFiltro', 'mais90')
         ->assertSee('Sumido Lima')
+        ->assertSee('Antigo Reis')
         ->assertDontSee('Recente Costa')
+        ->assertDontSee('Novato Souza')
+        // +1 ano: só o de 400 dias.
+        ->set('visitaFiltro', 'mais365')
+        ->assertSee('Antigo Reis')
+        ->assertDontSee('Sumido Lima')
+        ->assertDontSee('Recente Costa')
+        // nunca: só quem não tem concluído.
         ->set('visitaFiltro', 'nunca')
         ->assertSee('Novato Souza')
-        ->assertDontSee('Recente Costa')
-        ->assertDontSee('Sumido Lima');
+        ->assertDontSee('Antigo Reis');
+});
+
+// ---- Cards de resumo (D89) ------------------------------------------------
+
+it('cards: total e faixas de inatividade vêm do agregado', function () {
+    $dono = usuarioComPapel('Dono', ['email' => 'dono@cli.test']);
+    $this->actingAs($dono, 'web');
+
+    $a = clienteCli('Ativo'); agendamentoCli($a->id, 5, 'concluido');
+    $b = clienteCli('Sumido 120'); agendamentoCli($b->id, 120, 'concluido');
+    $c = clienteCli('Antigo 400'); agendamentoCli($c->id, 400, 'concluido');
+    clienteCli('Nunca Veio');
+
+    Livewire::test(Index::class)->assertViewHas('resumo', function ($resumo) {
+        return $resumo['total'] === 4
+            && $resumo['bandas']['mais15'] === 2   // 120 e 400 (>15)
+            && $resumo['bandas']['mais90'] === 2   // 120 e 400 (>90)
+            && $resumo['bandas']['mais365'] === 1; // só 400 (>365)
+    });
+});
+
+it('coerência card↔tabela: clicar na faixa filtra para os mesmos clientes; reclicar limpa', function () {
+    $dono = usuarioComPapel('Dono', ['email' => 'dono@cli.test']);
+    $this->actingAs($dono, 'web');
+
+    $a = clienteCli('Ativo Joao'); agendamentoCli($a->id, 5, 'concluido');
+    $b = clienteCli('Sumido Maria'); agendamentoCli($b->id, 120, 'concluido');
+    $c = clienteCli('Antigo Pedro'); agendamentoCli($c->id, 400, 'concluido');
+
+    Livewire::test(Index::class)
+        ->call('selecionarFaixa', 'mais90')
+        ->assertSet('visitaFiltro', 'mais90')
+        ->assertViewHas('resumo', fn ($r) => $r['bandas']['mais90'] === 2)
+        ->assertSee('Sumido Maria')
+        ->assertSee('Antigo Pedro')
+        ->assertDontSee('Ativo Joao')
+        ->call('selecionarFaixa', 'mais90') // reclicar = limpar
+        ->assertSet('visitaFiltro', 'todos')
+        ->assertSee('Ativo Joao');
+});
+
+it('card Clube: assinantes vs avulsos somam o total', function () {
+    ligarClubeCli();
+    $dono = usuarioComPapel('Dono', ['email' => 'dono@cli.test']);
+    $this->actingAs($dono, 'web');
+
+    $assinante = clienteCli('Assina');
+    clienteCli('Avulso 1');
+    clienteCli('Avulso 2');
+    $plano = PlanoClube::create(['nome' => 'VIP', 'preco_mensal' => 50, 'ativo' => true, 'ilimitado' => true, 'capacidade' => 1]);
+    $assin = AssinaturaClube::create(['cliente_id' => $assinante->id, 'plano_id' => $plano->id, 'status' => 'ativa', 'preco_contratado' => 50, 'data_inicio' => Carbon::today()]);
+    BeneficiarioAssinatura::create(['assinatura_id' => $assin->id, 'cliente_id' => $assinante->id, 'titular' => true]);
+
+    Livewire::test(Index::class)->assertViewHas('resumo', function ($resumo) {
+        return $resumo['total'] === 3 && $resumo['assinantes'] === 1 && $resumo['avulsos'] === 2;
+    });
 });
 
 // ---- Selo e filtro do Clube (titular OU dependente) ----------------------

@@ -50,7 +50,11 @@ class Index extends Component
 
     public string $busca = '';
 
-    /** Faixa de "última visita": todos | nunca | ate30 | de31a90 | mais90. */
+    /**
+     * Filtro de inatividade (último atendimento concluído). Modelo CUMULATIVO: "maisX" =
+     * sem visita há MAIS de X dias (D89). Único filtro, movido pelo dropdown E pelos cards.
+     * Valores: todos | mais15 | mais30 | mais60 | mais90 | mais180 | mais365 | nunca.
+     */
     public string $visitaFiltro = 'todos';
 
     /** Clube (só com o recurso ligado): todos | assinantes | normais. */
@@ -86,6 +90,19 @@ class Index extends Component
 
     /** Tamanho máximo da mensagem avulsa. */
     public const MAX_MENSAGEM = 1000;
+
+    /**
+     * Faixas de inatividade (cumulativas) dos cards e do dropdown — fonte única (D89).
+     * "+X" = sem visita há mais de `dias` dias. A ordem define a exibição.
+     */
+    public const FAIXAS = [
+        'mais15' => ['rotulo' => '+15 dias', 'dias' => 15],
+        'mais30' => ['rotulo' => '+30 dias', 'dias' => 30],
+        'mais60' => ['rotulo' => '+60 dias', 'dias' => 60],
+        'mais90' => ['rotulo' => '+90 dias', 'dias' => 90],
+        'mais180' => ['rotulo' => '+6 meses', 'dias' => 180],
+        'mais365' => ['rotulo' => '+1 ano', 'dias' => 365],
+    ];
 
     public function mount(): void
     {
@@ -220,33 +237,47 @@ class Index extends Component
         $this->clienteAbertoId = $this->clienteAbertoId === $clienteId ? null : $clienteId;
     }
 
+    /** Clique num card de faixa: aplica/alterna o MESMO filtro do dropdown (D89). */
+    public function selecionarFaixa(string $faixa): void
+    {
+        if (! array_key_exists($faixa, self::FAIXAS)) {
+            return;
+        }
+
+        $this->visitaFiltro = $this->visitaFiltro === $faixa ? 'todos' : $faixa;
+        $this->resetPage();
+        $this->clienteAbertoId = null;
+    }
+
+    /** Limpa o filtro de inatividade (volta a "todos"). */
+    public function limparVisita(): void
+    {
+        $this->visitaFiltro = 'todos';
+        $this->resetPage();
+        $this->clienteAbertoId = null;
+    }
+
+    /** Limite (data) de uma faixa: clientes cuja última visita é ANTERIOR a ele. Fonte
+     *  ÚNICA usada pelos cards E pela tabela — garante card↔tabela coerentes. */
+    private function limiteFaixa(string $faixa): ?Carbon
+    {
+        $dias = self::FAIXAS[$faixa]['dias'] ?? null;
+
+        return $dias === null ? null : Carbon::today()->subDays($dias);
+    }
+
     public function render(): View
     {
         $clubeAtivo = tenant_tem_recurso('clube');
 
-        // Última visita = MAX(data_hora_inicio) dos agendamentos CONCLUÍDOS por cliente.
-        // Uma subconsulta agregada (GROUP BY) — sem N+1.
-        $ultimaSub = DB::table('agendamentos')
-            ->where('status', 'concluido')
-            ->groupBy('cliente_id')
-            ->selectRaw('cliente_id, MAX(data_hora_inicio) as ultima_visita');
-
+        // Lista paginada: anexa a última visita (MAX concluído) e o selo de assinante via
+        // subconsultas agregadas — UMA query, sem N+1.
         $query = Cliente::query()
-            ->leftJoinSub($ultimaSub, 'uv', 'uv.cliente_id', '=', 'clientes.id')
+            ->leftJoinSub($this->ultimaVisitaSub(), 'uv', 'uv.cliente_id', '=', 'clientes.id')
             ->select('clientes.*', 'uv.ultima_visita');
 
-        // Selo/filtro de assinante só quando o tenant tem o recurso Clube. Assinante =
-        // titular OU dependente COM conta de uma assinatura ATIVA. beneficiarios_assinatura
-        // já inclui o titular (titular=true, com cliente_id), então cobre os dois casos.
         if ($clubeAtivo) {
-            $assinanteSub = DB::table('beneficiarios_assinatura as ba')
-                ->join('assinaturas_clube as ac', 'ac.id', '=', 'ba.assinatura_id')
-                ->where('ac.status', AssinaturaClube::STATUS_ATIVA)
-                ->whereNotNull('ba.cliente_id')
-                ->groupBy('ba.cliente_id')
-                ->selectRaw('ba.cliente_id');
-
-            $query->leftJoinSub($assinanteSub, 'asg', 'asg.cliente_id', '=', 'clientes.id')
+            $query->leftJoinSub($this->assinanteSub(), 'asg', 'asg.cliente_id', '=', 'clientes.id')
                 ->addSelect(DB::raw('CASE WHEN asg.cliente_id IS NOT NULL THEN 1 ELSE 0 END as assinante'));
 
             if ($this->clubeFiltro === 'assinantes') {
@@ -261,20 +292,20 @@ class Index extends Component
             $query->where('clientes.nome', 'like', '%'.$this->busca.'%');
         }
 
-        // Faixas de última visita, sobre a coluna agregada do join (contíguas; "nunca" =
-        // sem nenhum concluído). Comparações com NULL são falsas → "nunca" cai só no bucket.
-        $hoje = Carbon::today();
-        $d30 = $hoje->copy()->subDays(30);
-        $d90 = $hoje->copy()->subDays(90);
-        match ($this->visitaFiltro) {
-            'nunca' => $query->whereNull('uv.ultima_visita'),
-            'ate30' => $query->where('uv.ultima_visita', '>=', $d30),
-            'de31a90' => $query->where('uv.ultima_visita', '<', $d30)->where('uv.ultima_visita', '>=', $d90),
-            'mais90' => $query->where('uv.ultima_visita', '<', $d90),
-            default => null,
-        };
+        // Filtro de inatividade (cumulativo): "maisX" = última visita ANTERIOR ao limite;
+        // "nunca" = sem nenhum concluído (NULL). Mesma régua dos cards (limiteFaixa) →
+        // o número do card bate com as linhas que a tabela lista.
+        if ($this->visitaFiltro === 'nunca') {
+            $query->whereNull('uv.ultima_visita');
+        } elseif (($limite = $this->limiteFaixa($this->visitaFiltro)) !== null) {
+            $query->where('uv.ultima_visita', '<', $limite);
+        }
 
         $clientes = $query->orderBy('clientes.nome')->paginate(self::POR_PAGINA);
+
+        // Cards de resumo (total, faixas de inatividade, Clube) — UMA query agregada,
+        // independente da busca/filtro. Mesmo critério de última visita da tabela.
+        $resumo = $this->resumo($clubeAtivo);
 
         // Detalhe: últimos agendamentos do cliente aberto. UMA query, só quando expandido.
         // Achatado em array (serviços já concatenados) para a view ficar sem lógica.
@@ -299,8 +330,77 @@ class Index extends Component
             'detalhe' => $detalhe,
             'clubeAtivo' => $clubeAtivo,
             'whatsappAtivo' => tenant_tem_recurso('whatsapp'),
+            'resumo' => $resumo,
+            'faixas' => self::FAIXAS,
             'statusLabel' => AgendaIndex::STATUS_LABEL,
             'statusCor' => AgendaIndex::STATUS_COR,
         ]);
+    }
+
+    /** Subconsulta: última visita (MAX concluído) por cliente. Builder novo a cada uso. */
+    private function ultimaVisitaSub(): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('agendamentos')
+            ->where('status', 'concluido')
+            ->groupBy('cliente_id')
+            ->selectRaw('cliente_id, MAX(data_hora_inicio) as ultima_visita');
+    }
+
+    /**
+     * Subconsulta: clientes assinantes (titular OU dependente com conta de uma assinatura
+     * ATIVA). beneficiarios_assinatura já inclui o titular (titular=true, com cliente_id).
+     */
+    private function assinanteSub(): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('beneficiarios_assinatura as ba')
+            ->join('assinaturas_clube as ac', 'ac.id', '=', 'ba.assinatura_id')
+            ->where('ac.status', AssinaturaClube::STATUS_ATIVA)
+            ->whereNotNull('ba.cliente_id')
+            ->groupBy('ba.cliente_id')
+            ->selectRaw('ba.cliente_id');
+    }
+
+    /**
+     * Resumo dos cards numa ÚNICA query agregada (sem N+1): total, contagem por faixa de
+     * inatividade (cumulativa, mesma régua da tabela) e, com o Clube, assinantes/avulsos.
+     *
+     * @return array{total:int, bandas:array<string,int>, assinantes:?int, avulsos:?int}
+     */
+    private function resumo(bool $clubeAtivo): array
+    {
+        $base = DB::table('clientes')
+            ->leftJoinSub($this->ultimaVisitaSub(), 'uv', 'uv.cliente_id', '=', 'clientes.id')
+            ->select('uv.ultima_visita');
+
+        if ($clubeAtivo) {
+            $base->leftJoinSub($this->assinanteSub(), 'asg', 'asg.cliente_id', '=', 'clientes.id')
+                ->addSelect(DB::raw('CASE WHEN asg.cliente_id IS NOT NULL THEN 1 ELSE 0 END as assinante'));
+        }
+
+        $selects = ['COUNT(*) as total'];
+        $bind = [];
+        foreach (array_keys(self::FAIXAS) as $chave) {
+            $selects[] = "SUM(CASE WHEN ultima_visita < ? THEN 1 ELSE 0 END) as {$chave}";
+            $bind[] = $this->limiteFaixa($chave)->toDateTimeString();
+        }
+        if ($clubeAtivo) {
+            $selects[] = 'SUM(assinante) as assinantes';
+        }
+
+        $row = DB::query()->fromSub($base, 'c')->selectRaw(implode(', ', $selects), $bind)->first();
+
+        $total = (int) ($row->total ?? 0);
+        $bandas = [];
+        foreach (array_keys(self::FAIXAS) as $chave) {
+            $bandas[$chave] = (int) ($row->{$chave} ?? 0);
+        }
+        $assinantes = $clubeAtivo ? (int) ($row->assinantes ?? 0) : null;
+
+        return [
+            'total' => $total,
+            'bandas' => $bandas,
+            'assinantes' => $assinantes,
+            'avulsos' => $clubeAtivo ? $total - $assinantes : null,
+        ];
     }
 }

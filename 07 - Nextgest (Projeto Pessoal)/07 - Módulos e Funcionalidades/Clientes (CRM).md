@@ -74,6 +74,20 @@ Gerente/Recepção) — tanto editar quanto enviar WhatsApp.
   `MensagemWhatsapp::AVULSO`; rótulo "Mensagem avulsa" no Histórico. Testes:
   `tests/Feature/Painel/ClientesAcoesTest.php` (11).
 
+## Fatia 2.5 — cards de resumo + filtro de inatividade (D89) — ENTREGUE
+
+Resumo gerencial no topo da aba (só UI/contagem).
+- **Cards:** **Total** de clientes; **Inatividade** com faixas **cumulativas** clicáveis (+15/+30/+60/
+  +90 dias, +6 meses, +1 ano = "sem visita há mais de X"); **Clube** (assinantes vs avulsos), só com o
+  recurso. Contagens numa **única query agregada** (`fromSub` + `SUM(CASE …)`), sem N+1, global (não
+  depende da busca/filtro).
+- **Filtro único:** `visitaFiltro` virou cumulativo (`mais15…mais365`, `nunca`, `todos`), movido pelo
+  **dropdown E pelos cards** (`selecionarFaixa`/`limparVisita`). O helper `limiteFaixa()` é a régua
+  ÚNICA usada pelo card e pela tabela → **coerência card↔tabela** (o nº do card = linhas listadas).
+  Substituiu os buckets antigos (até 30 / 31–90). "Nunca" fica fora das faixas (opção própria).
+- Botão **"Ver"** uniformizado com Editar/WhatsApp (`eye`/`eye-slash`).
+- Testes em `tests/Feature/Painel/ClientesTest.php` (filtro cumulativo + cards + coerência).
+
 ## Roadmap (próximas fatias — NÃO entregues)
 - **Fatia 3 (sensível):** "resetar senha do cliente" — caminho **seguro**: disparar link/processo de
   redefinição para o **próprio cliente** (o dono **não** define/vê a senha). Auditoria-primeiro.
