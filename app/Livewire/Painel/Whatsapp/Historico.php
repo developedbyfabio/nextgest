@@ -61,10 +61,11 @@ class Historico extends Component
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        // Catálogo p/ o filtro de automação (+ "teste"), com rótulos amigáveis.
+        // Catálogo p/ o filtro de automação (+ "teste" e "avulso"), com rótulos amigáveis.
         $automacoes = collect(AutomacaoWhatsapp::cases())
             ->mapWithKeys(fn ($a) => [$a->value => $a->rotulo()])
-            ->put('teste', 'Teste manual');
+            ->put('teste', 'Teste manual')
+            ->put(\App\Models\MensagemWhatsapp::AVULSO, 'Mensagem avulsa');
 
         return view('livewire.painel.whatsapp.historico', [
             'mensagens' => $mensagens,

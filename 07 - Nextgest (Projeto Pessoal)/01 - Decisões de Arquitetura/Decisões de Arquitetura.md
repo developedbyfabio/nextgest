@@ -1687,3 +1687,35 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   visita usa concluído e ignora cancelado/"nunca"; busca; faixas de visita; selo do Clube cobre
   titular **e** dependente, cancelada não conta, sem recurso não aparece; detalhe abre/fecha; isolamento
   por tenant; sem ações. Smoke HTTP cobre a rota. Suíte **665/665**; build ok. **Só leitura. Sem deploy.**
+
+## D88 — Clientes (CRM) Fatia 2: editar cliente + WhatsApp avulso (1 a 1)
+> Primeiras AÇÕES sobre o cliente na aba Clientes (D87): editar dados e enviar um WhatsApp manual
+> 1 a 1. O avulso passa pelos MESMOS freios anti-ban dos envios automáticos. Ver [[Clientes (CRM)]]
+> e [[WhatsApp (Evolution) no Nextgest]].
+- **Editar cliente:** modal no Clientes\Index com `nome`/`email`/`telefone`. Gate por **`ver_clientes`**
+  (`can()`, nunca papel) — mesmo da tela (Dono/Gerente/Recepção). Validação: e-mail válido + único
+  (ignorando o próprio); telefone via regra `App\Rules\CelularBr`, **normalizado para dígitos** ao
+  salvar (canônico BR; o gateway prefixa o 55). E-mail vazio → `null`.
+- **WhatsApp avulso (decisão do Fabio):** gate **`ver_clientes`** (Recepção também envia) + só com o
+  recurso `whatsapp` ligado. Manual, 1 a 1, texto livre, pelo detalhe do cliente.
+- **Mesmo ponto de teto (anti-ban, CRÍTICO):** serviço novo `App\Services\WhatsApp\EnvioAvulso` é o
+  único caminho do avulso e: exige **conexão** (`status()==='open'`), checa **teto/dia** via
+  `Aquecimento::restanteHoje` e **teto/minuto** (`limite_por_minuto`, só avulsos), envia (`WhatsAppService`,
+  D75) e **registra no histórico** (D83, `automacao='avulso'`). Para o avulso comer o MESMO orçamento
+  diário combinado, `Aquecimento::consumoHoje()` passou a somar os avulsos de hoje (enviado|falhou) —
+  assim o avulso **não fura** o limite e ainda reduz o que as automações podem enviar (e vice-versa).
+- **Opt-out (D86/D83):** o avulso é transacional/manual → olha **só** `whatsapp_optout` (geral). Manda
+  mesmo para quem está em opt-out, **MAS** com **confirmação** (modal D65 `x-ng.confirmar`): `tentarEnviar`
+  abre o modal se opt-out; `confirmarEnvioOptout` confirma. Sem opt-out → envia direto.
+- **Erro tratado:** bloqueio/falha vira `WhatsAppException` com mensagem amigável (toast `danger`),
+  **sem 500 e sem vazar segredo**; falha no envio grava `falhou` no histórico. Modais abertos/fechados
+  de PHP com `Flux::modal()->show()/close()` + `Flux::toast()` (padrão de `Unidades\Index`).
+- **Coluna `mensagens_whatsapp.automacao`** é string livre (sem enum no DB) → `'avulso'` direto
+  (constante `MensagemWhatsapp::AVULSO`). Histórico (D83) ganhou o rótulo "Mensagem avulsa" (filtro+linha).
+- **Fora do escopo:** reset de senha (Fatia 3, sensível) e campanha de reativação (depende do broadcast).
+- **Verificação:** `ClientesAcoesTest` (11) — edição (validação/normalização, Recepção edita); avulso
+  feliz + histórico; **avulso consome o orçamento combinado** (`consumoHoje`); opt-out só envia após
+  confirmar; **teto/dia e teto/minuto bloqueiam** (não fura o anti-ban); desconectado não envia/avisa;
+  falha grava `falhou`; sem recurso não renderiza o botão. `ClientesTest` ajustado (a aba agora TEM
+  editar/WhatsApp; segue sem reset/campanha). Sem regressão (D75/D79/D82/D83/D87). Suíte **676/676**;
+  build ok. **Dev. Sem deploy.**

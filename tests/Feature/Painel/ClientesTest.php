@@ -234,15 +234,14 @@ it('isolamento: só lista clientes do tenant atual', function () {
         ->assertDontSee('Beta Outro Tenant');
 });
 
-// ---- Sem ações nesta fatia ------------------------------------------------
+// ---- Ações sensíveis ainda NÃO entram (reset de senha = Fatia 3; campanha depois) -----
 
-it('não expõe ações (editar / resetar senha / WhatsApp) nesta fatia', function () {
+it('não expõe reset de senha nem campanha (fatias seguintes)', function () {
     $dono = usuarioComPapel('Dono', ['email' => 'dono@cli.test']);
     $this->actingAs($dono, 'web');
     clienteCli('Cliente Qualquer');
 
     Livewire::test(Index::class)
-        ->assertDontSee('Editar')
-        ->assertDontSee('Resetar')
-        ->assertDontSee('Enviar WhatsApp');
+        ->assertDontSee('Resetar senha')
+        ->assertDontSee('Reativar inativos');
 });

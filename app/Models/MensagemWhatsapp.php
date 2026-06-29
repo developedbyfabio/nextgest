@@ -28,6 +28,9 @@ class MensagemWhatsapp extends Model
 
     public const DESCARTADO = 'descartado';
 
+    /** Automação "avulsa": envio manual 1 a 1 pela aba Clientes (D88). */
+    public const AVULSO = 'avulso';
+
     protected $fillable = [
         'automacao',
         'agendamento_id',

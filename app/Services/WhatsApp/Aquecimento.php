@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\WhatsApp;
 
 use App\Models\LembreteServico;
+use App\Models\MensagemWhatsapp;
 use App\Models\PedidoAvaliacao;
 use App\Models\WhatsappConfig;
 
@@ -69,11 +70,21 @@ class Aquecimento
         return $curva === null ? $normal : min($normal, $curva);
     }
 
-    /** Envios JÁ feitos/enfileirados hoje (COMBINADO: lembrete + avaliação) — contexto do tenant. */
+    /**
+     * Envios JÁ feitos/enfileirados hoje (orçamento diário ÚNICO, COMBINADO) — contexto do
+     * tenant. Soma lembrete + avaliação (enfileirados hoje) + WhatsApp avulso (D88) que
+     * realmente saiu/tentou sair hoje (enviado|falhou). Assim o avulso NÃO é porta lateral
+     * pra furar o teto: consome o mesmo orçamento e reduz o que as automações podem enviar.
+     */
     public function consumoHoje(): int
     {
         return LembreteServico::query()->whereDate('enfileirado_em', today())->count()
-            + PedidoAvaliacao::query()->whereDate('enfileirado_em', today())->count();
+            + PedidoAvaliacao::query()->whereDate('enfileirado_em', today())->count()
+            + MensagemWhatsapp::query()
+                ->where('automacao', MensagemWhatsapp::AVULSO)
+                ->whereIn('status', [MensagemWhatsapp::ENVIADO, MensagemWhatsapp::FALHOU])
+                ->whereDate('created_at', today())
+                ->count();
     }
 
     /** Quanto ainda pode enviar hoje (>= 0), já com o aquecimento + consumo combinado. */

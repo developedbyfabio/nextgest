@@ -52,9 +52,29 @@ Aba **"Clientes"** no grupo **Gestão** (rota `painel.clientes`). **Só visualiz
   `resources/views/components/layouts/painel.blade.php` (grupo Gestão).
 - Testes: `tests/Feature/Painel/ClientesTest.php` (11) + rota no `HttpSmokeTest`.
 
+## Fatia 2 — editar cliente + WhatsApp avulso (1 a 1) — ENTREGUE (D88)
+
+Primeiras AÇÕES sobre o cliente, no detalhe/linha da tabela. Gate por **`ver_clientes`** (Dono/
+Gerente/Recepção) — tanto editar quanto enviar WhatsApp.
+
+### Editar cliente
+- Modal com `nome`/`email`/`telefone`. E-mail válido + único (ignora o próprio); telefone via
+  `App\Rules\CelularBr`, **normalizado para dígitos** ao salvar (o gateway prefixa o 55). Toast de sucesso.
+
+### WhatsApp avulso
+- Botão **Enviar WhatsApp** (só com o recurso `whatsapp` ligado) → modal de texto livre.
+- Passa pelos MESMOS freios anti-ban via `App\Services\WhatsApp\EnvioAvulso`: exige conexão, consome
+  **teto/dia** (`Aquecimento::restanteHoje`) e **teto/minuto**, e **registra no histórico** (D83,
+  `automacao='avulso'`). O avulso entra em `Aquecimento::consumoHoje()` → **orçamento diário combinado**
+  (não fura o limite; reduz o que as automações enviam, e vice-versa).
+- **Opt-out** (só o geral `whatsapp_optout`, D83): manda mesmo, mas com **confirmação** (modal D65).
+  `tentarEnviar` → se opt-out abre a confirmação; `confirmarEnvioOptout` confirma. Sem opt-out → direto.
+- Erro/timeout/desconectado → `WhatsAppException` amigável (toast), sem 500/segredo; falha grava `falhou`.
+- Arquivos: `app/Services/WhatsApp/EnvioAvulso.php`; `Aquecimento::consumoHoje()` estendido;
+  `MensagemWhatsapp::AVULSO`; rótulo "Mensagem avulsa" no Histórico. Testes:
+  `tests/Feature/Painel/ClientesAcoesTest.php` (11).
+
 ## Roadmap (próximas fatias — NÃO entregues)
-- **Fatia 2:** editar dados do cliente + **WhatsApp avulso** para um cliente (reusa o envio do
-  [[WhatsApp (Evolution) no Nextgest]]).
 - **Fatia 3 (sensível):** "resetar senha do cliente" — caminho **seguro**: disparar link/processo de
   redefinição para o **próprio cliente** (o dono **não** define/vê a senha). Auditoria-primeiro.
 - **Reativação de inativos** ("faz tempo que não vem"): é **campanha segmentada** — encaixa **após** o

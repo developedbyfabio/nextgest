@@ -78,8 +78,14 @@
                                 </flux:table.cell>
                             @endif
                             <flux:table.cell class="text-right">
-                                <flux:button wire:click="alternarDetalhe({{ $cliente->id }})" size="sm" variant="ghost"
-                                    :icon="$aberto ? 'chevron-up' : 'chevron-down'">{{ $aberto ? 'Fechar' : 'Ver' }}</flux:button>
+                                <div class="flex flex-wrap items-center justify-end gap-1">
+                                    <flux:button wire:click="abrirEditar({{ $cliente->id }})" size="sm" variant="ghost" icon="pencil-square">Editar</flux:button>
+                                    @if ($whatsappAtivo)
+                                        <flux:button wire:click="abrirWhatsapp({{ $cliente->id }})" size="sm" variant="ghost" icon="chat-bubble-left-right">WhatsApp</flux:button>
+                                    @endif
+                                    <flux:button wire:click="alternarDetalhe({{ $cliente->id }})" size="sm" variant="ghost"
+                                        :icon="$aberto ? 'chevron-up' : 'chevron-down'">{{ $aberto ? 'Fechar' : 'Ver' }}</flux:button>
+                                </div>
                             </flux:table.cell>
                         </flux:table.row>
 
@@ -110,4 +116,58 @@
             <div>{{ $clientes->links() }}</div>
         @endif
     </div>
+
+    {{-- Modal: editar cliente (gated por ver_clientes; valida nome/email/telefone BR). --}}
+    <flux:modal name="editar-cliente" class="md:w-96">
+        <form wire:submit="salvarEditar" class="flex flex-col gap-4">
+            <flux:heading size="lg">Editar cliente</flux:heading>
+            <flux:input wire:model="editNome" label="Nome" required />
+            <flux:input wire:model="editEmail" type="email" label="E-mail (opcional)" placeholder="email@exemplo.com" />
+            <flux:input wire:model="editTelefone" label="Telefone (WhatsApp)" placeholder="(DDD) 9 0000-0000" required />
+            <div class="flex justify-end gap-2">
+                <flux:modal.close><flux:button variant="ghost">Cancelar</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary" icon="check">Salvar</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Modal: WhatsApp avulso (só com o recurso ligado). O envio passa pelos freios
+         anti-ban (EnvioAvulso); opt-out exige confirmação (D65). --}}
+    @if ($whatsappAtivo)
+        <flux:modal name="whatsapp-cliente" class="md:w-[30rem]">
+            <div class="flex flex-col gap-4">
+                <div>
+                    <flux:heading size="lg">Enviar WhatsApp</flux:heading>
+                    <flux:subheading>Para {{ $waNome }}</flux:subheading>
+                </div>
+
+                @unless ($waConectado)
+                    <flux:callout variant="warning" icon="exclamation-triangle">
+                        O WhatsApp pode não estar conectado. Se o envio falhar, conecte na aba WhatsApp.
+                    </flux:callout>
+                @endunless
+
+                @if ($waOptout)
+                    <flux:callout variant="warning" icon="bell-slash">
+                        Este cliente optou por <strong>não</strong> receber mensagens. Ao enviar, será pedida uma confirmação.
+                    </flux:callout>
+                @endif
+
+                <flux:textarea wire:model="msgTexto" label="Mensagem" rows="4"
+                    placeholder="Escreva a mensagem que será enviada ao cliente..." />
+
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close><flux:button variant="ghost">Cancelar</flux:button></flux:modal.close>
+                    <flux:button wire:click="tentarEnviar" variant="primary" icon="paper-airplane">Enviar</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+
+        {{-- Confirmação D65 para enviar a cliente em opt-out. --}}
+        <x-ng.confirmar name="confirmar-optout-wa" tom="amber" icone="bell-slash"
+            titulo="Cliente em opt-out"
+            texto="Este cliente optou por não receber mensagens. Confirmar o envio mesmo assim?">
+            <flux:button wire:click="confirmarEnvioOptout" variant="primary" icon="paper-airplane">Enviar mesmo assim</flux:button>
+        </x-ng.confirmar>
+    @endif
 </div>

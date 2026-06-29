@@ -164,6 +164,15 @@ php artisan nextgest:whatsapp-teste {tenant} {numero} [--mensagem="..."]
 - **Tela Opt-out** agora gerencia os **dois** consentimentos por cliente (colunas Tudo/Marketing),
   bloquear imediato e liberar com confirmação (D65). 6 testes (`MarketingOptoutTest`).
 
+## WhatsApp avulso 1 a 1 (D88) — pela aba Clientes
+- Envio **manual, 1 a 1, texto livre** pelo detalhe do cliente (ver [[Clientes (CRM)]]). Serviço
+  `App\Services\WhatsApp\EnvioAvulso` é o **ponto único** que aplica os MESMOS freios anti-ban:
+  conexão obrigatória, **teto/dia** (`Aquecimento::restanteHoje`) + **teto/minuto**, e histórico (D83,
+  `automacao='avulso'`).
+- **Não fura o limite:** o avulso entra em `Aquecimento::consumoHoje()` → orçamento diário **combinado**
+  com lembrete/avaliação. Opt-out (só o geral) → envia com **confirmação** (D65). Gate `ver_clientes`
+  (Recepção também), só com o recurso `whatsapp`. 11 testes (`ClientesAcoesTest`).
+
 ## Próximas fatias
 - **Conversas tipo WhatsApp Web:** **recebimento** via webhook Evolution exposto (o maior; exige a
   decisão de exposição/produção da Evolution). Hoje **nada é recebido**.
