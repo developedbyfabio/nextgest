@@ -1,8 +1,8 @@
 # Identidade Visual do Estabelecimento (Tema)
 
 > Projeto: [[Nextgest - Visão Geral]] · Decisões: [[Decisões de Arquitetura]]
-> (D28 tema, D30 templates, D35 arquivos, **D36 modo claro/escuro**, D90 favicon) ·
-> Atualizado: 2026-07-01.
+> (D28 tema, D30 templates, D35 arquivos, **D36 modo claro/escuro**, D90 favicon,
+> D91 botão secundário) · Atualizado: 2026-07-01.
 
 > [!important] Modelo ATUAL (Etapa D, D36) — substitui parte das Etapas A/B
 > - **Marca do tenant = ACENTO** (`--cor-principal` / `--color-accent`) **+ logo +
@@ -93,7 +93,11 @@ portal do cliente — **fonte de verdade única**.
   - `x-portal.como-funciona` — passos. `x-portal.servico` — linha de serviço.
   - `x-portal.tela-inicio` — composição da tela do visitante (capa + como-funciona +
     chamadas). **A home real do visitante e a tela 1 do carrossel usam ESTE mesmo
-    componente** (sem markup paralelo).
+    componente** (sem markup paralelo). As duas chamadas: **"Criar conta e agendar"**
+    (primária, cor principal) e **"Já tenho conta"** (secundária, **botão sólido na cor
+    secundária** — D91): reusa o botão primário do Flux com `--color-accent` sobrescrito
+    localmente p/ `--cor-secundaria` + `--cor-sobre-secundaria` (mesma altura/raio/estados;
+    sólido dispensa a `.ng-leitura` sobre a foto).
   - O **fundo** (`fundo_imagem`) entra no `<body>` pelo layout do portal (e na moldura da
     prévia). Imagens servidas por `Aparencia::urlArquivo()` (rota por caminho, anti
     path-traversal).
@@ -182,8 +186,10 @@ CRUAS), o favicon é **processado no upload**.
 ## Como é aplicado (modelo atual — Etapa D)
 - Os layouts (portal, painel, auth) injetam no `<body>`, via
   **`Aparencia::cssVarsAcento()`**, só a **marca**: `--cor-principal`,
-  `--cor-secundaria`, `--cor-sobre-principal`, `--color-accent*` e a **tipografia**
-  (`font-family`/`font-size`). Constante nos dois modos.
+  `--cor-secundaria`, `--cor-sobre-principal`, **`--cor-sobre-secundaria`**,
+  `--color-accent*` e a **tipografia** (`font-family`/`font-size`). Constante nos dois
+  modos. `--cor-sobre-secundaria` = contraste WCAG (`corDeContraste`) sobre a secundária,
+  para texto legível em botões sólidos na cor secundária (D91).
 - As **superfícies** (`--cor-fundo`, `--cor-superficie`, `--cor-texto`,
   `--cor-texto-suave`) são **tokens** definidos em `app.css` (`:root` claro / `.dark`
   escuro). Como as views e as classes `.ng-*` já usavam essas vars, elas seguem o

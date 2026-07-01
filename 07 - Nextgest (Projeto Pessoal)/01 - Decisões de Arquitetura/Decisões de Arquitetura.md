@@ -1774,3 +1774,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   do tenant com favicon próprio, outro tenant sem favicon → fallback (isolamento), logins (cliente/
   painel) idem, e o arquivo servido 200/`image/png`/immutable. Suíte **687/687**; build ok. **Dev, sem
   deploy.**
+
+## D91 — Portal: "Já tenho conta" vira botão sólido na cor secundária
+> Na tela inicial do visitante (portal), a ação secundária deixou de ser texto/contorno e virou
+> **botão sólido na cor SECUNDÁRIA (realces)** do tema, mantendo a hierarquia (primária = principal).
+> Só aparência do botão. Ver [[Identidade Visual do Estabelecimento (Tema)]].
+- **Só um partial:** `resources/views/components/portal/tela-inicio.blade.php` — **fonte de verdade
+  única** da home do visitante E da tela 1 da prévia da Aparência (a mudança reflete nos dois sem markup
+  paralelo).
+- **Reuso do botão primário do Flux, não CSS novo:** o "Já tenho conta" é um `flux:button variant=primary`
+  com o acento **sobrescrito localmente** via `style="--color-accent: var(--cor-secundaria);
+  --color-accent-content: var(--cor-secundaria); --color-accent-foreground: var(--cor-sobre-secundaria)"`.
+  Como o botão primário do Flux é construído sobre `--color-accent`/`--color-accent-foreground`, isso o
+  recolore inteiro (fundo, texto e **hover/focus/active** derivados) para a secundária — **mesma altura
+  (h-10), raio e largura** da primária, sem hardcode de cor.
+- **Contraste automático:** nova var `--cor-sobre-secundaria` (em `Aparencia::mapaVars`/`cssVarsAcento` +
+  default no `app.css :root`), calculada por `corDeContraste()` (luminância WCAG) sobre a secundária —
+  texto legível seja a secundária clara ou escura.
+- **Sólido dispensa `.ng-leitura`:** o fundo opaco da secundária é legível sobre a imagem de fundo do
+  portal (a camada de leitura era p/ o botão fantasma antigo). Constante em claro/escuro (é marca).
+- **Fora de escopo mantido:** nada de login/registro/rotas; só o estilo do botão. Não reverte D36.
+- **Verificação:** testes de tema/prévia/portal/aparência **59** verdes; **HTTP real** no
+  `barbeariateste` — os dois botões são o mesmo componente Flux, o secundário com o `style` de acento
+  secundário e `--cor-sobre-secundaria: #18181b` emitido no `<body>`. Build ok. **Dev, sem deploy.**

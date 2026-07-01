@@ -265,6 +265,7 @@ class Aparencia
     protected static function mapaVars(array $a): array
     {
         $sobre = self::corDeContraste($a['cor_principal']);
+        $sobreSecundaria = self::corDeContraste($a['cor_secundaria']);
 
         return [
             '--cor-principal' => $a['cor_principal'],
@@ -275,6 +276,8 @@ class Aparencia
             '--cor-texto-suave' => $a['cor_texto_suave'],
             // Cor de frente legível sobre a cor principal (6B) — texto em botões etc.
             '--cor-sobre-principal' => $sobre,
+            // Idem sobre a cor SECUNDÁRIA — p/ o botão secundário sólido do portal.
+            '--cor-sobre-secundaria' => $sobreSecundaria,
             // Faz os componentes Flux (botões primary, foco, links) usarem a marca.
             '--color-accent' => $a['cor_principal'],
             '--color-accent-content' => $a['cor_principal'],
@@ -308,6 +311,7 @@ class Aparencia
         $a = $a ?? self::doTenant();
 
         $marca = ['--cor-principal', '--cor-secundaria', '--cor-sobre-principal',
+            '--cor-sobre-secundaria',
             '--color-accent', '--color-accent-content', '--color-accent-foreground',
             'font-family', 'font-size'];
 

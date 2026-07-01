@@ -67,6 +67,7 @@
         --cor-principal: var(--color-accent);
         --cor-secundaria: var(--color-accent);
         --cor-sobre-principal: var(--color-white);
+        --cor-sobre-secundaria: var(--color-white);
     }
 
     .dark {

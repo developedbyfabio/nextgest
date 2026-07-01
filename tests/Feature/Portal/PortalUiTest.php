@@ -96,3 +96,32 @@ it('confirmar no modal cancela e limpa o alvo', function () {
 
     expect($ag->fresh()->status)->toBe('cancelado');
 });
+
+it('a tela inicial do visitante usa botão SÓLIDO na cor secundária para "Já tenho conta" (D91)', function () {
+    // Visitante (deslogado): a home mostra as duas chamadas. A secundária virou botão
+    // sólido na cor SECUNDÁRIA — reusa o botão primário do Flux com o acento sobrescrito
+    // localmente (não mais ghost/contorno com camada de leitura).
+    $html = Livewire::test(Home::class)->html();
+
+    $pos = strpos($html, 'Já tenho conta');
+    expect($pos)->not->toBeFalse();
+
+    // Cauda do <a> do botão (o style fica logo antes do rótulo).
+    $botao = substr($html, max(0, $pos - 400), 400);
+
+    expect($botao)->toContain('--color-accent: var(--cor-secundaria)')
+        ->toContain('--color-accent-foreground: var(--cor-sobre-secundaria)')
+        ->not->toContain('ng-leitura'); // o botão sólido dispensa a camada de leitura
+});
+
+it('cssVarsAcento expõe --cor-sobre-secundaria (contraste WCAG sobre a secundária)', function () {
+    // Secundária CLARA (#0ea5e9) → texto escuro legível.
+    Aparencia::salvar(['cor_secundaria' => '#0ea5e9']);
+    expect(Aparencia::cssVarsAcento(Aparencia::doTenant()))
+        ->toContain('--cor-sobre-secundaria: #18181b');
+
+    // Secundária ESCURA (#111827) → texto branco legível.
+    Aparencia::salvar(['cor_secundaria' => '#111827']);
+    expect(Aparencia::cssVarsAcento(Aparencia::doTenant()))
+        ->toContain('--cor-sobre-secundaria: #ffffff');
+});
