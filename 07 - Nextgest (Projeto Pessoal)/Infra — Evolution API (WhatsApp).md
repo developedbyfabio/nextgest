@@ -1,9 +1,10 @@
 ---
 projeto: Nextgest
 tipo: infra
-ambiente: dev
-status: no ar (dev, fechado no localhost)
+ambiente: dev + produção
+status: no ar (dev localhost; produção nextgest.com.br via loopback, exposição mínima)
 criado: 2026-06-27
+atualizado: 2026-07-01
 tags: [nextgest, whatsapp, evolution, docker, infra, dev]
 ---
 
@@ -66,9 +67,35 @@ O Nextgest fala com esta Evolution via `config/whatsapp.php` (lendo `EVOLUTION_B
 Cada salão é a instância `ng_{tenantId}`. Detalhes em [[WhatsApp (Evolution) no Nextgest]].
 Instâncias já criadas no dev pela integração: `nextgest_teste` (prova da Fatia 0) e `ng_barbeariateste`.
 
+## Produção (Bloco 2 — 2026-07-01) — NO AR
+> VPS Hostinger (`nextgest.com.br`, `187.127.24.165`). Espelha o dev, com endurecimento.
+- **Pasta:** `/srv/www/evolution/` (fora do repo Nextgest) — `docker-compose.yml`, `.env` (600), `.gitignore`.
+- **Imagem:** `evoapicloud/evolution-api:v2.3.7` (mesma tag do dev). Postgres `16-alpine` + Redis
+  `7-alpine` **dedicados** (rede interna `evonet`, **sem porta publicada**). Volumes:
+  `evolution_instances`/`evolution_pgdata`/`evolution_redis`.
+- **Docker:** instalado do repo oficial (v29.x). **data-root padrão `/var/lib/docker`** — a partição
+  `/` tem ~88 GB livres (diferente do dev, não precisou realocar).
+- **Exposição MÍNIMA (mais segura que o previsto):** app e Evolution na **mesma VPS** → o Nextgest
+  fala por **loopback** (`EVOLUTION_BASE_URL=http://127.0.0.1:8088`); a chamada **nunca sai da
+  máquina**. A API da Evolution **não tem NENHUMA rota pública** (nem via Nginx) — o QR é servido
+  pelo **painel (HTTPS já existente)**, não pela Evolution direto. Superfície pública da Evolution = **zero**.
+- **Webhook de entrada:** não usado hoje (app só envia) → **preparado e fechado** (sem rota pública).
+- **Validação de segurança:** raiz local 200; endpoint protegido **sem key → 401**; **com key → 200**;
+  do **IP público:8088 → 000 (recusado)**; Postgres/Redis não publicam porta.
+- **Firewall (`ufw` ATIVO — aplicado 2026-07-01):** default **deny incoming**, allow outgoing.
+  Liberados só **22/80/443** (v4+v6); resto negado. Defesa em profundidade por cima do bind loopback.
+  Pós-ativação validado: site HTTPS 200, app→Evolution (loopback) 200, `8088` de fora → 000.
+- **Segredos:** `AUTHENTICATION_API_KEY` + `POSTGRES_PASSWORD` gerados no servidor (`openssl rand`),
+  só no `/srv/www/evolution/.env` (600). A key global também no `.env` do Nextgest
+  (`EVOLUTION_API_KEY`) — nunca no banco de tenant, nunca impressa.
+- **Instância do tenant de teste:** `ng_teste` conectada (`status=open`) e **envio real validado**
+  (`nextgest:whatsapp-teste teste <numero>` → chegou). Scheduler roda sem erro com a Evolution no ar.
+- **Operar:** `cd /srv/www/evolution && docker compose ps|logs|restart` (mesmos comandos do dev).
+
 ## Limites / próximas fatias
-- **Só dev**, fechado no localhost. **Produção** (com exposição/segurança blindada — TLS, firewall,
-  domínio) fica para depois, à parte.
+- **Dev**: fechado no localhost. **Produção**: no ar (ver seção acima), exposição mínima + loopback.
+  Roadmap seguinte: **broadcast real** (maior risco de ban) e **conversas via webhook** (exige a
+  camada de recebimento; a Evolution de produção já existe).
 - Roadmap WhatsApp no Nextgest: (1) `WhatsAppService` + driver Evolution (config por tenant, enviar
   msg de teste); (2) tela do QR no painel (gated pelo recurso `whatsapp`/plano) + monitorar sessão;
   (3) lembrete antes do horário (job agendado, opt-in, idempotente, fuso correto).
