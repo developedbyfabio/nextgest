@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Middleware\EscoparAutenticacaoPorTenant;
-use App\Http\Middleware\ExigirCpfCliente;
+use App\Http\Middleware\ExigirPerfilCompletoCliente;
 use App\Http\Middleware\GarantirTenantAtivo;
 use App\Http\Middleware\InicializarTenancyArquivosLivewire;
 use App\Http\Middleware\VerificaRecurso;
@@ -91,8 +91,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // (idem 'recurso:clube' / 'recurso:gateway'). Ver App\Http\Middleware\VerificaRecurso.
         $middleware->alias([
             'recurso' => VerificaRecurso::class,
-            // Gate de CPF do cliente: ->middleware('cpf.cliente') nas rotas do portal.
-            'cpf.cliente' => ExigirCpfCliente::class,
+            // Gate de perfil completo do cliente (CPF + telefone) nas rotas do portal.
+            // `perfil.completo` é o canônico; `cpf.cliente` (D94) segue como alias legado.
+            'perfil.completo' => ExigirPerfilCompletoCliente::class,
+            'cpf.cliente' => ExigirPerfilCompletoCliente::class,
         ]);
 
         // Webhooks de gateways externos não enviam token CSRF.

@@ -79,9 +79,10 @@ Route::middleware(['tenant'])
         /*
         | Portal do cliente (guard `cliente`) — mobile-first.
         */
-        // Gate de CPF (D94): cliente logado sem CPF é levado a completar antes de
-        // usar o portal (home + agendar). Visitante passa direto.
-        Route::get('/', PortalHome::class)->middleware('cpf.cliente')->name('tenant.home');
+        // Gate de perfil completo (D94 CPF + D96 telefone): cliente logado com perfil
+        // incompleto é levado a completar antes de usar o portal (home + agendar).
+        // Visitante passa direto.
+        Route::get('/', PortalHome::class)->middleware('perfil.completo')->name('tenant.home');
 
         // Documentos legais (D93) — PÚBLICOS (sem login), conteúdo único por tenant na URL.
         Route::get('politica-de-privacidade', PoliticaPrivacidade::class)->name('tenant.politica-privacidade');
@@ -92,13 +93,13 @@ Route::middleware(['tenant'])
             Route::get('registrar', ClienteRegistrar::class)->name('cliente.registrar');
         });
 
-        // Completar cadastro (CPF) — logado, ISENTO do gate (senão faria loop). D94.
+        // Completar cadastro (CPF + telefone) — logado, ISENTO do gate (senão faria loop).
         Route::get('completar-cadastro', CompletarCadastro::class)
             ->middleware('auth:cliente')
             ->name('cliente.completar-cadastro');
 
         Route::get('agendar', PortalAgendar::class)
-            ->middleware(['auth:cliente', 'cpf.cliente'])
+            ->middleware(['auth:cliente', 'perfil.completo'])
             ->name('cliente.agendar');
 
         // Avaliação pós-serviço por LINK (D81): página PÚBLICA, sem login, protegida por

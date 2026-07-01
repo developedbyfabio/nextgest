@@ -1904,3 +1904,26 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   cria/vincula sem duplicar, gate de CPF (sem CPF → completar; com CPF → direto), e-mail não verificado e
   cancelamento, botão só com `client_id`. **HTTP real:** botão oculto sem `client_id`, rotas centrais
   registradas, redirect sem tenant → landing. Suíte verde; build ok. Tenants de dev migrados. **Sem deploy.**
+
+## D96 — Gate de PERFIL completo: telefone obrigatório no "Completar cadastro"
+> Generaliza o gate de CPF (D94) para exigir também TELEFONE — o cliente do Google (D95) fica com
+> `telefone = ''` (NOT NULL, o Google não dá) e isso quebra o WhatsApp. Ver [[Login com Google (Socialite)]].
+- **Perfil incompleto = sem CPF OU sem telefone** (`Cliente::perfilIncompleto()`). O middleware foi
+  renomeado `ExigirCpfCliente` → **`ExigirPerfilCompletoCliente`** e passou a checar isso. Aliases:
+  **`perfil.completo`** (canônico) + **`cpf.cliente`** (legado, mantido — não quebra referências). Rotas
+  home/agendar usam `perfil.completo`. Config `nextgest.exigir_cpf_cliente` **mantida** (liga/desliga o
+  gate de perfil inteiro; não renomeada p/ não quebrar referências/testes).
+- **Tela "Completar cadastro"** coleta num ÚNICO passo o que faltar: mostra **telefone** e/ou **CPF**
+  conforme ausentes (nome vem do Google, pré-preenchido e editável). **Reusa** `App\Rules\CelularBr`
+  (telefone BR/celular p/ WhatsApp) e `App\Rules\Cpf` (+ unique por tenant) — sem validação nova. A
+  exigência é recomputada do banco no salvar (não confia em prop hidratada).
+- **Formato de gravação:** telefone em **dígitos** (o `EvolutionGateway::normalizarNumero` prefixa 55 no
+  envio); CPF em 11 dígitos. Autocadastro por e-mail (que já coleta telefone) **fora de escopo** — segue
+  com sua regra própria; o gate só força quem está com o campo **vazio**.
+- **Backfill leve:** `telefone = ''` legado passa a contar como incompleto e cai no gate no próximo
+  acesso — sem operação destrutiva.
+- **Fora de escopo:** verificação por SMS/OTP; mexer no autocadastro por e-mail.
+- **Verificação:** `CompletarPerfilTest` (7) — sem telefone (mesmo com CPF) / sem CPF caem no gate; com
+  ambos passa; telefone inválido rejeitado; salva telefone em dígitos e libera; exige só o que falta;
+  cliente do Google precisa completar OS DOIS. Regressão de `ClienteCpfTest`/`GoogleAuthTest` intacta.
+  Suíte verde; build ok. **Dev, sem deploy.**

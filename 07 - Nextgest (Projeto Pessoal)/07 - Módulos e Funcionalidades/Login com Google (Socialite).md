@@ -29,15 +29,21 @@ Rotas em `routes/web.php` (centrais, precedência sobre `/{tenant}`), nomes
 2. senão por **e-mail** (o Google entrega e-mail verificado) → **vincula** o `google_id` à
    conta existente (não duplica);
 3. senão **cria** (`nome`/`email`/`google_id`; `telefone` vazio — Google não dá telefone, a
-   coluna é NOT NULL; sem senha; sem CPF).
+   coluna é NOT NULL; sem senha; sem CPF). O telefone e o CPF são coletados logo em seguida pelo
+   gate de perfil completo (D96 — ver abaixo).
 
 Migração aditiva por tenant: `clientes.google_id` nullable + unique (tolera NULL). Guardamos
 só o identificador — **nunca** tokens.
 
-## Reuso do gate de CPF (D94)
-O novo usuário do Google entra **sem CPF** → o middleware `cpf.cliente` (já em `home`/`agendar`)
-o leva a **"Completar cadastro (CPF)"** antes de liberar o portal. **Sem duplicar** a lógica —
-é o mesmo gate da Fatia de CPF.
+## Reuso do gate de PERFIL completo (D94 CPF + D96 telefone)
+O novo usuário do Google entra **sem CPF e com `telefone = ''`** (a coluna é NOT NULL e o
+Google não fornece telefone). O gate — middleware **`ExigirPerfilCompletoCliente`** (aliases
+`perfil.completo` e o legado `cpf.cliente`, em `home`/`agendar`) — considera o perfil
+**incompleto** (`Cliente::perfilIncompleto()` = sem CPF OU sem telefone) e o leva a **"Completar
+cadastro"**, onde ele informa **telefone + CPF** num único passo (reusa `CelularBr` e `Cpf`)
+antes de liberar o portal. **Sem duplicar** a lógica — é o mesmo gate. Ver
+[[Decisões de Arquitetura#D96 — Gate de PERFIL completo: telefone obrigatório no "Completar cadastro"|D96]].
+Isso também conserta o **WhatsApp** desses clientes (telefone vazio quebrava lembretes/confirmações).
 
 ## Botão "Continuar com Google"
 `x-portal.botao-google` (incluído em login/registro, dentro do shell `x-portal.auth`):

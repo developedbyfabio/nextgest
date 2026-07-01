@@ -89,6 +89,17 @@ class Cliente extends Authenticatable
         return substr($d, 0, 3).'.'.substr($d, 3, 3).'.'.substr($d, 6, 3).'-'.substr($d, 9, 2);
     }
 
+    /**
+     * Perfil incompleto (D96): falta CPF OU telefone. É o que o gate
+     * ExigirPerfilCompletoCliente checa para levar à tela "Completar cadastro".
+     * Cobre o cliente do Google (telefone '' + sem CPF) e o `telefone = ''` legado —
+     * sem WhatsApp, esses precisam completar antes de circular no portal.
+     */
+    public function perfilIncompleto(): bool
+    {
+        return blank($this->cpf) || blank($this->telefone);
+    }
+
     public function agendamentos(): HasMany
     {
         return $this->hasMany(Agendamento::class);

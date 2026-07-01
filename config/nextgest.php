@@ -6,15 +6,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Exigir CPF do cliente (gate)
+    | Exigir perfil completo do cliente (gate)
     |--------------------------------------------------------------------------
     |
-    | Quando true (default), o cliente logado SEM CPF é levado a completar o
-    | cadastro antes de usar o portal — inclusive clientes ANTIGOS sem CPF, no
-    | próximo login (é o que fecha a brecha de contas duplicadas). false = só a
-    | obrigatoriedade do autocadastro vale (existentes sem CPF não são forçados).
-    | O middleware App\Http\Middleware\ExigirCpfCliente e o fluxo do Google
-    | (fatia seguinte) reutilizam este ponto único.
+    | Quando true (default), o cliente logado com PERFIL INCOMPLETO (sem CPF OU sem
+    | telefone) é levado a completar o cadastro antes de usar o portal — inclusive
+    | clientes do Google (telefone '') e clientes ANTIGOS, no próximo acesso (fecha a
+    | brecha de contas duplicadas e o telefone vazio que quebra o WhatsApp). false =
+    | só a obrigatoriedade do autocadastro vale. O middleware
+    | App\Http\Middleware\ExigirPerfilCompletoCliente é o ponto único (reusado pelo
+    | Google). Chave mantida (`exigir_cpf_cliente`/`NEXTGEST_EXIGIR_CPF_CLIENTE`) por
+    | compatibilidade — hoje liga/desliga o gate de PERFIL inteiro.
     |
     */
     'exigir_cpf_cliente' => (bool) env('NEXTGEST_EXIGIR_CPF_CLIENTE', true),
