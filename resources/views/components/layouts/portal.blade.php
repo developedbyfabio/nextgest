@@ -62,10 +62,7 @@
             {{ $slot }}
         </main>
 
-        <footer class="border-t px-4 py-3 text-center text-xs"
-            style="border-color: color-mix(in srgb, var(--cor-texto) 10%, transparent); color: var(--cor-texto-suave);">
-            Powered by Nextgest
-        </footer>
+        <x-portal.rodape />
     </div>
 
     <flux:toast position="top center" />

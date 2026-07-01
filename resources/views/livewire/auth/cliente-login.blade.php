@@ -39,4 +39,6 @@
     <flux:button :href="route('cliente.registrar', ['tenant' => tenant('id')])" variant="ghost" class="w-full" wire:navigate>
         Criar uma conta
     </flux:button>
+
+    <x-portal.consentimento />
 </x-portal.auth>

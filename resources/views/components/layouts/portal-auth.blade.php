@@ -28,6 +28,9 @@
 >
     {{ $slot }}
 
+    {{-- Rodapé com os links legais do tenant (D93) — mesmo partial da home. --}}
+    <x-portal.rodape />
+
     <flux:toast />
 
     @fluxScripts

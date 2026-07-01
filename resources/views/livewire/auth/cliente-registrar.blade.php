@@ -64,4 +64,6 @@
     <flux:button :href="route('cliente.login', ['tenant' => tenant('id')])" variant="ghost" class="w-full" wire:navigate>
         Já tenho conta
     </flux:button>
+
+    <x-portal.consentimento />
 </x-portal.auth>

@@ -207,6 +207,48 @@
         background-color: var(--ng-leitura, transparent);
     }
 
+    /* Prosa dos documentos legais (D93): tipografia legível seguindo o TEMA (vars
+       de claro/escuro), sem depender do plugin de typography. Estiliza os elementos
+       semânticos do conteúdo (h2/h3/p/ul/ol/strong/a) — o texto fica em um único
+       arquivo por documento, sem classes utilitárias repetidas em cada linha. */
+    .ng-prosa h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        color: var(--cor-texto);
+    }
+
+    .ng-prosa h3 {
+        font-weight: 600;
+        color: var(--cor-texto);
+    }
+
+    .ng-prosa p {
+        color: var(--cor-texto-suave);
+    }
+
+    .ng-prosa strong {
+        font-weight: 600;
+        color: var(--cor-texto);
+    }
+
+    .ng-prosa a {
+        color: var(--cor-principal);
+        text-decoration: underline;
+    }
+
+    .ng-prosa ul,
+    .ng-prosa ol {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding-left: 1.35rem;
+        color: var(--cor-texto-suave);
+    }
+
+    .ng-prosa ul { list-style: disc; }
+    .ng-prosa ol { list-style: decimal; }
+
     /* Skeleton temático (segue o texto da marca, não o zinc fixo). */
     .ng-skeleton-portal {
         @apply animate-pulse rounded-md;

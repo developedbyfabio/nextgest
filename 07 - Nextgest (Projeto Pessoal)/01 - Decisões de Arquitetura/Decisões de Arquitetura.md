@@ -1823,3 +1823,29 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   `<img>` (sem quadrado); `logo` sem imagem cai no ícone; partial único no hero e no topo. **HTTP real**
   no `barbeariateste`: ícone → quadrado de acento; logo → `<img>` do logo (transparência). Suíte verde;
   build ok. **Dev, sem deploy.**
+
+## D93 — Portal: rodapé + Política de Privacidade e Termos de Uso (páginas públicas por tenant)
+> O portal ganhou rodapé com links legais e duas páginas públicas (sem login) com Política de Privacidade
+> e Termos de Uso, conteúdo ÚNICO compartilhado por todos os tenants (só o slug muda). Ver
+> [[Documentos Legais e Rodapé do Portal]].
+- **Rotas públicas tenant-scoped:** `/{tenant}/politica-de-privacidade` e `/{tenant}/termos-de-uso` no grupo
+  público de `routes/tenant.php` (sem `auth`/`guest`), como **componentes Livewire full-page**
+  (`#[Layout('components.layouts.portal')]` + `#[Title]`) — renderizam no layout do portal com o tema do
+  tenant. Nomes `tenant.politica-privacidade`/`tenant.termos-uso`.
+- **Conteúdo em Blade (não markdown):** um arquivo por documento em `resources/views/livewire/portal/`;
+  moldura compartilhada `x-portal.documento-legal` (voltar + nome/título/data/versão + `.ng-prosa`);
+  metadados em `App\Support\Legal` (VERSAO/ATUALIZADO_EM). Escolha do Blade: **sem dependência nova**
+  (nada de parser/typography — regra de build sem rede) e estilização direta pelo tema (claro/escuro).
+- **Rodapé e consentimento (partials únicos):** `x-portal.rodape` (estende o "Powered by Nextgest" com os
+  dois links do próprio tenant) no layout do portal E no de auth do cliente → aparece em home/login/
+  registro; `x-portal.consentimento` (linha "Ao continuar, você concorda com…") no login e registro.
+- **Conteúdo:** pt-BR, LGPD, genérico à plataforma, com **placeholders** (sem dados reais). Política: 12
+  seções (inclui direitos do art. 18, bases legais, cookies, retenção, DPO); Termos: 12 seções (cadastro,
+  condutas, agendamentos/cancelamentos, pagamentos/Clube, comunicações/opt-out, PI, foro).
+- **Revisão jurídica obrigatória (aviso):** textos são **base/modelo**, exigem revisão por advogado; a
+  definição **controlador (tenant) × operador (Nextgest)** foi redigida no modelo SaaS usual mas **deve
+  ser validada juridicamente**. O corpo público não afirma conformidade definitiva.
+- **Fora de escopo:** edição legal por tenant; banner/aceite de cookies; versionar aceites por usuário.
+- **Verificação:** `PortalLegalTest` (6) — 200 público nas duas URLs, conteúdo LGPD + layout do portal,
+  dois tenants com o mesmo conteúdo em URLs próprias, rodapé em home/login/registro, consentimento no
+  login/registro. **HTTP real** no `barbeariateste`. Suíte verde; build ok. **Dev, sem deploy.**

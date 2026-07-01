@@ -44,6 +44,8 @@ use App\Livewire\Painel\Whatsapp\OptOut as WhatsappOptOut;
 use App\Livewire\Portal\Agendar as PortalAgendar;
 use App\Livewire\Portal\AvaliacaoPublica as PortalAvaliacaoPublica;
 use App\Livewire\Portal\Home as PortalHome;
+use App\Livewire\Portal\PoliticaPrivacidade;
+use App\Livewire\Portal\TermosUso;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
@@ -77,6 +79,10 @@ Route::middleware(['tenant'])
         | Portal do cliente (guard `cliente`) — mobile-first.
         */
         Route::get('/', PortalHome::class)->name('tenant.home');
+
+        // Documentos legais (D93) — PÚBLICOS (sem login), conteúdo único por tenant na URL.
+        Route::get('politica-de-privacidade', PoliticaPrivacidade::class)->name('tenant.politica-privacidade');
+        Route::get('termos-de-uso', TermosUso::class)->name('tenant.termos-uso');
 
         Route::middleware('guest:cliente')->group(function () {
             Route::get('login', ClienteLogin::class)->name('cliente.login');
