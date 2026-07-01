@@ -117,3 +117,10 @@ CPF adicionado ao cadastro do cliente (banco do tenant), **obrigatório** no aut
   nome+telefone) e beneficiários do Clube (nome-avulso ou referência) não passam pela validação.
 - **Fora de escopo:** registro central cross-tenant; verificação em base externa (Receita).
 - **Testes:** `tests/Feature/Portal/ClienteCpfTest.php` (12).
+
+### Telefone padronizado (D97)
+O **autocadastro por e-mail** (`ClienteRegistrar`) passou a validar o telefone com a MESMA regra
+`App\Rules\CelularBr` da tela de completar cadastro (D96) e do admin (antes era `max:30` frouxo, que
+deixava passar número inválido — mesmo risco de WhatsApp fechado no D96, pela outra porta). Grava em
+**dígitos limpos** (o `EvolutionGateway` prefixa 55 no envio); input com máscara `(99) 99999-9999`.
+Assim há **uma regra só de telefone** em todo o cadastro do cliente.

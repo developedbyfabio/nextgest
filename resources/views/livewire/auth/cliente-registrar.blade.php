@@ -19,8 +19,10 @@
         <flux:input
             wire:model="telefone"
             type="tel"
-            label="Telefone"
+            label="Telefone (WhatsApp)"
+            mask="(99) 99999-9999"
             placeholder="(00) 00000-0000"
+            inputmode="numeric"
             autocomplete="tel"
             required
         />

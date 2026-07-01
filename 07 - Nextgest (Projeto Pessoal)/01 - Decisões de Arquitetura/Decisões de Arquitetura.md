@@ -1927,3 +1927,22 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   ambos passa; telefone inválido rejeitado; salva telefone em dígitos e libera; exige só o que falta;
   cliente do Google precisa completar OS DOIS. Regressão de `ClienteCpfTest`/`GoogleAuthTest` intacta.
   Suíte verde; build ok. **Dev, sem deploy.**
+
+## D97 — Autocadastro por e-mail: telefone padronizado (CelularBr + dígitos)
+> Fecha a outra porta do telefone: o autocadastro por e-mail (`ClienteRegistrar`) usava `max:30`
+> frouxo — dava para cadastrar número inválido e passar (o gate D96 só checa presença). Ver
+> [[Clientes (CRM)]].
+- **Uma regra só de telefone no cadastro do cliente:** troquei `['required','string','max:30']` por
+  **`['required','string', new CelularBr]`** — a MESMA regra da tela de completar cadastro (D96) e do
+  admin. Sem regra nova.
+- **Gravação em dígitos limpos:** normaliza o telefone (`preg_replace('/\D+/','')`) ANTES de validar/
+  gravar — mesmo formato do completar cadastro; o `EvolutionGateway` prefixa 55 no envio. Input com
+  máscara `(99) 99999-9999` (padrão do projeto); grava só dígitos.
+- **Outras portas (mapeadas, não alteradas):** admin (`donoCelular`) e completar cadastro já usam
+  `CelularBr`; walk-in da equipe (`NovoAgendamento::criarCliente`) e beneficiário do Clube criam direto
+  (sem validação de formato) — fora de escopo desta fatia.
+- **Sem limpeza em massa** de telefones legados inválidos (poucos; o gate pega os vazios) — nada
+  destrutivo.
+- **Verificação:** `ClienteAuthTest` +2 — rejeita inválido/exige o 9/sequência; salva em dígitos
+  (`(41) 98888-7777` → `41988887777`). Regressão de CPF/perfil/Google intacta. Suíte verde; build ok.
+  **Dev, sem deploy.**

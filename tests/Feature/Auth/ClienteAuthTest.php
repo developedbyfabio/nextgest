@@ -94,3 +94,41 @@ it('rejeita senha incorreta do cliente', function () {
 
     $this->assertGuest('cliente');
 });
+
+it('rejeita telefone inválido no autocadastro (formato / exige 9 / sequência)', function () {
+    // Reusa App\Rules\CelularBr (não mais o max:30 frouxo).
+    $invalidos = [
+        '123',            // curto demais
+        '11388887777',    // 11 dígitos SEM o 9 após o DDD
+        '0099998888',     // DDD < 11
+        '11111111111',    // sequência (tudo igual)
+    ];
+
+    foreach ($invalidos as $tel) {
+        Livewire::test(ClienteRegistrar::class)
+            ->set('nome', 'Maria')
+            ->set('telefone', $tel)
+            ->set('email', 'maria@cliente.com')
+            ->set('cpf', '529.982.247-25')
+            ->set('password', 'senha-cliente-12345')
+            ->set('password_confirmation', 'senha-cliente-12345')
+            ->call('registrar')
+            ->assertHasErrors('telefone');
+    }
+
+    $this->assertGuest('cliente');
+});
+
+it('salva o telefone em DÍGITOS limpos (consistente com o completar cadastro)', function () {
+    Livewire::test(ClienteRegistrar::class)
+        ->set('nome', 'Maria')
+        ->set('telefone', '(41) 98888-7777') // mascarado
+        ->set('email', 'maria@cliente.com')
+        ->set('cpf', '529.982.247-25')
+        ->set('password', 'senha-cliente-12345')
+        ->set('password_confirmation', 'senha-cliente-12345')
+        ->call('registrar')
+        ->assertHasNoErrors();
+
+    expect(Cliente::where('email', 'maria@cliente.com')->value('telefone'))->toBe('41988887777');
+});
