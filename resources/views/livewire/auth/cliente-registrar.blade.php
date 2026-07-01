@@ -70,9 +70,13 @@
 
     <flux:separator class="my-6" text="ou" />
 
-    <flux:button :href="route('cliente.login', ['tenant' => tenant('id')])" variant="ghost" class="w-full" wire:navigate>
-        Já tenho conta
-    </flux:button>
+    <div class="flex flex-col gap-3">
+        <x-portal.botao-google />
+
+        <flux:button :href="route('cliente.login', ['tenant' => tenant('id')])" variant="ghost" class="w-full" wire:navigate>
+            Já tenho conta
+        </flux:button>
+    </div>
 
     <x-portal.consentimento />
 </x-portal.auth>

@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    /*
+    | Login social com Google (D95) — Socialite. Credenciais SÓ via .env (sem segredo
+    | no código). O botão "Continuar com Google" só aparece quando client_id está setado
+    | (gate de config). Em produção, o redirect DEVE ser a URI central registrada no
+    | Google Cloud Console (https://nextgest.com.br/auth/google/callback).
+    */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+    ],
+
 ];

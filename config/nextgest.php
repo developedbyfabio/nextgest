@@ -35,6 +35,7 @@ return [
     'reserved_slugs' => [
         'admin',
         'api',
+        'auth', // rotas centrais de login social (D95): /auth/google/*
         'login',
         'logout',
         'register',

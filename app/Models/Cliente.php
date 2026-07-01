@@ -29,6 +29,7 @@ class Cliente extends Authenticatable
         'email',
         'telefone',
         'cpf',
+        'google_id',
         'whatsapp_optout',
         'whatsapp_marketing_optout',
         'password',

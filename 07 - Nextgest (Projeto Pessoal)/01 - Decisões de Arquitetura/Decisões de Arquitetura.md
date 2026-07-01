@@ -1878,3 +1878,29 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   walk-in sem CPF não quebra; CRM mascara sem permissão e mostra completo com `ver_cpf_cliente`; CPF fora
   do `toArray`. **HTTP real** no `barbeariateste` (campo com máscara; gate 302; política v1.1). Suíte
   verde; build ok. **Dev, sem deploy.**
+
+## D95 — Login/cadastro do cliente via Google (Socialite, callback central + slug via sessão)
+> Login social do cliente com `laravel/socialite`, só a parte que roda em dev (atrás de gate de config);
+> registro no Google e teste real ficam para o deploy (https). Ver [[Login com Google (Socialite)]].
+- **Callback CENTRAL + slug via sessão (decisão-chave):** o Google não aceita wildcard de path, então
+  **uma** redirect URI central (`/auth/google/callback`, em `routes/web.php`). O botão em
+  `/{tenant}/login|registrar` chama `/auth/google/redirect?tenant={slug}`; o `redirect` valida o slug e o
+  **guarda na sessão** (domínio central) sem tocar no `state` CSRF do Socialite; o `callback` lê da
+  sessão, revalida (senão aborta p/ landing), **inicializa o tenancy** e só então mexe no cliente. `auth`
+  entrou nos `reserved_slugs`.
+- **Vínculo (find-or-create no tenant):** por `google_id`; senão por **e-mail** (verificado pelo Google)
+  → vincula sem duplicar; senão cria (`nome`/`email`/`google_id`; `telefone` vazio — NOT NULL; sem senha;
+  sem CPF). Migração aditiva `clientes.google_id` nullable+unique por tenant. **Nunca** guarda tokens.
+- **Reuso do gate de CPF (D94):** novo usuário do Google entra sem CPF → o middleware `cpf.cliente` o leva
+  a "Completar cadastro". Sem duplicar a lógica.
+- **Botão (`x-portal.botao-google`):** só renderiza com `config('services.google.client_id')` setado (gate
+  de config; credenciais só via `.env`). Segue as diretrizes de marca do Google (botão oficial, claro/
+  escuro); o acento do tenant tematiza o entorno, **não** o botão.
+- **Erros amigáveis:** tenant inválido → landing; cancelamento/erro OAuth e e-mail não verificado →
+  login do tenant. Sem logar tokens.
+- **Fora de escopo (deploy):** registrar o app no Google Cloud Console + redirect URI https + `.env` de
+  produção + teste real ponta a ponta (só o Fabio, precisa de https).
+- **Verificação:** `GoogleAuthTest` (10, Socialite mockado) — redirect/slug, aborta tenant inválido,
+  cria/vincula sem duplicar, gate de CPF (sem CPF → completar; com CPF → direto), e-mail não verificado e
+  cancelamento, botão só com `client_id`. **HTTP real:** botão oculto sem `client_id`, rotas centrais
+  registradas, redirect sem tenant → landing. Suíte verde; build ok. Tenants de dev migrados. **Sem deploy.**

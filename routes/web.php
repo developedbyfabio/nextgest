@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Pagamentos\MercadoPagoOAuthController;
 use App\Http\Controllers\Webhooks\WebhookPagamentoController;
@@ -30,6 +31,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('landing');
 })->name('landing');
+
+// Login social com Google (D95) — CENTRAL (Google não aceita wildcard de path): UMA
+// redirect URI. O tenant viaja pela sessão (?tenant={slug} no redirect). Ver
+// App\Http\Controllers\Auth\GoogleController.
+Route::prefix('auth/google')->name('auth.google.')->group(function () {
+    Route::get('redirect', [GoogleController::class, 'redirect'])->name('redirect');
+    Route::get('callback', [GoogleController::class, 'callback'])->name('callback');
+});
 
 // Super-admin (central, guard `admin`).
 Route::prefix('admin')->name('admin.')->group(function () {
