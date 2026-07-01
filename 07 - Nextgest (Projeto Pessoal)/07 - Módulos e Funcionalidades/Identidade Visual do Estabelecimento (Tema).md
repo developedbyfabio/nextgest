@@ -1,8 +1,8 @@
 # Identidade Visual do Estabelecimento (Tema)
 
 > Projeto: [[Nextgest - Visão Geral]] · Decisões: [[Decisões de Arquitetura]]
-> (D28 tema, D30 templates, D35 arquivos, **D36 modo claro/escuro**) ·
-> Atualizado: 2026-06-21.
+> (D28 tema, D30 templates, D35 arquivos, **D36 modo claro/escuro**, D90 favicon) ·
+> Atualizado: 2026-07-01.
 
 > [!important] Modelo ATUAL (Etapa D, D36) — substitui parte das Etapas A/B
 > - **Marca do tenant = ACENTO** (`--cor-principal` / `--color-accent`) **+ logo +
@@ -142,6 +142,32 @@ portal do cliente — **fonte de verdade única**.
 - **Salvar recarrega:** após persistir, `Editar::salvar()` faz `redirect(..., navigate:
   false)` (reload completo) para o novo tema aplicar no próprio painel; a mensagem de
   sucesso aparece após o reload (flash → `Flux::toast` no `mount`).
+
+## Favicon por tenant (D90)
+Cada tenant tem seu **favicon** (ícone da aba do navegador), na MESMA tela de
+Aparência (junto de logo/cabeçalho/fundo). Ao contrário das outras imagens (guardadas
+CRUAS), o favicon é **processado no upload**.
+
+- **Campo:** `favicon` no JSON `configuracoes.aparencia` (aditivo no `PADRAO`, **sem
+  migration**). `null` → fallback pro padrão do Nextgest.
+- **Processamento (`App\Support\Favicon`):** decodifica a imagem enviada e gera um
+  **PNG 32×32** "contain" (proporção preservada, centralizado em fundo transparente),
+  via **GD** — extensão já disponível no servidor (sem pacote novo/download no build).
+  Grava no MESMO disco/pasta do logo (`storage/tenant{id}/app/public/aparencia`) com
+  **nome único** por upload.
+- **Injeção no `<head>` (`Aparencia::linkFavicon()`):** emite
+  `<link rel="icon" type="image/png">` no MESMO ponto onde a tipografia/acento já
+  entram, nos layouts **portal**, **painel** e **auth do tenant** (`portal-auth` e
+  `auth` quando há tenant). Fora do tenant (ou tenant sem favicon), cai no padrão
+  `asset('nextgest-logo.png')` (o mesmo de landing/admin) — o head nunca quebra.
+- **Cache-busting:** herdado do nome único → **URL nova a cada troca** → o navegador
+  (que cacheia favicon agressivamente) reflete a mudança. Servido por
+  `TenantArquivoController` com `Cache-Control: immutable` (seguro porque a URL muda).
+- **Validação:** mesma das outras imagens (`image|mimes:png,jpg,jpeg,webp|max:5120`).
+  Falha de processamento vira erro de validação no campo (não 500) e aborta o salvar.
+- **UI:** campo "Favicon (ícone da aba)" na seção Imagens, com preview e a nota de que
+  é reduzido para 32×32/PNG automaticamente.
+- **Não** injetado em `landing`/`admin` (centrais, não-tenant): seguem o padrão fixo.
 
 ## Uploads por tenant (Etapa 2, D35)
 - Logo/cabeçalho/fundo gravados no disco `public` isolado por tenant

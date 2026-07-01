@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Painel\Aparencia;
 
 use App\Support\Aparencia;
+use App\Support\Favicon;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -49,12 +50,17 @@ class Editar extends Component
 
     public ?string $fundo_imagem = null;
 
+    // Favicon do tenant (D90) — caminho do PNG 32x32 já processado (ou null).
+    public ?string $favicon = null;
+
     // Uploads temporários (substituem o caminho persistido ao salvar).
     public $logoUpload = null;
 
     public $headerUpload = null;
 
     public $fundoUpload = null;
+
+    public $faviconUpload = null;
 
     public function mount(): void
     {
@@ -80,6 +86,7 @@ class Editar extends Component
         $this->logo = $a['logo'];
         $this->header_imagem = $a['header_imagem'];
         $this->fundo_imagem = $a['fundo_imagem'];
+        $this->favicon = $a['favicon'] ?? null;
     }
 
     public function aplicarTemplate(string $chave): void
@@ -113,6 +120,7 @@ class Editar extends Component
             'logoUpload' => $imagem,
             'headerUpload' => $imagem,
             'fundoUpload' => $imagem,
+            'faviconUpload' => $imagem,
         ];
     }
 
@@ -122,9 +130,11 @@ class Editar extends Component
             'logoUpload.max' => 'A logo deve ter no máximo 5 MB.',
             'headerUpload.max' => 'A imagem de cabeçalho deve ter no máximo 5 MB.',
             'fundoUpload.max' => 'A imagem de fundo deve ter no máximo 5 MB.',
+            'faviconUpload.max' => 'O favicon deve ter no máximo 5 MB.',
             'logoUpload.mimes' => 'Use PNG, JPG ou WebP.',
             'headerUpload.mimes' => 'Use PNG, JPG ou WebP.',
             'fundoUpload.mimes' => 'Use PNG, JPG ou WebP.',
+            'faviconUpload.mimes' => 'Use PNG, JPG ou WebP.',
         ];
     }
 
@@ -132,7 +142,7 @@ class Editar extends Component
     {
         $this->authorize('gerir_aparencia');
 
-        if (in_array($campo, ['logo', 'header_imagem', 'fundo_imagem'], true)) {
+        if (in_array($campo, ['logo', 'header_imagem', 'fundo_imagem', 'favicon'], true)) {
             $this->{$campo} = null;
         }
     }
@@ -151,6 +161,20 @@ class Editar extends Component
             }
         }
 
+        // Favicon (D90): NÃO guarda cru — processa no upload (reduz p/ 32x32 e
+        // converte PNG). Nome único → cache-busting. Falha de processamento vira
+        // erro de validação (não 500) e aborta o salvamento.
+        if ($this->faviconUpload) {
+            try {
+                $this->favicon = Favicon::processar($this->faviconUpload);
+            } catch (\RuntimeException $e) {
+                $this->addError('faviconUpload', 'Não foi possível processar essa imagem como favicon.');
+
+                return null;
+            }
+            $this->faviconUpload = null;
+        }
+
         // Salva só os campos do modelo D36 (marca + tipografia + imagens). As
         // superfícies permanecem nos valores padrão e não são editadas aqui.
         Aparencia::salvar([
@@ -162,6 +186,7 @@ class Editar extends Component
             'logo' => $this->logo,
             'header_imagem' => $this->header_imagem,
             'fundo_imagem' => $this->fundo_imagem,
+            'favicon' => $this->favicon,
         ]);
 
         // Recarrega a página (reload completo, não SPA) para o novo tema (acento/
@@ -193,9 +218,11 @@ class Editar extends Component
             'logo' => $this->logo,
             'header_imagem' => $this->header_imagem,
             'fundo_imagem' => $this->fundo_imagem,
+            'favicon' => $this->favicon,
             'logo_url' => $this->urlPrevia($this->logoUpload, $this->logo),
             'header_url' => $this->urlPrevia($this->headerUpload, $this->header_imagem),
             'fundo_url' => $this->urlPrevia($this->fundoUpload, $this->fundo_imagem),
+            'favicon_url' => $this->urlPrevia($this->faviconUpload, $this->favicon),
         ]);
     }
 

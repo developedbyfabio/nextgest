@@ -38,6 +38,9 @@ class Aparencia
         'logo' => null,
         'header_imagem' => null,
         'fundo_imagem' => null,
+        // Favicon do tenant (D90): PNG 32x32 processado no upload (ver App\Support\
+        // Favicon). null → cai no favicon padrão do Nextgest (ver linkFavicon).
+        'favicon' => null,
         'menu_posicao' => 'topo',
         'icone_estilo' => 'outline',
     ];
@@ -163,6 +166,30 @@ class Aparencia
         }
 
         return route('tenant.arquivo', ['tenant' => tenant('id'), 'path' => $path]);
+    }
+
+    /**
+     * `<link rel="icon">` para o `<head>` (D90) — ícone da aba do navegador. Usa o
+     * favicon do tenant (PNG 32x32 processado no upload) quando há; senão, o favicon
+     * PADRÃO do Nextgest (mesmo de landing/admin). Chamado nos layouts do tenant
+     * (portal/painel/auth), no MESMO ponto onde a tipografia/acento já entram.
+     *
+     * O favicon do tenant tem nome ÚNICO por upload → URL nova a cada troca →
+     * cache-busting embutido (o navegador cacheia favicon agressivamente).
+     */
+    public static function linkFavicon(?array $a = null): string
+    {
+        $path = null;
+
+        if (tenancy()->initialized) {
+            $a = $a ?? self::doTenant();
+            $path = $a['favicon'] ?? null;
+        }
+
+        // Favicon do tenant (PNG) ou fallback pro padrão do Nextgest (também PNG).
+        $url = self::urlArquivo($path) ?? asset('nextgest-logo.png');
+
+        return '<link rel="icon" type="image/png" href="'.e($url).'">';
     }
 
     /** Aparência do tenant atual mesclada com o padrão. */

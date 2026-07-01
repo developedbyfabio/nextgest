@@ -18,6 +18,8 @@
     @fluxAppearance
     {{-- Tipografia da marca: no tenant, carrega a fonte (Google) escolhida, se houver. --}}
     @if ($temTenant){!! \App\Support\Aparencia::linkFonteGoogle($aparencia) !!}@endif
+    {{-- Favicon (D90): no tenant, o dele; no central, o padrão do Nextgest (fallback). --}}
+    {!! \App\Support\Aparencia::linkFavicon($aparencia) !!}
 </head>
 
 @php($logoUrl = $temTenant ? \App\Support\Aparencia::urlArquivo($aparencia['logo']) : null)

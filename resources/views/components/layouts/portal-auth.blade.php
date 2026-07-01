@@ -19,6 +19,8 @@
     @fluxAppearance
     {{-- Tipografia da marca: carrega a fonte (Google) escolhida pelo tenant, se houver. --}}
     {!! \App\Support\Aparencia::linkFonteGoogle($aparencia) !!}
+    {{-- Favicon do tenant (D90) — ícone da aba; fallback pro padrão do Nextgest. --}}
+    {!! \App\Support\Aparencia::linkFavicon($aparencia) !!}
 </head>
 <body
     class="flex min-h-screen flex-col antialiased"

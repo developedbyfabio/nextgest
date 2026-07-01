@@ -18,7 +18,9 @@
          modos); as superfícies vêm dos tokens de claro/escuro. --}}
     @fluxAppearance
     {{-- Tipografia da marca: carrega a fonte (Google) escolhida pelo tenant, se houver. --}}
-    {!! \App\Support\Aparencia::linkFonteGoogle() !!}
+    {!! \App\Support\Aparencia::linkFonteGoogle($aparencia) !!}
+    {{-- Favicon do tenant (D90) — ícone da aba; fallback pro padrão do Nextgest. --}}
+    {!! \App\Support\Aparencia::linkFavicon($aparencia) !!}
 </head>
 <body
     class="min-h-screen antialiased"

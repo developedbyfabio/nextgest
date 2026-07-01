@@ -1744,3 +1744,33 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
   parte); **cards do agregado** (`assertViewHas('resumo', …)`); **coerência card↔tabela** (clicar filtra
   pros mesmos; reclicar limpa); card Clube (assinantes+avulsos = total). 25 testes nos 2 arquivos de
   Clientes. Sem regressão (D87/D88). Suíte **679/679**; build ok. **Só UI. Sem deploy.**
+
+## D90 — Aparência: favicon por tenant (upload processado + injeção no head)
+> Cada tenant sobe um favicon na tela de Aparência; o ícone da aba do navegador passa a ser o do
+> estabelecimento no portal E no painel. Extensão do que a Aparência já faz. Ver
+> [[Identidade Visual do Estabelecimento (Tema)]].
+- **Processado no upload, não cru** (`App\Support\Favicon`): a imagem do dono vira um **PNG 32×32**
+  "contain" (proporção preservada, fundo transparente) via **GD** — extensão **já disponível** no
+  servidor, **sem pacote novo** (regra: build sem rede). Diferente de logo/cabeçalho/fundo, guardados
+  crus (a foto de perfil recorta no cliente; aqui o processamento é no servidor).
+- **Persistência aditiva, sem migration:** campo `favicon` no JSON `configuracoes.aparencia` (gancho no
+  `Aparencia::PADRAO`), gravado no MESMO disco/pasta do logo (`storage/tenant{id}/app/public/aparencia`)
+  com **nome único** por upload. Reusa o upload (`WithFileUploads`) e a validação existentes
+  (`image|mimes:png,jpg,jpeg,webp|max:5120`).
+- **Injeção no `<head>` no contexto path-based** (`Aparencia::linkFavicon()`): `<link rel="icon">` no
+  MESMO ponto onde acento/tipografia já entram — layouts **portal**, **painel** e **auth do tenant**
+  (`portal-auth`/`auth`). **Não** cria caminho novo de resolução de tenant. `landing`/`admin` (centrais)
+  ficam no padrão fixo.
+- **Fallback:** tenant sem favicon (ou fora de tenancy) → `asset('nextgest-logo.png')` (o padrão do
+  Nextgest). O head **nunca** quebra.
+- **Cache-busting:** herdado do **nome único** (nova URL a cada troca) — resolve o cache agressivo de
+  favicon do navegador. Servido por `TenantArquivoController` com `Cache-Control: immutable` (seguro
+  porque a URL muda). Mesmo racional do PERF-005.
+- **Falha de processamento** (imagem que o GD não decodifica) vira **erro de validação** no campo (não
+  500) e aborta o salvar.
+- **Verificação:** `AparenciaFaviconTest` (8) — processa p/ 32×32 PNG (inclui WebP de entrada); grava
+  scoped; `linkFavicon` com favicon do tenant × fallback; cache-busting (2 uploads = 2 caminhos);
+  remover sem apagar o resto; rejeita PDF/>5MB; guarda a injeção nos 4 layouts. **HTTP real:** portal
+  do tenant com favicon próprio, outro tenant sem favicon → fallback (isolamento), logins (cliente/
+  painel) idem, e o arquivo servido 200/`image/png`/immutable. Suíte **687/687**; build ok. **Dev, sem
+  deploy.**
