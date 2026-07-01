@@ -85,10 +85,10 @@
                 <flux:text class="text-xs text-zinc-500">PNG, JPG ou WebP, até 5 MB cada.</flux:text>
 
                 @foreach ([
-                    ['campo' => 'logo', 'upload' => 'logoUpload', 'url' => 'logo_url', 'rotulo' => 'Logo', 'ajuda' => null],
-                    ['campo' => 'header_imagem', 'upload' => 'headerUpload', 'url' => 'header_url', 'rotulo' => 'Imagem de cabeçalho', 'ajuda' => null],
-                    ['campo' => 'fundo_imagem', 'upload' => 'fundoUpload', 'url' => 'fundo_url', 'rotulo' => 'Imagem de fundo', 'ajuda' => null],
-                    ['campo' => 'favicon', 'upload' => 'faviconUpload', 'url' => 'favicon_url', 'rotulo' => 'Favicon (ícone da aba)', 'ajuda' => 'Reduzido para 32×32 e convertido em PNG automaticamente.'],
+                    ['campo' => 'logo', 'upload' => 'logoUpload', 'url' => 'logo_url', 'rotulo' => 'Logo'],
+                    ['campo' => 'header_imagem', 'upload' => 'headerUpload', 'url' => 'header_url', 'rotulo' => 'Imagem de cabeçalho'],
+                    ['campo' => 'fundo_imagem', 'upload' => 'fundoUpload', 'url' => 'fundo_url', 'rotulo' => 'Imagem de fundo'],
+                    ['campo' => 'favicon', 'upload' => 'faviconUpload', 'url' => 'favicon_url', 'rotulo' => 'Favicon (ícone da aba)'],
                 ] as $img)
                     <div class="flex items-center gap-4">
                         <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
@@ -100,9 +100,6 @@
                         </div>
                         <div class="flex flex-1 flex-col gap-1">
                             <flux:label>{{ $img['rotulo'] }}</flux:label>
-                            @if ($img['ajuda'])
-                                <flux:text class="text-xs text-zinc-500">{{ $img['ajuda'] }}</flux:text>
-                            @endif
                             <input type="file" wire:model="{{ $img['upload'] }}" accept="image/png,image/jpeg,image/webp"
                                 class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:hover:file:bg-zinc-600" />
                             <div wire:loading wire:target="{{ $img['upload'] }}" class="text-xs text-zinc-500">Enviando…</div>
