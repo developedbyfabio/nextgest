@@ -85,3 +85,42 @@ it('bloqueia quem não tem gerir_agenda de abrir o agendamento manual', function
         ->call('abrir')
         ->assertForbidden();
 });
+
+it('walk-in REJEITA telefone inválido (mesma CelularBr) e não cria cliente', function () {
+    Livewire::actingAs(usuarioComPapel('Dono'), 'web');
+
+    foreach (['123', '11388887777', '11111111111'] as $tel) {
+        Livewire::test(NovoAgendamento::class)
+            ->call('abrir')
+            ->set('novoNome', 'Balcão')
+            ->set('novoTelefone', $tel)
+            ->call('criarCliente')
+            ->assertHasErrors('novoTelefone');
+    }
+
+    expect(Cliente::where('nome', 'Balcão')->exists())->toBeFalse();
+});
+
+it('walk-in salva o telefone em DÍGITOS (aceita máscara)', function () {
+    Livewire::actingAs(usuarioComPapel('Dono'), 'web');
+
+    Livewire::test(NovoAgendamento::class)
+        ->call('abrir')
+        ->set('novoNome', 'Balcão Dígitos')
+        ->set('novoTelefone', '(41) 98888-7777')
+        ->call('criarCliente')
+        ->assertHasNoErrors();
+
+    expect(Cliente::where('nome', 'Balcão Dígitos')->value('telefone'))->toBe('41988887777');
+});
+
+it('walk-in MANTÉM telefone obrigatório (em branco → erro)', function () {
+    Livewire::actingAs(usuarioComPapel('Dono'), 'web');
+
+    Livewire::test(NovoAgendamento::class)
+        ->call('abrir')
+        ->set('novoNome', 'Sem Fone')
+        ->set('novoTelefone', '')
+        ->call('criarCliente')
+        ->assertHasErrors('novoTelefone');
+});

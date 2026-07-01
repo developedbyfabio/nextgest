@@ -124,3 +124,9 @@ O **autocadastro por e-mail** (`ClienteRegistrar`) passou a validar o telefone c
 deixava passar número inválido — mesmo risco de WhatsApp fechado no D96, pela outra porta). Grava em
 **dígitos limpos** (o `EvolutionGateway` prefixa 55 no envio); input com máscara `(99) 99999-9999`.
 Assim há **uma regra só de telefone** em todo o cadastro do cliente.
+
+**D98** fechou a última porta: o **walk-in da equipe** (`NovoAgendamento::criarCliente`) passou a usar
+`CelularBr` + dígitos (telefone segue obrigatório lá). O **beneficiário do Clube** não tem campo de
+telefone (name-only ou referência a cliente existente) — nada a validar. **Mapa final:** autocadastro
+(D97), completar cadastro (D96), walk-in (D98), Google→gate (D95/D96) e admin já validam/normalizam;
+Clube beneficiário = N/A. Ver [[Decisões de Arquitetura#D98 — Telefone validado no walk-in (e o mapa final das portas de cliente)|D98]].

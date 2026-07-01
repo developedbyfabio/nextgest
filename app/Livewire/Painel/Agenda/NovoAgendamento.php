@@ -7,6 +7,7 @@ namespace App\Livewire\Painel\Agenda;
 use App\Models\Cliente;
 use App\Models\Servico;
 use App\Models\Unidade;
+use App\Rules\CelularBr;
 use App\Services\Agendamento\Agendador;
 use App\Services\Agendamento\MotorDisponibilidade;
 use App\Services\Agendamento\SlotIndisponivelException;
@@ -79,9 +80,14 @@ class NovoAgendamento extends Component
 
     public function criarCliente(): void
     {
+        // Telefone segue OBRIGATÓRIO no walk-in (cliente presente), mas agora com a
+        // MESMA regra do resto (CelularBr) e gravado em dígitos — a máscara é do input,
+        // o WhatsApp/EvolutionGateway prefixa 55 no envio. (D98)
+        $this->novoTelefone = preg_replace('/\D+/', '', $this->novoTelefone);
+
         $dados = $this->validate([
             'novoNome' => ['required', 'string', 'max:255'],
-            'novoTelefone' => ['required', 'string', 'max:30'],
+            'novoTelefone' => ['required', 'string', new CelularBr],
         ], attributes: ['novoNome' => 'nome', 'novoTelefone' => 'telefone']);
 
         $cliente = Cliente::create(['nome' => $dados['novoNome'], 'telefone' => $dados['novoTelefone']]);

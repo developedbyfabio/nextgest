@@ -1946,3 +1946,28 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Verificação:** `ClienteAuthTest` +2 — rejeita inválido/exige o 9/sequência; salva em dígitos
   (`(41) 98888-7777` → `41988887777`). Regressão de CPF/perfil/Google intacta. Suíte verde; build ok.
   **Dev, sem deploy.**
+
+## D98 — Telefone validado no walk-in (e o mapa final das portas de cliente)
+> Fecha a última porta que gravava telefone de cliente sem validar formato: o walk-in da equipe.
+> Auditoria revelou que o beneficiário do Clube NÃO tem telefone. Ver [[Clientes (CRM)]].
+- **Walk-in (`NovoAgendamento::criarCliente`):** telefone segue **OBRIGATÓRIO** (cliente presente —
+  obrigatoriedade preservada), mas a regra frouxa `max:30` virou **`CelularBr`** e o valor é gravado em
+  **dígitos** (normaliza antes de validar; input com máscara `(99) 99999-9999`). Mesmo padrão de D96/D97.
+- **Beneficiário/dependente do Clube (auditoria):** `Assinaturas::adicionarBeneficiario` cria um
+  `BeneficiarioAssinatura` **só com nome** OU **referência a um cliente existente** — **não coleta nem
+  grava telefone** e **não cria Cliente**. Logo **não há campo de telefone** a validar; name-only não é
+  mensageado, e o cliente vinculado já teve o telefone validado na criação dele. **Não** adicionei campo
+  (seria feature nova, fora de "só formato"). Se um dia o dependente precisar de WhatsApp próprio, é uma
+  fatia à parte (novo campo + migração).
+- **Mapa final — todas as portas de criação de cliente com telefone agora validam/normalizam:**
+  - Autocadastro por e-mail (`ClienteRegistrar`) — CelularBr + dígitos (D97). ✅
+  - Completar cadastro (`CompletarCadastro`) — CelularBr + dígitos (D96). ✅
+  - Walk-in da equipe (`NovoAgendamento`) — CelularBr + dígitos (D98). ✅
+  - Google (`GoogleController`) — cria com telefone `''`; o gate de perfil (D96) coleta com CelularBr. ✅
+  - Admin (`EstabelecimentoDados::donoCelular`, dono do estabelecimento, não cliente) — CelularBr. ✅
+  - Clube beneficiário — sem campo de telefone (name-only/referência). N/A.
+  - `SemearDemo` — seeder de dev (dados fictícios), não é porta de usuário. N/A.
+- **Fora de escopo:** SMS/OTP; tornar opcional↔obrigatório; limpeza em massa de legados (não destrutivo).
+- **Verificação:** `NovoAgendamentoTest` +3 — rejeita inválido (e não cria cliente); salva em dígitos
+  (`(41) 98888-7777` → `41988887777`); mantém obrigatório (em branco → erro). Regressão de agendamento/
+  Clube/gate/CPF/Google/autocadastro intacta. Suíte verde; build ok. **Dev, sem deploy.**

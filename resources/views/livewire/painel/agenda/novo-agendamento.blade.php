@@ -30,7 +30,7 @@
 
                 <div class="flex flex-wrap items-end gap-3">
                     <flux:input wire:model="novoNome" label="Nome" class="flex-1" />
-                    <flux:input wire:model="novoTelefone" label="Telefone" class="flex-1" />
+                    <flux:input wire:model="novoTelefone" label="Telefone" mask="(99) 99999-9999" placeholder="(00) 00000-0000" inputmode="numeric" class="flex-1" />
                     <flux:button wire:click="criarCliente" variant="primary">Adicionar</flux:button>
                 </div>
             @endif
