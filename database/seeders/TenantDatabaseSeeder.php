@@ -40,6 +40,7 @@ class TenantDatabaseSeeder extends Seeder
         'editar_agendamento',
         'gerir_agenda',
         'ver_clientes',
+        'ver_cpf_cliente',         // ver o CPF COMPLETO do cliente (D94) — Dono/Gerente; Recepção só mascarado
         'gerir_unidades',
         'criar_servico',
         'editar_servico',

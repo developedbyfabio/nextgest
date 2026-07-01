@@ -1849,3 +1849,32 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Verificação:** `PortalLegalTest` (6) — 200 público nas duas URLs, conteúdo LGPD + layout do portal,
   dois tenants com o mesmo conteúdo em URLs próprias, rodapé em home/login/registro, consentimento no
   login/registro. **HTTP real** no `barbeariateste`. Suíte verde; build ok. **Dev, sem deploy.**
+
+## D94 — Cliente: CPF obrigatório e único por tenant (com gate)
+> CPF no cadastro do cliente (banco do tenant), obrigatório no autocadastro e único POR TENANT
+> (anti conta duplicada). Ver [[Clientes (CRM)]].
+- **Unicidade por tenant (DB-per-tenant):** índice único em `clientes.cpf` no banco de CADA tenant —
+  **não** é global entre tenants (a mesma pessoa pode ser cliente de várias casas; registro central
+  seria outra decisão). `Rule::unique('clientes','cpf')` usa a conexão default (o banco do tenant).
+- **Migração aditiva / não destrutiva:** `cpf` VARCHAR(11) **nullable + unique** (tolera múltiplos NULL
+  em MySQL e SQLite). A coluna **não** é `NOT NULL` (linhas antigas seguem nulas); a obrigatoriedade é
+  da APLICAÇÃO (autocadastro + gate). Armazena 11 dígitos (mutator normaliza; máscara só no input).
+- **Validação:** reusa `App\Rules\Cpf` (11 dígitos, rejeita sequências, dígitos verificadores). Normaliza
+  para dígitos ANTES do `unique` (a máscara é client-side). Mensagem "CPF já cadastrado".
+- **Gate reutilizável (ponto único):** `App\Http\Middleware\ExigirCpfCliente` (alias `cpf.cliente` em
+  home/agendar) → cliente logado sem CPF vai para `Portal\CompletarCadastro` (isento do gate p/ não
+  fazer loop; logout também isento). Config `nextgest.exigir_cpf_cliente` — **default true: exige de
+  TODOS** (inclusive antigos, no próximo login — fecha a brecha de fato); configurável. O fluxo do
+  **Google** (fatia seguinte) reutiliza este gate sem duplicar a lógica.
+- **LGPD:** `cpf` em `Cliente::$hidden` (não serializa em snapshots do Livewire/JSON → não vaza em telas
+  do profissional, que só renderizam o nome). CRM exibe **mascarado** (`cpfMascarado()`); **completo** só
+  com a nova permissão `ver_cpf_cliente` (Dono/Gerente; Recepção mascarado; Profissional sem CRM).
+  Política de Privacidade inclui CPF (dados + finalidade identificação/antifraude); `Legal::VERSAO` → 1.1.
+- **Não quebra criação fora do autocadastro:** walk-in da equipe (nome+telefone) e beneficiários do Clube
+  (nome-avulso ou referência) não passam pela validação — CPF fica nulo, sem erro.
+- **Fora de escopo:** registro central cross-tenant; verificação externa (Receita); Google (reusa o gate).
+- **Verificação:** `ClienteCpfTest` (12) — exige/valida/duplica/normaliza CPF; unicidade por tenant
+  (mesmo CPF em outro tenant OK); gate redireciona sem CPF e passa com CPF (e desliga por config);
+  walk-in sem CPF não quebra; CRM mascara sem permissão e mostra completo com `ver_cpf_cliente`; CPF fora
+  do `toArray`. **HTTP real** no `barbeariateste` (campo com máscara; gate 302; política v1.1). Suíte
+  verde; build ok. **Dev, sem deploy.**

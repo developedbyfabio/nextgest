@@ -102,6 +102,12 @@
                                     @if ($cliente->email)
                                         <span class="text-xs font-normal text-zinc-500">{{ $cliente->email }}</span>
                                     @endif
+                                    {{-- CPF (LGPD): mascarado por padrão; completo só com ver_cpf_cliente. --}}
+                                    @if ($cliente->cpf)
+                                        <span class="text-xs font-normal text-zinc-400">
+                                            CPF: {{ auth('web')->user()?->can('ver_cpf_cliente') ? $cliente->cpfFormatado() : $cliente->cpfMascarado() }}
+                                        </span>
+                                    @endif
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell>{{ $cliente->telefone ?: '—' }}</flux:table.cell>

@@ -64,7 +64,7 @@ it('a landing central segue na marca Nextgest, sem tema de tenant', function () 
 
 it('a home logada do portal renderiza as seções esperadas sob o tema', function () {
     tenancy()->initialize($this->tenant);
-    $cliente = Cliente::create(['nome' => 'Ana Cliente', 'telefone' => '11999', 'email' => 'ana@l.test']);
+    $cliente = Cliente::create(['nome' => 'Ana Cliente', 'telefone' => '11999', 'email' => 'ana@l.test', 'cpf' => '52998224725']);
 
     $html = $this->actingAs($cliente, 'cliente')->get('/lojaum')->assertOk()->content();
 

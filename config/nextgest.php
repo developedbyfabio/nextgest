@@ -6,6 +6,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Exigir CPF do cliente (gate)
+    |--------------------------------------------------------------------------
+    |
+    | Quando true (default), o cliente logado SEM CPF é levado a completar o
+    | cadastro antes de usar o portal — inclusive clientes ANTIGOS sem CPF, no
+    | próximo login (é o que fecha a brecha de contas duplicadas). false = só a
+    | obrigatoriedade do autocadastro vale (existentes sem CPF não são forçados).
+    | O middleware App\Http\Middleware\ExigirCpfCliente e o fluxo do Google
+    | (fatia seguinte) reutilizam este ponto único.
+    |
+    */
+    'exigir_cpf_cliente' => (bool) env('NEXTGEST_EXIGIR_CPF_CLIENTE', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Slugs reservados
     |--------------------------------------------------------------------------
     |

@@ -35,6 +35,15 @@
         />
 
         <flux:input
+            wire:model="cpf"
+            label="CPF"
+            mask="999.999.999-99"
+            placeholder="000.000.000-00"
+            inputmode="numeric"
+            required
+        />
+
+        <flux:input
             wire:model="password"
             type="password"
             label="Senha"

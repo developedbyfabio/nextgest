@@ -39,7 +39,7 @@ it('a tela de login do cliente não contém link para o painel da equipe', funct
 
 it('portal do cliente (logado) não contém link para o painel da equipe', function () {
     tenancy()->initialize(criarTenant('semvaz3'));
-    $cliente = Cliente::create(['nome' => 'Maria', 'telefone' => '1199', 'email' => 'maria@x.test']);
+    $cliente = Cliente::create(['nome' => 'Maria', 'telefone' => '1199', 'email' => 'maria@x.test', 'cpf' => '52998224725']);
 
     $html = $this->actingAs($cliente, 'cliente')
         ->get(route('tenant.home', ['tenant' => 'semvaz3']))

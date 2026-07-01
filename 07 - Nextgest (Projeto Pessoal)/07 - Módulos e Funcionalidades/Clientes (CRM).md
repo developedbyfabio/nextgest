@@ -94,3 +94,26 @@ Resumo gerencial no topo da aba (só UI/contagem).
 - **Reativação de inativos** ("faz tempo que não vem"): é **campanha segmentada** — encaixa **após** o
   broadcast real (reusa o motor de envio em massa + `Cliente::aceitaMarketing()`/opt-out de marketing
   do D86).
+
+## CPF do cliente — obrigatório, único por tenant, mascarado (D94)
+CPF adicionado ao cadastro do cliente (banco do tenant), **obrigatório** no autocadastro e
+**único por tenant** (anti conta duplicada). Ver
+[[Decisões de Arquitetura#D94 — Cliente: CPF obrigatório e único por tenant (com gate)|D94]].
+
+- **Banco (aditivo):** `clientes.cpf` VARCHAR(11) **nullable + unique** (tolera múltiplos NULL). A
+  obrigatoriedade é da APLICAÇÃO (não `NOT NULL`), então clientes antigos sem CPF coexistem.
+- **Autocadastro** (`ClienteRegistrar`): `required` + `App\Rules\Cpf` (11 dígitos, rejeita
+  sequências, dígitos verificadores) + `Rule::unique('clientes','cpf')` (conexão default = tenant).
+  Input com máscara `999.999.999-99`; grava **só dígitos** (mutator `Cliente::setCpfAttribute`).
+- **Gate reutilizável** (`App\Http\Middleware\ExigirCpfCliente`, alias `cpf.cliente` em home/agendar):
+  cliente logado SEM CPF → tela `Portal\CompletarCadastro`. Config `nextgest.exigir_cpf_cliente`
+  (**default true**: exige de TODOS, inclusive antigos no próximo login — fecha a brecha). O fluxo do
+  **Google** (fatia seguinte) reutiliza este ponto único, sem duplicar.
+- **LGPD / exibição:** `cpf` em `$hidden` (não vaza em snapshots/JSON de telas do profissional). CRM
+  mostra **mascarado** (`cpfMascarado()` → `***.***.**X-XX`); **completo** só com a permissão
+  `ver_cpf_cliente` (Dono/Gerente; Recepção só mascarado; Profissional não acessa o CRM). Política de
+  Privacidade atualizada (CPF nos dados + finalidade identificação/antifraude; `Legal::VERSAO` 1.1).
+- **Não quebra criação fora do autocadastro:** walk-in da equipe (`NovoAgendamento::criarCliente`,
+  nome+telefone) e beneficiários do Clube (nome-avulso ou referência) não passam pela validação.
+- **Fora de escopo:** registro central cross-tenant; verificação em base externa (Receita).
+- **Testes:** `tests/Feature/Portal/ClienteCpfTest.php` (12).

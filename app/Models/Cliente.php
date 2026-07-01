@@ -28,6 +28,7 @@ class Cliente extends Authenticatable
         'nome',
         'email',
         'telefone',
+        'cpf',
         'whatsapp_optout',
         'whatsapp_marketing_optout',
         'password',
@@ -36,6 +37,10 @@ class Cliente extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // CPF é dado pessoal (LGPD): fora da serialização (snapshots do Livewire,
+        // toArray/JSON) para não vazar em telas do profissional. O acesso direto
+        // ($cliente->cpf) segue disponível ao CRM (gated + mascarado).
+        'cpf',
     ];
 
     protected function casts(): array
@@ -46,6 +51,41 @@ class Cliente extends Authenticatable
             // Opt-out SÓ de marketing/broadcast (D86) — independente do geral.
             'whatsapp_marketing_optout' => 'boolean',
         ];
+    }
+
+    /** Normaliza o CPF para só dígitos ao gravar (null se vazio) — nunca guarda máscara. */
+    public function setCpfAttribute(?string $valor): void
+    {
+        $d = preg_replace('/\D+/', '', (string) $valor);
+        $this->attributes['cpf'] = $d === '' ? null : $d;
+    }
+
+    /**
+     * CPF mascarado para exibição (LGPD): esconde o miolo — "123.***.**9-00" vira
+     * "***.***.**9-00". Retorna '—' quando não há CPF. Uso geral (o CPF completo só
+     * para quem tem permissão explícita; ver a tela de Clientes).
+     */
+    public function cpfMascarado(): string
+    {
+        $d = $this->cpf;
+
+        if (! $d || strlen($d) !== 11) {
+            return $d ? $d : '—';
+        }
+
+        return '***.***.**'.substr($d, 8, 1).'-'.substr($d, 9, 2);
+    }
+
+    /** CPF completo formatado (999.999.999-99) — só para quem tem `ver_cpf_cliente`. */
+    public function cpfFormatado(): string
+    {
+        $d = $this->cpf;
+
+        if (! $d || strlen($d) !== 11) {
+            return $d ? $d : '—';
+        }
+
+        return substr($d, 0, 3).'.'.substr($d, 3, 3).'.'.substr($d, 6, 3).'-'.substr($d, 9, 2);
     }
 
     public function agendamentos(): HasMany

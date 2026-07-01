@@ -17,6 +17,7 @@ it('registra e autentica um novo cliente', function () {
         ->set('nome', 'Maria')
         ->set('telefone', '11999998888')
         ->set('email', 'maria@cliente.com')
+        ->set('cpf', '529.982.247-25') // CPF obrigatório (D94)
         ->set('password', 'senha-cliente-12345')
         ->set('password_confirmation', 'senha-cliente-12345')
         ->call('registrar')
@@ -52,6 +53,7 @@ it('não permite e-mail duplicado no registro', function () {
         ->set('nome', 'Maria')
         ->set('telefone', '11999998888')
         ->set('email', 'maria@cliente.com')
+        ->set('cpf', '529.982.247-25') // CPF válido → isola o erro no e-mail duplicado
         ->set('password', 'senha-cliente-12345')
         ->set('password_confirmation', 'senha-cliente-12345')
         ->call('registrar')

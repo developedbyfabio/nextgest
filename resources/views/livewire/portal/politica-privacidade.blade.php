@@ -34,7 +34,7 @@
 
     <h2>3. Dados que coletamos</h2>
     <ul>
-        <li><strong>Cadastro:</strong> nome, e-mail e telefone informados ao criar a conta.</li>
+        <li><strong>Cadastro:</strong> nome, e-mail, telefone e <strong>CPF</strong> informados ao criar a conta.</li>
         <li><strong>Agendamentos:</strong> serviços escolhidos, datas, horários, histórico e eventuais observações.</li>
         <li><strong>Dados de uso:</strong> informações técnicas do acesso, como endereço IP, tipo de dispositivo e navegador, e registros de atividade (logs).</li>
         <li><strong>Cookies:</strong> identificadores necessários para manter a sessão e o funcionamento do portal (ver seção 6).</li>
@@ -45,7 +45,7 @@
     <ul>
         <li><strong>Execução de contrato:</strong> criar e manter sua conta, permitir e gerenciar agendamentos e prestar o serviço solicitado.</li>
         <li><strong>Consentimento:</strong> envio de comunicações de marketing e promoções, quando você opta por recebê-las.</li>
-        <li><strong>Legítimo interesse:</strong> segurança, prevenção a fraudes, melhoria do serviço e comunicações operacionais (por exemplo, confirmações e lembretes de agendamento).</li>
+        <li><strong>Legítimo interesse:</strong> segurança, prevenção a fraudes, melhoria do serviço e comunicações operacionais (por exemplo, confirmações e lembretes de agendamento). O <strong>CPF</strong> é usado para <strong>identificar você com segurança</strong> e <strong>evitar cadastros duplicados</strong> (antifraude).</li>
         <li><strong>Cumprimento de obrigação legal ou regulatória:</strong> quando exigido por lei.</li>
     </ul>
 

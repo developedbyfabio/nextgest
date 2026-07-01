@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
 class Legal
 {
     /** Versão vigente dos documentos (subir ao alterar o texto). */
-    public const VERSAO = '1.0';
+    public const VERSAO = '1.1';
 
     /** Data (ISO) da última atualização — usada no <time> e no rótulo pt-BR. */
     public const ATUALIZADO_EM = '2026-07-01';
