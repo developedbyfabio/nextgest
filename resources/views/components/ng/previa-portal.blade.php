@@ -97,11 +97,11 @@
                     {{-- TELA 0 — Portal deslogado (MESMO componente da home real) --}}
                     <div class="flex h-full w-full shrink-0 flex-col">
                         <div @class(['mx-auto flex size-full max-w-md flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
-                            <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
+                            <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl" :aparencia="$a">
                                 <span class="rounded-md px-2.5 py-1 text-xs font-medium" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">Entrar</span>
                             </x-portal.cabecalho>
                             <div class="flex flex-1 flex-col p-4">
-                                <x-portal.tela-inicio :nome="$nome" :header-url="$headerUrl" />
+                                <x-portal.tela-inicio :nome="$nome" :header-url="$headerUrl" :aparencia="$a" :logo-url="$logoUrl" />
                             </div>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
                     {{-- TELA 2 — Home do cliente logado --}}
                     <div class="flex h-full w-full shrink-0 flex-col">
                         <div @class(['mx-auto flex size-full max-w-md flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
-                            <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
+                            <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl" :aparencia="$a">
                                 <span class="flex size-7 items-center justify-center rounded-full" style="background-color: color-mix(in srgb, var(--cor-texto) 8%, transparent); color: var(--cor-texto-suave);">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5"><path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clip-rule="evenodd"/></svg>
                                 </span>
@@ -166,7 +166,7 @@
                     {{-- TELA 3 — Fluxo de agendamento (passo serviços) --}}
                     <div class="flex h-full w-full shrink-0 flex-col">
                         <div @class(['mx-auto flex size-full max-w-md flex-col overflow-y-auto', 'ng-com-fundo' => $fundoUrl])>
-                            <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl">
+                            <x-portal.cabecalho :nome="$nome" :logoUrl="$logoUrl" :aparencia="$a">
                                 <span class="rounded-md px-2.5 py-1 text-xs font-medium" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">Entrar</span>
                             </x-portal.cabecalho>
                             <div class="flex flex-1 flex-col gap-4 p-4">

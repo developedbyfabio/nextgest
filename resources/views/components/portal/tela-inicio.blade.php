@@ -2,6 +2,8 @@
     'nome' => '',
     'descricao' => null,
     'headerUrl' => null,
+    'aparencia' => [],   // aparência do tenant (marca do portal — repassa p/ a capa)
+    'logoUrl' => null,   // logo já resolvido (p/ marca_tipo=logo)
     'registrarHref' => null, // portal real: links; prévia: nulo (botões estáticos)
     'loginHref' => null,
 ])
@@ -9,7 +11,7 @@
 {{-- Tela INÍCIO (visitante): capa + como funciona + chamadas. FONTE DE VERDADE
      única: home do portal real (visitante) e tela 1 do carrossel da prévia. --}}
 <div class="flex flex-1 flex-col gap-5">
-    <x-portal.capa :nome="$nome" :descricao="$descricao" :header-url="$headerUrl" />
+    <x-portal.capa :nome="$nome" :descricao="$descricao" :header-url="$headerUrl" :aparencia="$aparencia" :logo-url="$logoUrl" />
 
     <x-portal.como-funciona />
 

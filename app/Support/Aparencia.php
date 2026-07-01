@@ -41,8 +41,36 @@ class Aparencia
         // Favicon do tenant (D90): PNG 32x32 processado no upload (ver App\Support\
         // Favicon). null → cai no favicon padrão do Nextgest (ver linkFavicon).
         'favicon' => null,
+        // Marca do portal (D92): fonte do brand-mark do portal — 'icone' (um ícone
+        // predefinido no quadrado de acento) ou 'logo' (a imagem enviada, respeitando
+        // transparência). 'marca_icone' é a chave do ícone (ver ICONES_MARCA).
+        'marca_tipo' => 'icone',
+        'marca_icone' => 'scissors',
         'menu_posicao' => 'topo',
         'icone_estilo' => 'outline',
+    ];
+
+    /**
+     * Ícones oferecidos como marca do portal (D92) — chave (nome do ícone Flux/
+     * Heroicons, validado em render) => rótulo pt-BR. Lista fechada: o valor salvo
+     * passa por Rule::in(array_keys(...)), então nunca chega um nome de ícone inválido
+     * ao `flux:icon` (que abortaria). Curadoria p/ barbearia/salão/estética/geral.
+     *
+     * @var array<string, string>
+     */
+    public const ICONES_MARCA = [
+        'scissors' => 'Tesoura',
+        'sparkles' => 'Brilho',
+        'star' => 'Estrela',
+        'heart' => 'Coração',
+        'fire' => 'Chama',
+        'building-storefront' => 'Loja',
+        'calendar-days' => 'Calendário',
+        'swatch' => 'Paleta',
+        'paint-brush' => 'Pincel',
+        'face-smile' => 'Sorriso',
+        'gift' => 'Presente',
+        'sun' => 'Sol',
     ];
 
     /**
@@ -190,6 +218,21 @@ class Aparencia
         $url = self::urlArquivo($path) ?? asset('nextgest-logo.png');
 
         return '<link rel="icon" type="image/png" href="'.e($url).'">';
+    }
+
+    /**
+     * Chave do ícone da marca do portal (D92), validada contra ICONES_MARCA. Se
+     * ausente/inválida, cai no padrão 'scissors' — garante que o `flux:icon` do
+     * brand-mark nunca receba um nome fora do catálogo (que abortaria a renderização).
+     */
+    public static function marcaIcone(?array $a = null): string
+    {
+        $a = $a ?? self::doTenant();
+        $icone = $a['marca_icone'] ?? null;
+
+        return is_string($icone) && array_key_exists($icone, self::ICONES_MARCA)
+            ? $icone
+            : self::PADRAO['marca_icone'];
     }
 
     /** Aparência do tenant atual mesclada com o padrão. */

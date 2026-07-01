@@ -1797,3 +1797,29 @@ ao fim, sem apagar as antigas. Ver também [[Nextgest - Visão Geral]].
 - **Verificação:** testes de tema/prévia/portal/aparência **59** verdes; **HTTP real** no
   `barbeariateste` — os dois botões são o mesmo componente Flux, o secundário com o `style` de acento
   secundário e `--cor-sobre-secundaria: #18181b` emitido no `<body>`. Build ok. **Dev, sem deploy.**
+
+## D92 — Portal: marca configurável (ícone predefinido OU logo)
+> O dono escolhe, na Aparência, a fonte do brand-mark do portal: um ÍCONE de um catálogo curado ou o
+> LOGO enviado (respeitando transparência). Renderiza no portal e reflete na prévia. Ver
+> [[Identidade Visual do Estabelecimento (Tema)]].
+- **Persistência aditiva (sem migração):** `marca_tipo` (`icone|logo`) + `marca_icone` (chave do ícone)
+  no JSON `configuracoes.aparencia`. Default `icone`/`scissors` (mantém a tesoura de hoje).
+- **Catálogo fechado `Aparencia::ICONES_MARCA` (12 ícones Flux/Heroicons):** scissors, sparkles, star,
+  heart, fire, building-storefront, calendar-days, swatch, paint-brush, face-smile, gift, sun. Validação
+  `Rule::in(array_keys(...))` no salvar (o valor salvo casa EXATAMENTE — imune ao escape duplo porque a
+  UI grava via `wire:click="$set('marca_icone','<chave>')"`, sem `value="{{ }}"`). `Aparencia::marcaIcone()`
+  revalida no render → fallback `scissors` (o `flux:icon` nunca recebe nome inválido).
+- **PARTIAL ÚNICO `x-portal.marca`** — usado no HERO (`x-portal.capa`, quadrado de acento+ícone ou logo)
+  e no TOPO (`x-portal.cabecalho`, ícone tingido ou logo). Como capa/cabecalho são compartilhados
+  portal↔prévia, a prévia reflete a escolha SEM markup paralelo (sem caminho duplicado).
+- **Logo respeita transparência:** sem quadrado de cor atrás (anularia a transparência). **Fallback:**
+  `logo` sem imagem → ícone padrão. Reusa o upload de logo existente (disco do tenant, `urlArquivo`).
+- **Gotcha (corrigido no desenvolvimento):** a prop de contexto do `x-portal.marca` NÃO pode chamar-se
+  `variant` — colide com o `variant` (outline/solid) do `<flux:icon>` aninhado e estoura o `match`
+  (`UnhandledMatchError`) no portal e nos testes. Renomeada para **`contexto`**.
+- **Fora de escopo:** sem novas rotas; nada de login/agendamento; não altera o modelo de cores (D36).
+- **Verificação:** `AparenciaMarcaTest` (8) — salva/valida `marca_tipo`/`marca_icone` (todo o catálogo
+  passa; fora dele o `Rule::in` rejeita); ícone renderiza no quadrado de acento; logo renderiza como
+  `<img>` (sem quadrado); `logo` sem imagem cai no ícone; partial único no hero e no topo. **HTTP real**
+  no `barbeariateste`: ícone → quadrado de acento; logo → `<img>` do logo (transparência). Suíte verde;
+  build ok. **Dev, sem deploy.**

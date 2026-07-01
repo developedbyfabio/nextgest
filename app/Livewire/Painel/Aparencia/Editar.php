@@ -53,6 +53,11 @@ class Editar extends Component
     // Favicon do tenant (D90) — caminho do PNG 32x32 já processado (ou null).
     public ?string $favicon = null;
 
+    // Marca do portal (D92): 'icone' | 'logo' + chave do ícone escolhido.
+    public string $marca_tipo = 'icone';
+
+    public string $marca_icone = 'scissors';
+
     // Uploads temporários (substituem o caminho persistido ao salvar).
     public $logoUpload = null;
 
@@ -87,6 +92,8 @@ class Editar extends Component
         $this->header_imagem = $a['header_imagem'];
         $this->fundo_imagem = $a['fundo_imagem'];
         $this->favicon = $a['favicon'] ?? null;
+        $this->marca_tipo = $a['marca_tipo'] ?? 'icone';
+        $this->marca_icone = $a['marca_icone'] ?? 'scissors';
     }
 
     public function aplicarTemplate(string $chave): void
@@ -117,6 +124,11 @@ class Editar extends Component
             'cor_secundaria' => $hex,
             'fonte' => ['required', 'string', Rule::in(array_keys(Aparencia::FONTES))],
             'tamanho_base' => ['required', 'string', 'regex:/^\d{2}px$/'],
+            // Marca do portal (D92): tipo fechado + ícone da lista curada. A validação
+            // por Rule::in garante que o valor salvo case EXATAMENTE com o catálogo
+            // (evita o bug de escape duplo invalidar a seleção — ver a nota da fonte).
+            'marca_tipo' => ['required', Rule::in(['icone', 'logo'])],
+            'marca_icone' => ['required', Rule::in(array_keys(Aparencia::ICONES_MARCA))],
             'logoUpload' => $imagem,
             'headerUpload' => $imagem,
             'fundoUpload' => $imagem,
@@ -187,6 +199,8 @@ class Editar extends Component
             'header_imagem' => $this->header_imagem,
             'fundo_imagem' => $this->fundo_imagem,
             'favicon' => $this->favicon,
+            'marca_tipo' => $this->marca_tipo,
+            'marca_icone' => $this->marca_icone,
         ]);
 
         // Recarrega a página (reload completo, não SPA) para o novo tema (acento/
@@ -219,6 +233,8 @@ class Editar extends Component
             'header_imagem' => $this->header_imagem,
             'fundo_imagem' => $this->fundo_imagem,
             'favicon' => $this->favicon,
+            'marca_tipo' => $this->marca_tipo,
+            'marca_icone' => $this->marca_icone,
             'logo_url' => $this->urlPrevia($this->logoUpload, $this->logo),
             'header_url' => $this->urlPrevia($this->headerUpload, $this->header_imagem),
             'fundo_url' => $this->urlPrevia($this->fundoUpload, $this->fundo_imagem),
@@ -245,6 +261,7 @@ class Editar extends Component
         return view('livewire.painel.aparencia.editar', [
             'templates' => Aparencia::TEMPLATES,
             'fontes' => Aparencia::FONTES,
+            'icones' => Aparencia::ICONES_MARCA,
             'aparencia' => $this->aparenciaAtual(),
         ]);
     }

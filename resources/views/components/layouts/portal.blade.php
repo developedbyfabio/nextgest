@@ -34,7 +34,7 @@
          leitura (ng-com-fundo). Sem fundo, a coluna é a superfície sólida. --}}
     <div @class(['mx-auto flex min-h-screen w-full max-w-md flex-col shadow-sm', 'ng-com-fundo' => $fundoUrl])
         @style(['background-color: var(--cor-superficie)' => ! $fundoUrl])>
-        <x-portal.cabecalho :nome="tenant('nome')" :logoUrl="$logoUrl" :href="route('tenant.home', ['tenant' => $tenantId])">
+        <x-portal.cabecalho :nome="tenant('nome')" :logoUrl="$logoUrl" :aparencia="$aparencia" :href="route('tenant.home', ['tenant' => $tenantId])">
             <x-ng.seletor-tema />
 
             @auth('cliente')

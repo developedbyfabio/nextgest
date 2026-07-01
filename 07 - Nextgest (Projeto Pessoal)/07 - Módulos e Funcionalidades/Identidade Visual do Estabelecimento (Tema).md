@@ -2,7 +2,7 @@
 
 > Projeto: [[Nextgest - Visão Geral]] · Decisões: [[Decisões de Arquitetura]]
 > (D28 tema, D30 templates, D35 arquivos, **D36 modo claro/escuro**, D90 favicon,
-> D91 botão secundário) · Atualizado: 2026-07-01.
+> D91 botão secundário, D92 marca do portal) · Atualizado: 2026-07-01.
 
 > [!important] Modelo ATUAL (Etapa D, D36) — substitui parte das Etapas A/B
 > - **Marca do tenant = ACENTO** (`--cor-principal` / `--color-accent`) **+ logo +
@@ -172,6 +172,37 @@ CRUAS), o favicon é **processado no upload**.
 - **UI:** campo "Favicon (ícone da aba)" na seção Imagens, com preview e a nota de que
   é reduzido para 32×32/PNG automaticamente.
 - **Não** injetado em `landing`/`admin` (centrais, não-tenant): seguem o padrão fixo.
+
+## Marca do portal — ícone ou logo (D92)
+O dono escolhe, na Aparência, a **fonte do brand-mark do portal**: um **ícone
+predefinido** (catálogo curado) OU o **logo enviado** (respeitando transparência).
+
+- **Persistência (aditiva, sem migração):** `marca_tipo` (`icone|logo`) e `marca_icone`
+  (chave do ícone) no JSON `configuracoes.aparencia` (ganchos no `PADRAO`). Default
+  `icone`/`scissors` — mantém a tesoura de hoje para quem não configurar.
+- **Catálogo `Aparencia::ICONES_MARCA`** (chave Flux/Heroicons → rótulo pt-BR, 12):
+  `scissors` (Tesoura), `sparkles` (Brilho), `star` (Estrela), `heart` (Coração),
+  `fire` (Chama), `building-storefront` (Loja), `calendar-days` (Calendário),
+  `swatch` (Paleta), `paint-brush` (Pincel), `face-smile` (Sorriso), `gift` (Presente),
+  `sun` (Sol). Lista fechada → `Rule::in(array_keys(...))` no salvar; `Aparencia::marcaIcone()`
+  valida no render e cai em `scissors` se vier algo fora do catálogo (o `flux:icon`
+  nunca recebe nome inválido, que abortaria).
+- **PARTIAL ÚNICO `x-portal.marca`** (novo): renderiza a marca conforme a escolha e é
+  usado no **hero** (`x-portal.capa`, `contexto="hero"` — quadrado de acento com o ícone,
+  ou o logo `object-contain`) e no **topo** (`x-portal.cabecalho`, `contexto="topo"` —
+  ícone tingido ou logo). Como capa/cabecalho são compartilhados portal↔prévia, a
+  **prévia da Aparência reflete a escolha** sem markup paralelo.
+  - > [!warning] Não nomear a prop de contexto como `variant`
+    > O `<flux:icon>` aninhado tem `@props(['variant' => 'outline'])`; uma prop `variant`
+    > no `x-portal.marca` VAZA para o ícone e um `hero`/`topo` estoura o `match` do Flux
+    > (`UnhandledMatchError`). Por isso a prop chama-se **`contexto`**.
+- **Logo respeita transparência:** no modo `logo`, a imagem entra **sem** quadrado de cor
+  atrás (que anularia a transparência). **Fallback:** `logo` sem imagem enviada cai no
+  ícone padrão. Constante em claro/escuro; sólido/legível com ou sem imagem de fundo.
+- **UI (Aparência):** segmented control **Ícone | Logo** + **seletor visual** (grade de
+  ícones renderizados, com prévia) quando `icone`; quando `logo`, aponta para o upload de
+  logo (na seção Imagens) e avisa que pode ser transparente. Reusa o **upload de logo
+  existente** (disco do tenant, `urlArquivo`) — sem novo caminho de upload.
 
 ## Uploads por tenant (Etapa 2, D35)
 - Logo/cabeçalho/fundo gravados no disco `public` isolado por tenant

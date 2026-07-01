@@ -79,6 +79,67 @@
                 <flux:text class="text-xs text-zinc-500">A fonte e o tamanho são aplicados no portal e no painel.</flux:text>
             </div>
 
+            {{-- Marca do portal (D92): ícone predefinido OU logo enviado. --}}
+            <div class="flex flex-col gap-3">
+                <flux:heading size="sm">Marca do portal</flux:heading>
+                <flux:text class="text-xs text-zinc-500">O símbolo que aparece no topo e no destaque do portal.</flux:text>
+
+                {{-- Segmented control: Ícone | Logo (wire:click = atualiza a prévia ao vivo). --}}
+                <div class="inline-flex w-fit rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700">
+                    @foreach (['icone' => 'Ícone', 'logo' => 'Logo'] as $valor => $rotulo)
+                        <button type="button" wire:click="$set('marca_tipo', '{{ $valor }}')"
+                            @class([
+                                'rounded-md px-3 py-1.5 text-sm font-medium transition',
+                                'text-white' => $marca_tipo === $valor,
+                                'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $marca_tipo !== $valor,
+                            ])
+                            @style(['background-color: var(--color-accent)' => $marca_tipo === $valor])
+                            aria-pressed="{{ $marca_tipo === $valor ? 'true' : 'false' }}">
+                            {{ $rotulo }}
+                        </button>
+                    @endforeach
+                </div>
+
+                @if ($marca_tipo === 'icone')
+                    {{-- Seletor visual: grade de ícones RENDERIZADOS (prévia), não só nomes.
+                         Valor via wire:click (string literal do catálogo) — sem value="{{ }}",
+                         então imune ao escape duplo; o Rule::in valida no salvar. --}}
+                    <div class="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                        @foreach ($icones as $chave => $rotulo)
+                            <button type="button" wire:click="$set('marca_icone', '{{ $chave }}')" title="{{ $rotulo }}"
+                                @class([
+                                    'flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition',
+                                    'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800' => $marca_icone !== $chave,
+                                    'ring-2 ring-[var(--color-accent)] ring-offset-2 dark:ring-offset-zinc-900' => $marca_icone === $chave,
+                                ])
+                                aria-pressed="{{ $marca_icone === $chave ? 'true' : 'false' }}">
+                                <span class="flex size-9 items-center justify-center rounded-md" style="background-color: var(--cor-principal); color: var(--cor-sobre-principal);">
+                                    <flux:icon :name="$chave" class="size-5" />
+                                </span>
+                                <span class="w-full truncate text-[0.7rem] text-zinc-500">{{ $rotulo }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="flex items-center gap-4 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                        <div class="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                            @if ($aparencia['logo_url'] ?? null)
+                                <img src="{{ $aparencia['logo_url'] }}" alt="Logo" class="size-full object-contain" />
+                            @else
+                                <flux:icon name="photo" class="size-6 text-zinc-400" />
+                            @endif
+                        </div>
+                        <flux:text class="text-xs text-zinc-500">
+                            Usa a <strong>logo</strong> enviada em <strong>Imagens</strong> (abaixo). Pode ser
+                            <strong>transparente</strong> — não colocamos fundo atrás dela.
+                            @unless ($aparencia['logo_url'] ?? null)
+                                Enquanto não houver logo, o portal mostra o ícone padrão.
+                            @endunless
+                        </flux:text>
+                    </div>
+                @endif
+            </div>
+
             {{-- Imagens --}}
             <div class="flex flex-col gap-3">
                 <flux:heading size="sm">Imagens</flux:heading>

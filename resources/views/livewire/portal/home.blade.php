@@ -220,11 +220,14 @@
         {{-- Visitante: usa o MESMO componente da prévia (tela 1 do carrossel):
              capa com imagem de cabeçalho + passos + chamadas. O fundo entra pelo
              layout do portal; a legibilidade sobre o fundo vem do .ng-leitura. --}}
-        @php($headerUrl = \App\Support\Aparencia::urlArquivo(\App\Support\Aparencia::doTenant()['header_imagem']))
+        @php($ap = \App\Support\Aparencia::doTenant())
+        @php($headerUrl = \App\Support\Aparencia::urlArquivo($ap['header_imagem']))
         <x-portal.tela-inicio
             :nome="tenant('nome')"
             :descricao="$descricao"
             :header-url="$headerUrl"
+            :aparencia="$ap"
+            :logo-url="\App\Support\Aparencia::urlArquivo($ap['logo'])"
             :registrar-href="route('cliente.registrar', ['tenant' => tenant('id')])"
             :login-href="route('cliente.login', ['tenant' => tenant('id')])"
         />
