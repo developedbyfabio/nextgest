@@ -61,6 +61,19 @@ não verificado → login do tenant. **Sem logar tokens.**
 `google.client_id` / `client_secret` / `redirect` — todos via `.env`
 (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`).
 
+## Status: DEV validado ponta a ponta (2026-07-01)
+App registrado no Google (client OAuth único, **duas** redirect URIs: dev `localhost:8000` + prod
+`nextgest.com.br`), scopes básicos **openid/profile/email** (em modo Testing, com test user). Login real
+testado e **funcionando em dev** via **túnel SSH** (o Google recusa IP e http fora de `localhost`):
+
+- **Túnel:** `ssh -L 8000:localhost:9090 <user>@192.168.11.210` (9090 = porta do `php artisan serve` do
+  nextgest). Acessa-se o dev como `http://localhost:8000`.
+- **`.env` de dev:** `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` + `GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback`. **Não** foi preciso mexer em `APP_URL`/`SESSION_*` (sessão já com `SESSION_DOMAIN=null` + `SESSION_SECURE_COOKIE=false`; a `redirect_uri` vem explícita do `.env` e a volta usa o host da requisição = `localhost:8000`). `php artisan config:clear` após editar.
+- **Fluxo confirmado:** botão → Google (test user) → callback → tenancy inicializado → cliente novo com
+  `google_id` → autenticado → **gate de perfil (D96)** → "Completar cadastro" (telefone + CPF) → portal.
+- > [!warning] Redirect URI bate 100% (senão `redirect_uri_mismatch`): `http`/`https`, porta, sem barra
+  > final. Test user obrigatório enquanto o app está em Testing (token de teste expira em ~7 dias).
+
 ## ✅ Checklist para PRODUÇÃO (você faz — precisa de https)
 - [ ] Google Cloud Console: criar projeto + **tela de consentimento** (OAuth) + credenciais OAuth 2.0.
 - [ ] **Redirect URI autorizada:** `https://nextgest.com.br/auth/google/callback` (exatamente).
